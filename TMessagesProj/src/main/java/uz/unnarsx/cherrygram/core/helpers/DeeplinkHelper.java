@@ -133,7 +133,7 @@ public class DeeplinkHelper {
                 unknown.run();
                 return;
             }
-            case DeepLinksRepo.CG_Ghost, "ghost" -> {
+            case DeepLinksRepo.CG_Ghost -> {
                 fragment = CherrygramPreferencesNavigator.INSTANCE.createGhost(hostFragment);
             }
             case DeepLinksRepo.CG_Privacy, "cg_security" -> {
@@ -328,7 +328,7 @@ public class DeeplinkHelper {
                     unknown.run();
                     return;
                 }
-                case DeepLinksRepoDeprecated.CG_Ghost, "cg_ghost", "ghost" -> {
+                case DeepLinksRepoDeprecated.CG_Ghost, "ghost" -> {
                     CherrygramPreferencesNavigator.INSTANCE.createGhost(fragment);
                     return;
                 }

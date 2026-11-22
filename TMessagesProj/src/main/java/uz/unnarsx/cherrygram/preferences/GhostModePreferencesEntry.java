@@ -17,6 +17,7 @@ import java.util.ArrayList;
 
 import uz.unnarsx.cherrygram.core.configs.MeeroGhostConfig;
 import uz.unnarsx.cherrygram.core.helpers.DeeplinkHelper;
+import uz.unnarsx.cherrygram.preferences.helpers.SettingsHelper;
 
 public class GhostModePreferencesEntry extends BaseCGPreferencesEntry {
 
