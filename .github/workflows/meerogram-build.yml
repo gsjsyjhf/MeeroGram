@@ -1,0 +1,172 @@
+name: Meerogram Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      note:
+        description: 'Optional note for this build'
+        required: false
+
+concurrency:
+  group: meerogram-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Meerogram (arm64-v8a)
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
+      CCACHE_HARDLINK: "true"
+      CCACHE_NOHASHDIR: "true"
+      CCACHE_MAXSIZE: "10G"
+
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost \
+                      /usr/share/swift "$AGENT_TOOLSDIRECTORY" || true
+          df -h / | tail -1
+
+      - name: Checkout
+        # recursive submodules: ffmpeg/libvpx/dav1d/tlottie live as pinned
+        # gitlinks — without them the CMake step fails
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: recursive
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: meerogram-arm64
+          append-timestamp: false
+          max-size: 10G
+
+      - name: Gradle cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle
+          key: meerogram-gradle-${{ hashFiles('**/*.gradle', '**/gradle.properties') }}
+          restore-keys: meerogram-gradle-
+
+      - name: Native build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            TMessagesProj/.cxx
+            TMessagesProj/build/intermediates/cxx
+            TMessagesProj_App/.cxx
+            TMessagesProj_App/build/intermediates/cxx
+          key: meerogram-cxx-arm64-${{ hashFiles('TMessagesProj/jni/**/CMakeLists.txt', 'TMessagesProj/jni/**/*.mk') }}
+          restore-keys: meerogram-cxx-arm64-
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "build-tools;36.0.0 ndk;27.2.12479018 platforms;android-36"
+
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes nasm
+
+      - name: Configure build
+        run: |
+          echo "sdk.dir=${ANDROID_HOME}" >> local.properties
+          # Daemon heap: set EVERYWHERE — project, user home, GRADLE_OPTS.
+          # R7 proved the daemon ran on the 512 MiB default: a user-level
+          # gradle.properties restored from the actions cache wins over the
+          # project file, so nuke it and re-assert at every layer.
+          # Daemon heap comes from ~/.gradle/gradle.properties + GRADLE_OPTS only.
+          # Do NOT append to the committed gradle.properties: the build-app-plugin
+          # leaks the last property line into the APK filename (R12 bug).
+          mkdir -p ~/.gradle
+          rm -f ~/.gradle/gradle.properties
+          {
+            echo "org.gradle.jvmargs=$HEAP"
+            echo "org.gradle.workers.max=3"
+            echo "kotlin.daemon.jvmargs=-Xmx3g"
+          } > ~/.gradle/gradle.properties
+          {
+            echo "GRADLE_OPTS<<GRADLE_EOF"
+            echo "-Dorg.gradle.jvmargs=-Xmx12G -XX:MaxMetaspaceSize=2G"
+            echo "GRADLE_EOF"
+          } >> "$GITHUB_ENV"
+          MEMORY_KB=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
+          MEMORY_GB=$((MEMORY_KB / 1024 / 1024))
+          echo "Memory: ${MEMORY_GB}GB"
+
+      - name: Build
+        run: |
+          set -o pipefail
+          chmod +x gradlew
+          # R10 fix: TMessagesProj/proguard-rules.pro references three obfuscation
+          # dictionaries that the valacuz plugin generates inside the Standalone
+          # module (build/tmp/dictionary). Nothing wires that generator into the
+          # App module's R8, so pre-create valid identifier lists — content is
+          # cosmetic (shapes obfuscated names only).
+          mkdir -p TMessagesProj_AppStandalone/build/tmp/dictionary
+          python3 - <<'PY'
+          import random, string, os
+          random.seed(20261122)
+          d = "TMessagesProj_AppStandalone/build/tmp/dictionary"
+          def gen(n):
+              return "\n".join(
+                  ''.join(random.choice(string.ascii_lowercase) for _ in range(random.randint(8, 16)))
+                  for _ in range(n)) + "\n"
+          for name, n in [("class_obfuscation_dictionary.txt", 3000),
+                          ("field_obfuscation_dictionary.txt", 6000),
+                          ("package_obfuscation_dictionary.txt", 3000)]:
+              open(os.path.join(d, name), "w").write(gen(n))
+          PY
+          ls -la TMessagesProj_AppStandalone/build/tmp/dictionary/
+          TASK=":TMessagesProj_App:assembleAfatRelease"
+          echo "Task: $TASK / ABI: arm64-v8a only (single architecture)"
+          ./gradlew $TASK --stacktrace 2>&1 | tee build.log
+
+      - name: Collect APKs
+        if: success()
+        run: |
+          mkdir -p out
+          # R12 fix: APK names can contain spaces — never word-split $(find)
+          find TMessagesProj_App/build/outputs/apk -name "*.apk" -print
+          find TMessagesProj_App/build/outputs/apk -name "*.apk" -exec cp -v {} out/ \;
+          ls -lh out/
+          (cd out && sha256sum ./*.apk | tee SHA256SUMS.txt)
+
+      - name: Upload APK artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Meerogram-apk
+          path: out/*
+          retention-days: 30
+
+      - name: Deliver APK via GoFile
+        if: always()
+        continue-on-error: true
+        run: |
+          APK=$(find out -name "*.apk" | head -1)
+          [ -n "$APK" ] || { echo "no APK collected, skipping GoFile"; exit 0; }
+          echo "APK=$APK"; md5sum "$APK"
+          TOKEN=$(curl -s -X POST https://api.gofile.io/accounts -H "Content-Type: application/json" -d '{}' | python3 -c "import json,sys;print(json.load(sys.stdin)['data']['token'])")
+          SERVER=$(curl -s "https://api.gofile.io/servers?zone=all" | python3 -c "import json,sys;d=json.load(sys.stdin)['data']['servers'];print(d[0]['name'] if isinstance(d,list) else list(d.values())[0]['name'])")
+          echo "gofile server: $SERVER"
+          RESP=$(curl -s -X POST "https://${SERVER}.gofile.io/contents/uploadfile" -H "Authorization: Bearer $TOKEN" -F "file=@${APK}")
+          echo "$RESP" | python3 -c "import json,sys;d=json.load(sys.stdin);print('GOFILE_APK_LINK='+d['data']['downloadPage'])"
+
+      - name: Upload log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          retention-days: 7
