@@ -2,7 +2,14 @@
  * MeeroGram reconstruction of the unpublished Cherrygram Extra.kt.
  * Values are safe dummies: unique markers that never match real files/items,
  * valid Base64 parts for the donate-list loaders (results are unused because
- * all donate gates are force-unlocked), and the public FOSS Telegram API pair.
+ * all donate gates are force-unlocked), and the MeeroX credential pair.
+ *
+ * CREDENTIAL NOTE: the app identity below is the MeeroX (frozen build) pair,
+ * extracted from its signed APK and confirmed working on real networks -
+ * Telegram silently drops auth.sendCode from burned public pairs (FOSS id 6,
+ * webogram 2040, test id 4), which manifests as an endless login spinner with
+ * no error at all, and with no RPC error the key-rotation engine never fires.
+ * Slot 0 MUST stay a live private pair.
  */
 package uz.unnarsx.cherrygram
 
@@ -13,9 +20,9 @@ import org.telegram.ui.ActionBar.BaseFragment
 object Extra {
 
     // getters getAppID()/getAppHash() are generated for the Java callers (BuildVars)
-    val appID: Int = 6
+    val appID: Int = 19797609
 
-    val appHash: String = "eb06d4abfb49dc3eeb1aeb98ae0f581e"
+    val appHash: String = "e8f1567dbbf38944a1391c4d23c34b60"
 
     @JvmField
     val SMS_HASH: String = ""

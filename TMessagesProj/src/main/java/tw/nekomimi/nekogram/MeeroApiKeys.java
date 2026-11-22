@@ -34,7 +34,9 @@ public class MeeroApiKeys {
      * once.
      */
     private static final String KEY_GENERATION = "api_generation";
-    private static final int GENERATION = 1;
+    /* 2: slot 0 moved from the burned FOSS pair to the proven MeeroX pair
+     * (19797609) - reset whatever slot the old installs had persisted. */
+    private static final int GENERATION = 2;
 
     private static int index = -1;
 

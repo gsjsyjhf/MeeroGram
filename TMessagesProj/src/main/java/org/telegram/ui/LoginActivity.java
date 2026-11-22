@@ -3333,6 +3333,16 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 if (nextPressed && meeroResponded[0] == 0 && getParentActivity() != null) {
                     nextPressed = false;
                     needHideProgress(false);
+                    // MeeroGram: a burned credential gets silently dropped by
+                    // Telegram (no RPC error, no response) - the rotation only
+                    // fires on real errors, so a dead slot 0 would never self-
+                    // heal. Advance the pool on a timeout too, before telling
+                    // the user.
+                    if (activityMode == MODE_LOGIN
+                            && tw.nekomimi.nekogram.NekoXConfig.customApi != tw.nekomimi.nekogram.NekoXConfig.API_TYPE_CUSTOM
+                            && tw.nekomimi.nekogram.MeeroApiKeys.advance()) {
+                        ConnectionsManager.nativeUpdateApiId(currentAccount, tw.nekomimi.nekogram.NekoXConfig.currentAppId());
+                    }
                     needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), LocaleController.getString("MG_SendCodeTimeout", R.string.MG_SendCodeTimeout));
                     FileLog.d("MeeroGram sendCode: no response within 30s");
                 }
