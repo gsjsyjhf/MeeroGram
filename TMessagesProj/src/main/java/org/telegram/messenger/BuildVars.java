@@ -44,11 +44,16 @@ public class BuildVars {
     // You can use this flag to disable Google Play Billing (If you're making fork and want it to be in Google Play)
     public static boolean IS_BILLING_UNAVAILABLE = CherrygramCoreConfig.isPlayStoreBuild();
 
-    // works only on official app ids, disable on your forks
-    public static boolean SUPPORTS_PASSKEYS = Build.VERSION.SDK_INT >= 34;
+    // MeeroGram: passkeys and Google digital-credential (FPNV) login are bound
+    // to the official Telegram app identity and signing certificate. On a fork
+    // they can never resolve, and the auto-attempt on the phone screen stalls
+    // login with "No viable credential is available." - so both stay off and
+    // the login screen keeps the classic SMS / Telegram-code flow (plus the
+    // proxy button, which passkey support would otherwise hide).
+    public static boolean SUPPORTS_PASSKEYS = false;
     // the second main tab: News, or Contacts as before them
 
-    public static boolean SUPPORTS_FPNV = true;
+    public static boolean SUPPORTS_FPNV = false;
 
     static {
         APP_ID = Extra.INSTANCE.getAppID();
