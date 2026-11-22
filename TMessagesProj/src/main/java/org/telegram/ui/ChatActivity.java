@@ -33520,7 +33520,14 @@ public class ChatActivity extends BaseFragment implements
                         String toLangDefault = LocaleController.getInstance().getCurrentLocale().getLanguage();
                         String toLang = TranslateAlert2.getToLanguage();
                         int[] messageIdToTranslate = new int[] { message.getId() };
-                        final CharSequence finalMessageText = message.getMessageTextToTranslate(groupedMessages, messageIdToTranslate);
+                        CharSequence meeroTranslateSource = message.getMessageTextToTranslate(groupedMessages, messageIdToTranslate);
+                        if (TextUtils.isEmpty(meeroTranslateSource)) {
+                            // MeeroGram: our always-on Translate row passes text
+                            // that the official language detection considers
+                            // non-translatable - fall back to the visible text.
+                            meeroTranslateSource = message.messageText;
+                        }
+                        final CharSequence finalMessageText = meeroTranslateSource;
                         Utilities.CallbackReturn<URLSpan, Boolean> onLinkPress = (link) -> {
                             didPressMessageUrl(link, false, selectedObject, v instanceof ChatMessageCell ? (ChatMessageCell) v : null);
                             return true;
@@ -47613,6 +47620,7 @@ public class ChatActivity extends BaseFragment implements
                     options.add(OPTION_TRANSLATE);
                     icons.add(R.drawable.msg_translate);
                 }
+                CGMessageMenuInjector.INSTANCE.injectTranslate(selectedObject, items, options, icons);
                 if (message.canEditMessage(currentChat) && message.type != MessageObject.TYPE_POLL || chatMode == MODE_WELCOME_MESSAGES) {
                     allowEdit = true;
                     items.add(LocaleController.getString(R.string.Edit));
@@ -48017,6 +48025,7 @@ public class ChatActivity extends BaseFragment implements
                     options.add(OPTION_TRANSLATE);
                     icons.add(R.drawable.msg_translate);
                 }
+                CGMessageMenuInjector.INSTANCE.injectTranslate(selectedObject, items, options, icons);
                 if (allowEdit || chatMode == MODE_WELCOME_MESSAGES) {
                     items.add(LocaleController.getString(R.string.Edit));
                     options.add(OPTION_EDIT);

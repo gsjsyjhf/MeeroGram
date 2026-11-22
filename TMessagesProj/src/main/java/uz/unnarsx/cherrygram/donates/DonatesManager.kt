@@ -216,21 +216,24 @@ object DonatesManager {
         loadLocalList(context, FILE_NAME, verifiedUserIds)
 
     fun checkAllDonatedAccounts(): Boolean {
-        for (i in 0 until UserConfig.MAX_ACCOUNT_COUNT) {
-            val userConfig = AccountInstance.getInstance(i).userConfig
-            val currentUser = userConfig?.currentUser
-            val userId = currentUser?.id ?: 0L
-
-            if (userConfig != null && userConfig.isClientActivated && userId != 0L) {
-                if (didUserDonate(userId)) {
-                    if (CherrygramCoreConfig.isDevBuild()) println("Account's ID is in the list: $userId")
-                    return true
-                } else {
-                    if (CherrygramCoreConfig.isDevBuild()) println("Account's ID is not in the list: $userId")
-                }
-            }
-        }
-        return false
+        // MeeroGram: every PRO/donate-gated feature is unlocked - there is no
+        // subscription in this build, the switches stay fully controllable.
+        return true
+        // for (i in 0 until UserConfig.MAX_ACCOUNT_COUNT) {
+        //     val userConfig = AccountInstance.getInstance(i).userConfig
+        //     val currentUser = userConfig?.currentUser
+        //     val userId = currentUser?.id ?: 0L
+        //
+        //     if (userConfig != null && userConfig.isClientActivated && userId != 0L) {
+        //         if (didUserDonate(userId)) {
+        //             if (CherrygramCoreConfig.isDevBuild()) println("Account's ID is in the list: $userId")
+        //             return true
+        //         } else {
+        //             if (CherrygramCoreConfig.isDevBuild()) println("Account's ID is not in the list: $userId")
+        //         }
+        //     }
+        // }
+        // return false
     }
 
     fun didUserDonate(userId: Long): Boolean {
@@ -263,22 +266,24 @@ object DonatesManager {
         loadLocalList(context, FILE_NAME_MARKETPLACE, verifiedUserIdsMarketplace)
 
     fun checkAllDonatedAccountsForMarketplace(): Boolean {
-        for (i in 0 until UserConfig.MAX_ACCOUNT_COUNT) {
-            val userConfig = AccountInstance.getInstance(i).userConfig
-            val currentUser = userConfig?.currentUser
-            val userId = currentUser?.id ?: 0L
-
-            if (userConfig != null && userConfig.isClientActivated && userId != 0L) {
-                if (didUserDonateForMarketplace(userId)) {
-                    if (CherrygramCoreConfig.isDevBuild()) println("Account's ID is in the list: $userId")
-                    CherrygramCoreConfig.showNotifications = true
-                    return true
-                } else {
-                    if (CherrygramCoreConfig.isDevBuild()) println("Account's ID is not in the list: $userId")
-                }
-            }
-        }
-        return false
+        // MeeroGram: unlocked, see checkAllDonatedAccounts().
+        return true
+        // for (i in 0 until UserConfig.MAX_ACCOUNT_COUNT) {
+        //     val userConfig = AccountInstance.getInstance(i).userConfig
+        //     val currentUser = userConfig?.currentUser
+        //     val userId = currentUser?.id ?: 0L
+        //
+        //     if (userConfig != null && userConfig.isClientActivated && userId != 0L) {
+        //         if (didUserDonateForMarketplace(userId)) {
+        //             if (CherrygramCoreConfig.isDevBuild()) println("Account's ID is in the list: $userId")
+        //             CherrygramCoreConfig.showNotifications = true
+        //             return true
+        //         } else {
+        //             if (CherrygramCoreConfig.isDevBuild()) println("Account's ID is not in the list: $userId")
+        //         }
+        //     }
+        // }
+        // return false
     }
 
     fun didUserDonateForMarketplace(userId: Long): Boolean {

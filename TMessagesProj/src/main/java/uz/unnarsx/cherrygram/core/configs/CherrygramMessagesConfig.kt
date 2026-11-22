@@ -50,6 +50,8 @@ object CherrygramMessagesConfig {
     /** Message menu items start */
     var showSaveForNotifications by sharedPreferences.boolean("CP_ShowSaveForNotifications", true)
     var showGemini by sharedPreferences.boolean("CP_ShowGemini", GeminiButtonsLayout.geminiButtonsVisible())
+    // MeeroGram: always show a Translate row in the text-message context menu
+    var showTranslateMenuItem by sharedPreferences.boolean("CP_ShowTranslateMenuItem", true)
     var showReply by sharedPreferences.boolean("CP_ShowReply", true)
     var showSaveToGallery by sharedPreferences.boolean("CP_ShowSaveToGallery", true)
     var showCopyPhoto by sharedPreferences.boolean("CP_ShowCopyPhoto", true)

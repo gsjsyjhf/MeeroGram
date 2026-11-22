@@ -198,6 +198,34 @@ object CGMessageMenuInjector {
         popupLayout.addView(createGap(), gapParams())
     }
 
+    // MeeroGram: the official Translate row only appears when the detected
+    // message language differs from the app language. This injector shows it
+    // for every text message; the OPTION_TRANSLATE handler in ChatActivity
+    // falls back to the raw message text when the official detection finds
+    // nothing to translate.
+    fun injectTranslate(
+        selectedObject: MessageObject?,
+        items: ArrayList<CharSequence?>,
+        options: ArrayList<Int?>,
+        icons: ArrayList<Int?>
+    ) {
+        if (!CherrygramMessagesConfig.showTranslateMenuItem || selectedObject == null) {
+            return
+        }
+        if (selectedObject.contentType != 0 || selectedObject.isAnimatedEmoji() || selectedObject.isDice()) {
+            return
+        }
+        if (TextUtils.isEmpty(selectedObject.messageOwner.message) && selectedObject.type != MessageObject.TYPE_TEXT) {
+            return
+        }
+        if (options.contains(ChatActivity.OPTION_TRANSLATE)) {
+            return
+        }
+        items.add(getString(R.string.TranslateMessage))
+        options.add(ChatActivity.OPTION_TRANSLATE)
+        icons.add(R.drawable.msg_translate)
+    }
+
     fun injectOpenInExternal(
         noforwardsOrPaidMedia: Boolean,
         message: MessageObject?,
@@ -443,6 +471,12 @@ object CGMessageMenuInjector {
                 { CherrygramMessagesConfig.showGemini },
                 { CherrygramMessagesConfig.showGemini = !CherrygramMessagesConfig.showGemini },
                 true
+            ),
+            MenuItemConfig(
+                getString(R.string.TranslateMessage),
+                R.drawable.msg_translate,
+                { CherrygramMessagesConfig.showTranslateMenuItem },
+                { CherrygramMessagesConfig.showTranslateMenuItem = !CherrygramMessagesConfig.showTranslateMenuItem }
             ),
             MenuItemConfig(
                 getString(R.string.OpenInExternalApp),

@@ -1243,7 +1243,6 @@
     <string name="RemindTodayAt">\'ذكّرني اليوم عند\' HH:mm</string>
     <string name="RemindDayAt">\'ذكّرني بتاريخ\' d MMM \'عند\' HH:mm</string>
     <string name="RemindDayYearAt">\'ذكّرني بتاريخ\' d MMM yyyy \'عند\' HH:mm</string>
-    <string name="MG_SendCodeTimeout">تعذر الوصول إلى خوادم تيليجرام. تحقق من اتصالك بالإنترنت أو جرّب شبكة أخرى (واي فاي أو بيانات الجوال)، أو استخدم خادماً وسيطاً. وإذا كان الـVPN مفعلاً فجرّب إيقافه وتشغيله من جديد.</string>
     <string name="AccDescrContactSorting">تغيير الترتيب</string>
     <string name="AccDescrGIFs">الصور المتحركة</string>
     <string name="AccDescrMoreOptions">خيارات أخرى</string>
@@ -1314,9 +1313,6 @@
     <string name="LiteBatteryEnabled">تشغيل</string>
     <string name="LiteMode">الحركات</string>
     <string name="LocalMiscellaneousCache">متنوع</string>
-    <string name="MainTabsChats">المحادثات</string>
-    <string name="MainTabsContacts">جهات الاتصال</string>
-    <string name="MainTabsProfile">الملف الشخصي</string>
     <string name="Mention">إشارة</string>
     <string name="Message">رسالة</string>
     <string name="MoreInfo">معلومات أكثر</string>
@@ -1386,4 +1382,32 @@
     <string name="ViewStatistics">عرض الإحصائيات</string>
     <string name="Warning">تحذير</string>
     <string name="YourStarsBalance">رصيدك</string>
+
+    <!-- MeeroGram R10 feature strings -->
+    <string name="MG_SendCodeTimeout">تعذر الوصول إلى خوادم تيليجرام. تحقق من اتصالك بالإنترنت أو جرّب شبكة أخرى (واي فاي أو بيانات الجوال)، أو استخدم خادماً وسيطاً. وإذا كان الـVPN مفعلاً فجرّب إيقافه وتشغيله من جديد.</string>
+    <string name="MG_Ghost_Header">وضع الشبح</string>
+    <string name="MG_Ghost_Row_Desc">اختفاء كامل: بلا حالة اتصال ولا علامات قراءة ولا مؤشر كتابة</string>
+    <string name="MG_Ghost_Desc">عند تشغيل وضع الشبح لن تستلم خوادم تيليجرام حالة اتصالك ولا مؤشرات الكتابة ولا علامات القراءة أبداً، ويمكنك القراءة والدردشة بشكل طبيعي.</string>
+    <string name="MG_Ghost_Master">وضع الشبح الكامل</string>
+    <string name="MG_Ghost_Online">إخفاء حالة الاتصال</string>
+    <string name="MG_Ghost_Online_Desc">لن يتم تحديث حالة الاتصال وآخر ظهور لك ما دمت تستخدم التطبيق.</string>
+    <string name="MG_Ghost_Read">إخفاء علامات القراءة</string>
+    <string name="MG_Ghost_Read_Desc">لن تُعلَّم الرسائل كمقروءة على الخادم - لن يرى الآخرون علامات القراءة المزدوجة.</string>
+    <string name="MG_Ghost_Typing">إخفاء مؤشر الكتابة</string>
+    <string name="MG_Ghost_Typing_Desc">لن تُرسل مؤشرات الكتابة أو تسجيل الصوت/الفيديو أو رفع الملفات أبداً.</string>
+    <string name="MG_BottomBar">شريط التنقل السفلي</string>
+    <string name="MG_BottomBar_Desc">إظهار شريط تنقل أسفل قائمة المحادثات مع المحادثات والبحث وجهات الاتصال والملف الشخصي والإعدادات.</string>
+    <string name="MG_Tab_Chats">المحادثات</string>
+    <string name="MG_Tab_Search">البحث</string>
+    <string name="MG_Tab_Contacts">جهات الاتصال</string>
+    <string name="MG_Tab_Profile">الملف الشخصي</string>
+    <string name="MG_Tab_Settings">الإعدادات</string>
+    <string name="MG_SearchBar">شريط البحث في قائمة المحادثات</string>
+    <string name="MG_SearchBar_Desc">إظهار شريط بحث دائم أعلى قائمة المحادثات مثل تيليجرام الرسمي.</string>
+    <string name="MG_SearchInTabs">زر البحث في شريط التبويبات</string>
+    <string name="MG_SearchInTabs_Desc">إظهار زر البحث الزجاجي بجانب تبويبات الشريط السفلي.</string>
+    <string name="MainTabsChats">المحادثات</string>
+    <string name="MainTabsContacts">جهات الاتصال</string>
+    <string name="MainTabsProfile">الملف الشخصي</string>
+    <string name="MainTabsCalls">المكالمات</string>
 </resources>

@@ -58,7 +58,8 @@ object MainTabsManager {
         return getEnabledTabs().map { it.type }
     }
 
-    private const val DEFAULT_ORDER = "SETTINGS,CHATS,PROFILE,!CONTACTS,!CALLS,SEARCH"
+    // MeeroGram: match the config default - Contacts and Profile enabled.
+    private const val DEFAULT_ORDER = "SETTINGS,CHATS,PROFILE,CONTACTS,!CALLS,SEARCH"
 
     private fun loadTabs(): MutableList<Tab> {
         val allPossibleTypes = TabType.entries.toMutableList()

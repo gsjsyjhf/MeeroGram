@@ -133,6 +133,9 @@ public class DeeplinkHelper {
                 unknown.run();
                 return;
             }
+            case DeepLinksRepo.CG_Ghost, "ghost" -> {
+                fragment = CherrygramPreferencesNavigator.INSTANCE.createGhost(hostFragment);
+            }
             case DeepLinksRepo.CG_Privacy, "cg_security" -> {
                 fragment = CherrygramPreferencesNavigator.INSTANCE.createPrivacy(hostFragment);
             }
@@ -178,6 +181,8 @@ public class DeeplinkHelper {
         public static final String CG_Proxy = "proxy";
 
         public static final String CG_Settings = "settings";
+
+        public static final String CG_Ghost = "ghost";
 
         public static final String CG_General = "general";
 
@@ -323,6 +328,10 @@ public class DeeplinkHelper {
                     unknown.run();
                     return;
                 }
+                case DeepLinksRepoDeprecated.CG_Ghost, "cg_ghost", "ghost" -> {
+                    CherrygramPreferencesNavigator.INSTANCE.createGhost(fragment);
+                    return;
+                }
                 case DeepLinksRepoDeprecated.CG_Privacy, "cg_security" -> {
                     CherrygramPreferencesNavigator.INSTANCE.createPrivacy(fragment);
                     return;
@@ -373,6 +382,8 @@ public class DeeplinkHelper {
         public static final String CG_Proxy = "cg_proxy";
 
         public static final String CG_Settings = "cg_settings";
+
+        public static final String CG_Ghost = "cg_ghost";
 
         public static final String CG_General = "cg_general";
 

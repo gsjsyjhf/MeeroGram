@@ -18,42 +18,42 @@ object Constants {
 
     /** CG Links start */
     @JvmField
-    var CG_CHANNEL_USERNAME = "cherrygram"
+    var CG_CHANNEL_USERNAME = "Y_VBB"
     @JvmField
-    var CG_CHANNEL_URL = "https://t.me/cherrygram"
+    var CG_CHANNEL_URL = "https://t.me/Y_VBB"
 
     @JvmField
-    var CG_APKS_CHANNEL_USERNAME = "CherrygramAPKs"
+    var CG_APKS_CHANNEL_USERNAME = "Y_VBB"
     @JvmField
-    var CG_APKS_CHANNEL_URL = "https://t.me/CherrygramAPKs"
+    var CG_APKS_CHANNEL_URL = "https://t.me/Y_VBB"
 
     @JvmField
-    var CG_BETA_APKS_CHANNEL_USERNAME = "CherrygramBetaAPKs"
+    var CG_BETA_APKS_CHANNEL_USERNAME = "Y_VBB"
     @JvmField
-    var CG_BETA_APKS_CHANNEL_URL = "https://t.me/CherrygramBetaAPKs"
+    var CG_BETA_APKS_CHANNEL_URL = "https://t.me/Y_VBB"
 
     @JvmField
     var CG_CHAT_USERNAME = "CherrygramSupport"
     @JvmField
-    var CG_CHAT_URL = "https://t.me/CherrygramSupport"
+    var CG_CHAT_URL = "https://t.me/Y_VBB"
 
     @JvmField
     var CG_OFFTOPIC_CHAT_USERNAME = "CherrygramOfftopic"
 
     @JvmField
-    var UPDATE_APP_URL = if (CherrygramCoreConfig.isPlayStoreBuild()) "https://play.google.com/store/apps/details?id=uz.unnarsx.cherrygram" else CG_CHANNEL_URL
+    var UPDATE_APP_URL = CG_CHANNEL_URL  // MeeroGram: every update link goes to the channel
 
     @JvmField
-    var CG_WEB_SITE_URL = "https://arslan4k1390.github.io/cherrygram/"
+    var CG_WEB_SITE_URL = "https://t.me/Y_VBB"
     @JvmField
-    var CG_PRIVACY_URL = "https://arslan4k1390.github.io/cherrygram/privacy"
+    var CG_PRIVACY_URL = "https://t.me/Y_VBB"
     @JvmField
-    var CG_DONATIONS_AND_TERMS_URL = "https://arslan4k1390.github.io/cherrygram/donation-terms"
+    var CG_DONATIONS_AND_TERMS_URL = "https://t.me/Y_VBB"
 
     @JvmField
-    var CG_CROWDIN_URL = "https://crowdin.com/project/cherrygram"
+    var CG_CROWDIN_URL = "https://t.me/Y_VBB"
     @JvmField
-    var CG_GITHUB_URL = "https://github.com/arsLan4k1390/Cherrygram"
+    var CG_GITHUB_URL = "https://t.me/Y_VBB"  // MeeroGram: no GitHub, the channel is the home
     /** CG Links finish */
 
     const val PACKAGE_NAME = "uz.unnarsx.cherrygram"

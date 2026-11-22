@@ -419,6 +419,15 @@ public class ConnectionsManager extends BaseController {
     }
 
     private void sendRequestInternal(TLObject object, RequestDelegate onComplete, RequestDelegateTimestamp onCompleteTimestamp, QuickAckDelegate onQuickAck, WriteToSocketDelegate onWriteToSocket, int flags, int datacenterId, int connectionType, boolean immediate, int requestToken) {
+        // MeeroGram: ghost mode - silently drop presence, typing and read
+        // receipts so the server never learns about them (request token is
+        // already allocated by the caller, so returning early is safe).
+        if (uz.unnarsx.cherrygram.core.configs.MeeroGhostConfig.INSTANCE.isGhostDropped(object)) {
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("MeeroGram ghost mode: dropped " + object + " with token = " + requestToken);
+            }
+            return;
+        }
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("send request " + object + " with token = " + requestToken);
         }

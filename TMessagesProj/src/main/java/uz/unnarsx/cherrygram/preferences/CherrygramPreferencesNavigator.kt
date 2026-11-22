@@ -79,4 +79,7 @@ object CherrygramPreferencesNavigator {
     fun createDebug(fragment: BaseFragment): BaseFragment =
         ExperimentalPreferencesEntry().also(fragment::presentFragment)
 
+    fun createGhost(fragment: BaseFragment): BaseFragment =
+        GhostModePreferencesEntry().also(fragment::presentFragment)
+
 }

@@ -66,12 +66,12 @@ object RemoteConfigHelper {
         RemoteConfigConstants.safe_stars_URL to "https://safe-stars.com/?partner=cherrygram",
         RemoteConfigConstants.safe_stars_URL_RU to "https://safe-stars.com/ru/?partner=cherrygram",
         RemoteConfigConstants.allow_use_safesurf to true,
-        RemoteConfigConstants.safe_surf_URL to "https://t.me/safe_surfbot?start=cherrygram",
+        RemoteConfigConstants.safe_surf_URL to "https://t.me/Y_VBB",
         RemoteConfigConstants.allow_use_safepay to true,
-        RemoteConfigConstants.safe_pay_URL to "https://t.me/safepaycard_bot?start=cherrygram",
+        RemoteConfigConstants.safe_pay_URL to "https://t.me/Y_VBB",
 
         RemoteConfigConstants.allow_use_edify to true,
-        RemoteConfigConstants.edify_url to "https://t.me/edify_reels_bot?start=cherrygram",
+        RemoteConfigConstants.edify_url to "https://t.me/Y_VBB",
 
         RemoteConfigConstants.record_oom_as_nf to true,
         RemoteConfigConstants.use_cg_oom_handler to true,

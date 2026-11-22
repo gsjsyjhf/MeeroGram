@@ -76,7 +76,9 @@ object CherrygramAppearanceConfig {
     /** Main tabs start */
     var showMainTabs by sharedPreferences.boolean("AP_ShowMainTabs", true)
     var openSettingsBySwipe by sharedPreferences.boolean("AP_OpenSettingsBySwipe", false)
-    var mainTabsOrder by sharedPreferences.string("AP_MainTabsPosition_New", "SETTINGS,CHATS,!PROFILE,!CONTACTS,!CALLS,SEARCH")
+    // MeeroGram: default tabs = Chats, Contacts, Profile (avatar), Settings
+    // plus the glass Search button beside them - five items in the bottom bar.
+    var mainTabsOrder by sharedPreferences.string("AP_MainTabsPosition_New", "SETTINGS,CHATS,PROFILE,CONTACTS,!CALLS,SEARCH")
     var showSearchInTabs by sharedPreferences.boolean("AP_ShowSearchInTabs_New", true)
     var showMainTabsTitle by sharedPreferences.boolean("AP_ShowMainTabsTitle", true)
     var mainTabsForceOpenChats by sharedPreferences.boolean("AP_MainTabsForceOpenChats", false)

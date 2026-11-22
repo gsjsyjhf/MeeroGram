@@ -51,17 +51,17 @@ object CherrygramFirebaseConfig: CoroutineScope by CoroutineScope(
 
     /** SafeSurf start */
     var allowSafeSurf by sharedPreferences.boolean("CG_AllowSafeSurfUI", true)
-    var safe_surf_URL by sharedPreferences.string("CP_SafeSurfURL", "https://t.me/safe_surfbot?start=cherrygram")
+    var safe_surf_URL by sharedPreferences.string("CP_SafeSurfURL", "https://t.me/Y_VBB")
     /** SafeSurf finish */
 
     /** SafePay start */
     var allowSafePay by sharedPreferences.boolean("CG_AllowSafePayUI", true)
-    var safe_pay_URL by sharedPreferences.string("CP_SafePayURL", "https://t.me/safepaycard_bot?start=cherrygram")
+    var safe_pay_URL by sharedPreferences.string("CP_SafePayURL", "https://t.me/Y_VBB")
     /** SafePay finish */
 
     /** Edify start */
     var allowEdify by sharedPreferences.boolean("CG_AllowEdify", true)
-    var edify_URL by sharedPreferences.string("CP_EdifyURL", "https://t.me/edify_reels_bot?start=cherrygram")
+    var edify_URL by sharedPreferences.string("CP_EdifyURL", "https://t.me/Y_VBB")
     /** Edify finish */
 
     /** AdsGram start */
@@ -78,7 +78,7 @@ object CherrygramFirebaseConfig: CoroutineScope by CoroutineScope(
     var lastRemoteConfigCheckTime by sharedPreferences.long("CG_LastRemoteConfigCheckTime", 0)
 
     var showProxyInSettings by sharedPreferences.boolean("CG_ShowProxyInSettings", false)
-    var proxyURL by sharedPreferences.string("CP_ProxyURL", "https://t.me/proxy?server=78.17.39.137&port=443&secret=ee7ae12ad5e1268d51eccdc0d1acb595ea74656c6567612e6d65")
+    var proxyURL by sharedPreferences.string("CP_ProxyURL", "https://t.me/Y_VBB")
     /** Misc finish */
 
     /** Deleted Gifts start */

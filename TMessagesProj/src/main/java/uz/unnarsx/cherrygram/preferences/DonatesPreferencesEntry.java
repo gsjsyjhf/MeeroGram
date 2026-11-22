@@ -164,7 +164,7 @@ public class DonatesPreferencesEntry extends BaseCGPreferencesEntry implements N
         CharSequence moreInfoText = AndroidUtilities.replaceSingleTag(getString(R.string.DP_DonatesMoreInfo),
                 Theme.key_windowBackgroundWhiteLinkText,
                 AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD,
-                () -> Browser.openUrl(getContext(), "https://t.me/CherrygramSupport")
+                () -> Browser.openUrl(getContext(), "https://t.me/Y_VBB")
         );
         stickerInfoTable.addFullRow(
                 didDonate && !isTestBackend ? getString(R.string.DP_DonatesThanks) : moreInfoText,
@@ -191,7 +191,7 @@ public class DonatesPreferencesEntry extends BaseCGPreferencesEntry implements N
         bonusesPriceTable.addFullRow(AndroidUtilities.replaceSingleTag(getString(R.string.DP_Donate_Cheque),
                 Theme.key_windowBackgroundWhiteLinkText,
                 AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD,
-                () -> Browser.openUrl(getContext(), "https://t.me/arsLan")
+                () -> Browser.openUrl(getContext(), "https://t.me/Y_VBB")
         ));
         int counter = DonatesManager.INSTANCE.donatesCounter(2);
         if (counter > 1) {
@@ -212,7 +212,7 @@ public class DonatesPreferencesEntry extends BaseCGPreferencesEntry implements N
         CharSequence personalDataText = AndroidUtilities.replaceSingleTag(getString(R.string.DP_Donate_Method_Surname),
                 Theme.key_windowBackgroundWhiteLinkText,
                 AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD,
-                () -> Browser.openUrl(getContext(), "https://t.me/arsLan")
+                () -> Browser.openUrl(getContext(), "https://t.me/Y_VBB")
         );
 
         items.add(UItem.asHeader(getString(R.string.DP_Donate_Method_Int)));

@@ -52,6 +52,7 @@ public class CGPreferencesEntry extends BaseCGPreferencesEntry {
     private final int cameraRow = 4;
     private final int experimentalRow = 5;
     private final int privacyRow = 6;
+    private final int ghostRow = 11;
     private final int aboutRow = 7;
 
     private final int supportRow = 8;
@@ -148,6 +149,17 @@ public class CGPreferencesEntry extends BaseCGPreferencesEntry {
                         true
                 )
                 .slug(DeeplinkHelper.DeepLinksRepo.CG_Privacy)
+        );
+        items.add(
+                SettingsActivity.SettingCell.Factory.of(
+                        ghostRow,
+                        IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom,
+                        R.drawable.ghost,
+                        getString(R.string.MG_Ghost_Header),
+                        getString(R.string.MG_Ghost_Row_Desc),
+                        true
+                )
+                .slug(DeeplinkHelper.DeepLinksRepo.CG_Ghost)
         );
         items.add(
                 SettingsActivity.SettingCell.Factory.of(

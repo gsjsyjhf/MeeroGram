@@ -45,6 +45,7 @@ public class MainTabsPreferencesEntry extends BaseCGPreferencesEntry {
     private final int openSettingsBySwipeRow = 3;
     private final int showTabTitleRow = 4;
     private final int forceOpenChats = 5;
+    private final int searchInTabsRow = 6;
 
     private MainTabsPreviewCell tabsView;
     private ArrayList<MainTabsManager.Tab> tabs;
@@ -116,6 +117,10 @@ public class MainTabsPreferencesEntry extends BaseCGPreferencesEntry {
             items.add(SettingsHelper.asSwitchCG(showTabTitleRow, getString(R.string.CP_MainTabs_ShowTabsTitle))
                     .setChecked(CherrygramAppearanceConfig.INSTANCE.getShowMainTabsTitle())
                     .slug("showTitles")
+            );
+            // MeeroGram: toggle for the glass Search button in the tab bar.
+            items.add(SettingsHelper.asSwitchCG(searchInTabsRow, getString(R.string.MG_SearchInTabs), getString(R.string.MG_SearchInTabs_Desc))
+                    .setChecked(CherrygramAppearanceConfig.INSTANCE.getShowSearchInTabs())
             );
             items.add(UItem.asShadow(getString(R.string.CP_MainTabs_Layout_Desc)));
 
@@ -193,11 +198,15 @@ public class MainTabsPreferencesEntry extends BaseCGPreferencesEntry {
         } else if (item.id == forceOpenChats) {
             CherrygramAppearanceConfig.INSTANCE.setMainTabsForceOpenChats(!CherrygramAppearanceConfig.INSTANCE.getMainTabsForceOpenChats());
             SettingsHelper.updateCheckState(view, CherrygramAppearanceConfig.INSTANCE.getMainTabsForceOpenChats());
+        } else if (item.id == searchInTabsRow) {
+            CherrygramAppearanceConfig.INSTANCE.setShowSearchInTabs(!CherrygramAppearanceConfig.INSTANCE.getShowSearchInTabs());
+            SettingsHelper.updateCheckState(view, CherrygramAppearanceConfig.INSTANCE.getShowSearchInTabs());
         }
     }
 
     private void resetMainTabsOrder() {
-        CherrygramAppearanceConfig.INSTANCE.setMainTabsOrder("SETTINGS,CHATS,!PROFILE,!CONTACTS,!CALLS,SEARCH");
+        // MeeroGram: five items by default - Chats, Contacts, Profile, Settings + Search.
+        CherrygramAppearanceConfig.INSTANCE.setMainTabsOrder("SETTINGS,CHATS,PROFILE,CONTACTS,!CALLS,SEARCH");
         CherrygramAppearanceConfig.INSTANCE.setShowSearchInTabs(true);
         tabs.clear();
         tabs.addAll(MainTabsManager.INSTANCE.getAllTabs());
