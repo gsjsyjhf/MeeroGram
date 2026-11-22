@@ -3333,7 +3333,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 if (nextPressed && meeroResponded[0] == 0 && getParentActivity() != null) {
                     nextPressed = false;
                     needHideProgress(false);
-                    needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.MG_SendCodeTimeout));
+                    needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), LocaleController.getString("MG_SendCodeTimeout", R.string.MG_SendCodeTimeout));
                     FileLog.d("MeeroGram sendCode: no response within 30s");
                 }
             };
