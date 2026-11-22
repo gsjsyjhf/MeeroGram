@@ -715,6 +715,15 @@ public class ConnectionsManager extends BaseController {
         }
 
         native_init(currentAccount, version, layer, apiId, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, logPath, regId, cFingerprint, installer, packageId, timezoneOffset, userId, userPremium, enablePushConnection, ApplicationLoader.isNetworkOnline(), ApplicationLoader.getCurrentNetworkType(), SharedConfig.measureDevicePerformanceClass());
+        // MeeroGram: the key-rotation pool may have restored a saved slot
+        // that differs from the build credential passed above. Telegram
+        // silently drops requests whose api_id differs from the
+        // initConnection metadata, so re-point the metadata at the active
+        // slot before any request goes out.
+        try {
+            nativeUpdateApiId(currentAccount, tw.nekomimi.nekogram.NekoXConfig.currentAppId());
+        } catch (Throwable ignore) {
+        }
         checkConnection();
     }
 
@@ -1051,6 +1060,10 @@ public class ConnectionsManager extends BaseController {
     public static native int native_getConnectionState(int currentAccount);
     public static native void native_setUserId(int currentAccount, long id);
     public static native void native_init(int currentAccount, int version, int layer, int apiId, String deviceModel, String systemVersion, String appVersion, String langCode, String systemLangCode, String configPath, String logPath, String regId, String cFingerprint, String installer, String packageId, int timezoneOffset, long userId, boolean userPremium, boolean enablePushConnection, boolean hasNetwork, int networkType, int performanceClass);
+    /* MeeroGram: re-points the initConnection metadata api_id at the active
+     * key-pool slot (see setApiId in tgnet). Exported by JNI name
+     * convention, no entry in the registration table is needed. */
+    public static native void nativeUpdateApiId(int currentAccount, int apiId);
     public static native void native_setProxySettings(int currentAccount, String address, int port, String username, String password, String secret);
     public static native void native_setLangCode(int currentAccount, String langCode);
     public static native void native_setRegId(int currentAccount, String regId);

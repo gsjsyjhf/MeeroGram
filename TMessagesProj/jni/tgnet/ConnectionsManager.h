@@ -43,6 +43,11 @@ public:
     ~ConnectionsManager();
 
     static ConnectionsManager &getInstance(int32_t instanceNum);
+    /* MeeroGram: the initConnection metadata api_id must always match the
+     * api_id of the requests being sent, otherwise Telegram silently drops
+     * them. The key-rotation pool re-points request credentials at runtime,
+     * so it calls this to re-point the connection metadata as well. */
+    void setApiId(int32_t apiId) { currentApiId = apiId; }
     int64_t getCurrentTimeMillis();
     int64_t getCurrentTimeMonotonicMillis();
     int32_t getCurrentTime();

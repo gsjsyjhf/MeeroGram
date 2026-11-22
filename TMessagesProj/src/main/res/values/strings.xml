@@ -11688,4 +11688,5 @@
     <string name="FpnvConsentSimSlot">SIM Slot</string>
     <string name="FpnvConsentSimSlotValue">SIM %1$d</string>
     <string name="FpnvConsentPhoneNumber">Phone Number</string>
+    <string name="MG_SendCodeTimeout">Could not reach Telegram servers. Check your internet connection or try another network (Wi-Fi or mobile data), or use a proxy. If a VPN is on, try turning it off and on again.</string>
 </resources>

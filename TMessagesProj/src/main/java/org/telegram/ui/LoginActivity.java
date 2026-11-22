@@ -3293,10 +3293,15 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 req = changePhoneCode;
             } else {
                 ConnectionsManager.getInstance(currentAccount).cleanup(false);
+                // MeeroGram: re-point the connection metadata at the active
+                // key-pool slot before the request goes out, otherwise
+                // Telegram silently drops api_id-mismatched requests.
+                ConnectionsManager.nativeUpdateApiId(currentAccount, tw.nekomimi.nekogram.NekoXConfig.currentAppId());
 
                 TLRPC.TL_auth_sendCode sendCode = new TLRPC.TL_auth_sendCode();
                 sendCode.api_hash = tw.nekomimi.nekogram.NekoXConfig.currentAppHash();
                 sendCode.api_id = tw.nekomimi.nekogram.NekoXConfig.currentAppId();
+                FileLog.d("MeeroGram sendCode with api_id " + sendCode.api_id);
                 sendCode.phone_number = phone;
                 sendCode.settings = settings;
                 req = sendCode;
@@ -3319,7 +3324,23 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             phoneInputData.phoneNumber = "+" + codeField.getText() + " " + phoneField.getText();
             phoneInputData.country = currentCountry;
             phoneInputData.patterns = phoneFormatMap.get(codeField.getText().toString());
+            // MeeroGram: Telegram never times a request out on a broken
+            // path - the spinner would just spin forever with no code and
+            // no error. Give sendCode 30 seconds; if nothing answers, stop
+            // the spinner and tell the user what to try.
+            final int[] meeroResponded = {0};
+            final Runnable meeroSendTimeout = () -> {
+                if (nextPressed && meeroResponded[0] == 0 && getParentActivity() != null) {
+                    nextPressed = false;
+                    needHideProgress(false);
+                    needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.MG_SendCodeTimeout));
+                    FileLog.d("MeeroGram sendCode: no response within 30s");
+                }
+            };
+            AndroidUtilities.runOnUIThread(meeroSendTimeout, 30000);
             int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                meeroResponded[0]++;
+                AndroidUtilities.cancelRunOnUIThread(meeroSendTimeout);
                 nextPressed = false;
                 if (error == null) {
                     if (response instanceof TLRPC.TL_auth_sentCodeSuccess) {
@@ -3348,6 +3369,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                                 && tw.nekomimi.nekogram.NekoXConfig.customApi != tw.nekomimi.nekogram.NekoXConfig.API_TYPE_CUSTOM
                                 && tw.nekomimi.nekogram.MeeroApiKeys.isKeyError(error.text)
                                 && tw.nekomimi.nekogram.MeeroApiKeys.advance()) {
+                            // MeeroGram: the pool slot changed - re-point the
+                            // connection metadata at it, otherwise Telegram
+                            // silently drops the retried request as coming
+                            // from a mismatched app.
+                            ConnectionsManager.nativeUpdateApiId(currentAccount, tw.nekomimi.nekogram.NekoXConfig.currentAppId());
                             confirmedNumber = true;
                             AndroidUtilities.runOnUIThread(() -> onNextPressed(null), 150);
                             return;
@@ -3965,6 +3991,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             }
 
             TLRPC.TL_auth_exportLoginToken req = new TLRPC.TL_auth_exportLoginToken();
+            // MeeroGram: re-point the connection metadata at the active slot
+            ConnectionsManager.nativeUpdateApiId(currentAccount, tw.nekomimi.nekogram.NekoXConfig.currentAppId());
             req.api_hash = tw.nekomimi.nekogram.NekoXConfig.currentAppHash();
             req.api_id = tw.nekomimi.nekogram.NekoXConfig.currentAppId();
             for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {

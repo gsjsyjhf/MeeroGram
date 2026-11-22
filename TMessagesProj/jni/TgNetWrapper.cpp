@@ -762,3 +762,15 @@ if (!(condition)) {       \
 #undef ENSURE
     } while (1);
 }
+
+/* MeeroGram: keep the connection-level api_id (initConnection metadata)
+ * pointing at the active key-pool slot. Telegram silently drops any
+ * request whose api_id differs from the one in its initConnection
+ * metadata, so the rotation flow calls this whenever the slot changes.
+ * Bound by JNI name convention - no registration-table entry. */
+extern "C"
+JNIEXPORT void JNICALL
+Java_org_telegram_tgnet_ConnectionsManager_nativeUpdateApiId(JNIEnv *env, jclass clazz, jint instance, jint apiId) {
+    ConnectionsManager::getInstance(instance).setApiId(apiId);
+}
+
