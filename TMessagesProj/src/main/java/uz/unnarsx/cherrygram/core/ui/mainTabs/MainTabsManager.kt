@@ -66,18 +66,28 @@ object MainTabsManager {
 
     // MeeroGram R11: one-time migration swapping Profile/Contacts in the
     // stored tab order so existing installs get the new default too.
+    // R11.2: the R11 flag was consumed even when the stored order had no
+    // exact "PROFILE,CONTACTS" adjacency, so installs with custom or
+    // disabled tokens kept Contacts in its old place forever. Run a second,
+    // position-independent swap guarded by a fresh flag.
     private var orderSwapMigrated = false
 
     private fun migrateContactsProfileSwap() {
         if (orderSwapMigrated) return
         orderSwapMigrated = true
         val prefs = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE)
-        if (prefs.getBoolean("MG_TabSwap_ContactsProfile", false)) return
-        val stored = prefs.getString("AP_MainTabsPosition_New", null)
-        if (stored != null && stored.contains("PROFILE,CONTACTS")) {
-            prefs.edit().putString("AP_MainTabsPosition_New", stored.replace("PROFILE,CONTACTS", "CONTACTS,PROFILE")).apply()
+        if (prefs.getBoolean("MG_TabSwap2_ContactsProfile", false)) return
+        val stored = prefs.getString("AP_MainTabsPosition_New", null) ?: DEFAULT_ORDER
+        val tokens = stored.split(",").map { it.trim() }.toMutableList()
+        val ci = tokens.indexOfFirst { it.equals("CONTACTS", true) || it.equals("!CONTACTS", true) }
+        val pi = tokens.indexOfFirst { it.equals("PROFILE", true) || it.equals("!PROFILE", true) }
+        if (ci >= 0 && pi >= 0 && ci > pi) {
+            val c = tokens[ci]
+            tokens[ci] = tokens[pi]
+            tokens[pi] = c
+            prefs.edit().putString("AP_MainTabsPosition_New", tokens.joinToString(",")).apply()
         }
-        prefs.edit().putBoolean("MG_TabSwap_ContactsProfile", true).apply()
+        prefs.edit().putBoolean("MG_TabSwap2_ContactsProfile", true).apply()
     }
 
     private fun loadTabs(): MutableList<Tab> {

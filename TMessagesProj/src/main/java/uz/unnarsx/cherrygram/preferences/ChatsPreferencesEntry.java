@@ -42,6 +42,7 @@ import java.util.function.Supplier;
 
 import uz.unnarsx.cherrygram.chats.helpers.ChatsHelper2;
 import uz.unnarsx.cherrygram.core.VibrateUtil;
+import uz.unnarsx.cherrygram.core.configs.CherrygramAppearanceConfig;
 import uz.unnarsx.cherrygram.core.configs.CherrygramChatsConfig;
 import uz.unnarsx.cherrygram.core.firebase.FirebaseAnalyticsHelper;
 import uz.unnarsx.cherrygram.core.helpers.DeeplinkHelper;
@@ -77,6 +78,7 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
     // MeeroGram R11: floating glass pills + stacked stories.
     private final int floatingActionsRow = 31;
     private final int stackedStoriesRow = 32, ios26ChatSoundsRow = 33, bubbleStyleRow = 34, fontsRow = 35;
+    private final int glassBottomBarRow = 36, mainTabsEditorRow = 37;
 
     private boolean expandedHeaderSettingsSection = false;
     private boolean expandedBottomBarSettingsSection = false;
@@ -86,7 +88,7 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
     );
 
     private static final Set<String> BOTTOM_BAR_SECTION_SLUGS = Set.of(
-            "iosInputField", "hideSendAs", "hideBottomBar", "recentsCounter"
+            "iosInputField", "hideSendAs", "hideBottomBar", "recentsCounter", "glassBottomBar", "mainTabsEditor"
     );
 
     @Override
@@ -226,6 +228,17 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
             );
             items.add(UItem.asButton(recentEmojisStickersRow, 0, getString(R.string.CP_Slider_RecentEmojisAndStickers))
                     .slug("recentsCounter")
+            );
+            // MeeroGram R11.2: glass bottom bar master switch (YTXTube look).
+            // Off = official Telegram behaviour: no bottom bar, top search back.
+            items.add(UItem.asShadow(null));
+            items.add(SettingsHelper.asSwitchCG(glassBottomBarRow, getString(R.string.MG_GlassBottomBar), getString(R.string.MG_GlassBottomBar_Desc))
+                    .setChecked(CherrygramAppearanceConfig.INSTANCE.getShowMainTabs())
+                    .slug("glassBottomBar")
+            );
+            // MeeroGram R11.2: bottom tabs editor (order / hidden tabs).
+            items.add(UItem.asButton(mainTabsEditorRow, 0, getString(R.string.MG_MainTabsEditor))
+                    .slug("mainTabsEditor")
             );
         }
         items.add(UItem.asShadow(null));
@@ -399,6 +412,11 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
         } else if (item.id == fontsRow) {
             // MeeroGram R11.1: custom font picker (feature 10).
             presentFragment(new MeeroFontsPreferencesEntry());
+        } else if (item.id == glassBottomBarRow) {
+            CherrygramAppearanceConfig.INSTANCE.setShowMainTabs(!CherrygramAppearanceConfig.INSTANCE.getShowMainTabs());
+            SettingsHelper.updateCheckState(view, CherrygramAppearanceConfig.INSTANCE.getShowMainTabs());
+        } else if (item.id == mainTabsEditorRow) {
+            CherrygramPreferencesNavigator.INSTANCE.createTabs(this);
         } else if (item.id == customBackgroundInChatsRow) {
             CherrygramChatsConfig.INSTANCE.setCustomWallpapers(!CherrygramChatsConfig.INSTANCE.getCustomWallpapers());
             SettingsHelper.updateCheckState(view, CherrygramChatsConfig.INSTANCE.getCustomWallpapers());

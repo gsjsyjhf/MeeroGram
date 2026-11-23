@@ -8216,7 +8216,7 @@ public class MessageObject {
     }
 
     public void replaceEmojiToLottieFrame(CharSequence text, int[] emojiOnly) {
-        if (!(text instanceof Spannable) || CherrygramCoreConfig.INSTANCE.getSystemEmoji()) {
+        if (!(text instanceof Spannable) || CherrygramCoreConfig.INSTANCE.getSystemEmoji() || Emoji.isSelectedEmojiPack()) {
             return;
         }
         Spannable spannable = (Spannable) text;

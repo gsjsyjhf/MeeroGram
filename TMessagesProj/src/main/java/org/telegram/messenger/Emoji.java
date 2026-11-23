@@ -46,6 +46,7 @@ import java.util.Objects;
 
 import uz.unnarsx.cherrygram.core.configs.CherrygramChatsConfig;
 import uz.unnarsx.cherrygram.core.configs.CherrygramCoreConfig;
+import tw.nekomimi.nekogram.helpers.remote.EmojiHelper;
 import uz.unnarsx.cherrygram.helpers.ui.FontHelper;
 
 public class Emoji {
@@ -103,6 +104,39 @@ public class Emoji {
         }
         placeholderPaint = new Paint();
         placeholderPaint.setColor(0x00000000);
+        reloadCache();
+    }
+
+    /** MeeroGram R11.2: emoji-pack cache (ported from MeeroX Emoji.java). */
+    private static File emojiFile;
+    private static boolean isSelectedEmojiPack;
+
+    private static void reloadCache() {
+        try {
+            emojiFile = EmojiHelper.getInstance().getCurrentEmojiPackOffline();
+            isSelectedEmojiPack = !EmojiHelper.getInstance().getEmojiPack().equals("default") && emojiFile != null && emojiFile.exists();
+        } catch (Throwable t) {
+            emojiFile = null;
+            isSelectedEmojiPack = false;
+        }
+    }
+
+    public static boolean isSelectedEmojiPack() {
+        return isSelectedEmojiPack;
+    }
+
+    /** MeeroGram R11.2: drop cached pack state after apply/delete (EmojiHelper.reloadEmoji). */
+    public static void reloadEmoji() {
+        reloadCache();
+        for (int a = 0; a < emojiBmp.length; a++) {
+            emojiBmp[a] = new Bitmap[emojiCounts[a]];
+            loadingEmoji[a] = new boolean[emojiCounts[a]];
+        }
+        for (int j = 0; j < EmojiData.data.length; j++) {
+            for (int i = 0; i < EmojiData.data[j].length; i++) {
+                rects.put(EmojiData.data[j][i], new DrawableInfo((byte) j, (short) i, i));
+            }
+        }
     }
 
     public static void preloadEmoji(CharSequence code) {
@@ -338,9 +372,9 @@ public class Emoji {
                 b = getBounds();
             }
 
-            if (CherrygramCoreConfig.INSTANCE.getSystemEmoji()) {
+            if (CherrygramCoreConfig.INSTANCE.getSystemEmoji() || isSelectedEmojiPack()) {
                 String emoji = fixEmoji(EmojiData.data[info.page][info.emojiIndex]);
-                textPaint.setTypeface(FontHelper.getSystemEmojiTypeface());
+                textPaint.setTypeface(isSelectedEmojiPack() ? EmojiHelper.getInstance().getCurrentTypeface() : FontHelper.getSystemEmojiTypeface());
                 textPaint.setTextSize(b.height() * 0.8f);
                 canvas.drawText(emoji, 0, emoji.length(), b.left, b.bottom - b.height() * 0.225f, textPaint);
                 return;
@@ -375,7 +409,7 @@ public class Emoji {
 
         @Override
         public boolean isLoaded() {
-            return emojiBmp[info.page][info.page2] != null;
+            return isSelectedEmojiPack() || emojiBmp[info.page][info.page2] != null;
         }
 
         @Override
@@ -610,9 +644,10 @@ public class Emoji {
         } else {
             s = Spannable.Factory.getInstance().newSpannable(cs);
         }
+        boolean replacedAppleLogo = EmojiHelper.replaceAppleLogo(s, fontMetrics);
         ArrayList<EmojiSpanRange> emojis = parseEmojis(s, emojiOnly);
         if (emojis.isEmpty()) {
-            return cs;
+            return replacedAppleLogo ? s : cs;
         }
 
         AnimatedEmojiSpan[] animatedEmojiSpans = s.getSpans(0, s.length(), AnimatedEmojiSpan.class);
@@ -675,7 +710,10 @@ public class Emoji {
     }
 
     public static CharSequence replaceWithRestrictedEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, int cacheType, Runnable update) {
-        if (/*SharedConfig.useSystemEmoji ||*/ cs == null || cs.length() == 0) {
+        if (cs == null || cs.length() == 0) {
+            return cs;
+        }
+        if ((CherrygramCoreConfig.INSTANCE.getSystemEmoji() || isSelectedEmojiPack()) && !EmojiHelper.containsAppleLogo(cs)) {
             return cs;
         }
 

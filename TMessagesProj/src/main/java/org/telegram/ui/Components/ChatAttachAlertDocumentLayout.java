@@ -62,6 +62,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.messenger.ringtone.RingtoneDataStore;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import tw.nekomimi.nekogram.helpers.remote.EmojiHelper;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -91,6 +92,11 @@ import java.util.Locale;
 import java.util.StringTokenizer;
 
 public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLayout {
+
+    /** MeeroGram R11.2: an emoji pack ships as a font-like .ttf (MeeroX flow). */
+    public boolean isEmojiFont(File file) {
+        return EmojiHelper.isValidEmojiPack(file);
+    }
 
     public interface DocumentSelectActivityDelegate {
         void didSelectFiles(ArrayList<String> files, String caption, ArrayList<TLRPC.MessageEntity> captionEntities, ArrayList<MessageObject> fmessages, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long effectId, boolean invertMedia, long payStars);

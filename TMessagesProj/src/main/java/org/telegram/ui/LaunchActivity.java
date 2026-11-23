@@ -164,6 +164,7 @@ import org.telegram.tgnet.tl.TL_forum;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBarLayout;
+import tw.nekomimi.nekogram.helpers.remote.EmojiHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheetTabs;
@@ -752,6 +753,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
 
         AndroidUtilities.enableEdgeToEdge(this);
+
+        // MeeroGram R11.2: refresh installed emoji packs (updates + cleanup).
+        Utilities.globalQueue.postRunnable(() -> EmojiHelper.getInstance().checkEmojiPacks());
 
         processFeats();
 

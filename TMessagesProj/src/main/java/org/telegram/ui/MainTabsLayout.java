@@ -1067,13 +1067,16 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             }
         } else {
             meeroPillPaint.setStyle(Paint.Style.FILL);
-            meeroPillPaint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_glass_tabSelected, resourcesProvider), 0.09f));
+            // MeeroGram R11.2: YTXTube pill surface - white 12% over dark,
+            // black 12% over light (GlassNavBar onDrawSurface tint).
+            final boolean meeroDark = Theme.isCurrentThemeDark() || Theme.isCurrentThemeNight();
+            meeroPillPaint.setColor(Theme.multAlpha(meeroDark ? 0xFFFFFFFF : 0xFF000000, 0.12f));
             canvas.drawRoundRect(meeroPillRect, radius, radius, meeroPillPaint);
         }
         // Hairline highlight along the pill edge, like the reference glass.
         meeroPillPaint.setStyle(Paint.Style.STROKE);
         meeroPillPaint.setStrokeWidth(dp(1));
-        meeroPillPaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.16f));
+        meeroPillPaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.18f));
         canvas.drawRoundRect(meeroPillRect, radius, radius, meeroPillPaint);
         canvas.restore();
     }

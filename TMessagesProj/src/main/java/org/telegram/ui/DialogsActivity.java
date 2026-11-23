@@ -536,14 +536,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private FragmentFloatingButton floatingButtonStories;
     /** Meerogram header glass actions start */
     private ActionBarMenuItem meeroComposeItem;
-    private ActionBarMenuItem meeroScanItem;
     private ActionBarMenuItem meeroEditItem;
+    private ActionBarMenuItem meeroDoneItem;
+    /** true while the dialogs folder edit mode is driven by our Edit/Done pills */
+    private boolean meeroEditingUI;
     private BlurredBackgroundDrawable meeroHeaderGroupGlass;
     private final ArrayList<BlurredBackgroundDrawable> meeroHeaderGlassDrawables = new ArrayList<>();
     private static final int MEERO_HEADER_BUTTON = 30;
     private static final int MEERO_HEADER_GROUP = 38;
     private static final int MEERO_ID_COMPOSE = 9711;
-    private static final int MEERO_ID_QR = 9712;
     /** Meerogram header glass actions finish */
     private ButtonWithCounterView addChatsToCommunityButton;
     private ChatActivityFadeView communityBottomFadeView;
@@ -3455,7 +3456,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (initialDialogsType == DIALOGS_TYPE_DEFAULT) {
             /** Meerogram header glass actions start */
             if (CherrygramChatsConfig.INSTANCE.getFloatingActions()) {
-                meeroComposeItem = menu.addItem(MEERO_ID_COMPOSE, R.drawable.msg_add);
+                meeroComposeItem = menu.addItem(MEERO_ID_COMPOSE, R.drawable.ios_chat_list_composeicon);
                 meeroComposeItem.setContentDescription(LocaleController.getString(R.string.NewMessageTitle));
                 meeroComposeItem.setOnClickListener(v -> {
                     if (parentLayout != null && parentLayout.isInPreviewMode()) {
@@ -3468,12 +3469,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     }
                     openWriteContacts();
                 });
-                meeroScanItem = menu.addItem(MEERO_ID_QR, R.drawable.msg_qr_scan);
-                meeroScanItem.setContentDescription(LocaleController.getString(R.string.ScanQrCode));
-                meeroScanItem.setOnClickListener(v -> openQrScanner());
             }
             /** Meerogram header glass actions finish */
-            optionsItem = menu.addItem(4, R.drawable.ic_ab_other);
+            optionsItem = menu.addItem(4, R.drawable.ios_chat_list_navigationmore);
             optionsItem.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
             optionsItem.setOnClickListener(v -> {
                 getContactsController().loadGlobalPrivacySetting();
@@ -3486,6 +3484,26 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             });
             /** Meerogram header glass actions start */
             if (CherrygramChatsConfig.INSTANCE.getFloatingActions()) {
+                // R11.2: Done pill - takes the Edit pill's place while the
+                // folder edit mode is active (frozen MeeroX behaviour).
+                meeroDoneItem = new ActionBarMenuItem(context, null, getThemedColor(Theme.key_actionBarDefaultSelector), getThemedColor(Theme.key_actionBarDefaultIcon), true);
+                meeroDoneItem.setText(getString(R.string.Done));
+                meeroDoneItem.setContentDescription(getString(R.string.Done));
+                meeroDoneItem.setPadding(dp(12), 0, dp(12), 0);
+                meeroDoneItem.setOnClickListener(v -> {
+                    if (filterTabsView != null) {
+                        filterTabsView.setIsEditing(false);
+                    }
+                    meeroSetEditEditing(false);
+                });
+                meeroDoneItem.setVisibility(View.GONE);
+                meeroDoneItem.setAlpha(0.0f);
+                final FrameLayout.LayoutParams meeroDoneLp = LayoutHelper.createFrame(
+                        LayoutHelper.WRAP_CONTENT, MEERO_HEADER_BUTTON,
+                        Gravity.TOP | Gravity.LEFT, 6, 0, 0, 0);
+                meeroDoneLp.topMargin = AndroidUtilities.statusBarHeight
+                        + (ActionBar.getCurrentActionBarHeight() - dp(MEERO_HEADER_BUTTON)) / 2;
+                actionBar.addView(meeroDoneItem, meeroDoneLp);
                 meeroEditItem = new ActionBarMenuItem(context, null, getThemedColor(Theme.key_actionBarDefaultSelector), getThemedColor(Theme.key_actionBarDefaultIcon), true);
                 meeroEditItem.setText(getString(R.string.MG_HeaderEdit));
                 meeroEditItem.setContentDescription(getString(R.string.MG_HeaderEdit));
@@ -3506,14 +3524,35 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         mlp.topMargin = want;
                         meeroEditItem.setLayoutParams(mlp);
                     }
+                    final ViewGroup.MarginLayoutParams dmlp = (ViewGroup.MarginLayoutParams) meeroDoneItem.getLayoutParams();
+                    if (dmlp != null && dmlp.topMargin != want) {
+                        dmlp.topMargin = want;
+                        meeroDoneItem.setLayoutParams(dmlp);
+                    }
                 });
-                meeroEditItem.setOnClickListener(v -> presentFragment(new MainTabsPreferencesEntry()));
+                // R11.2: the pill must open the same folder edit mode as the
+                // frozen MeeroX Edit button - reorder/delete the dialog folders.
+                meeroEditItem.setOnClickListener(v -> {
+                    if (filterTabsView == null) {
+                        return;
+                    }
+                    final boolean editing = filterTabsView.isEditing();
+                    filterTabsView.setIsEditing(!editing);
+                    meeroSetEditEditing(!editing);
+                });
+                // R11.2: side padding on the ITEM (not an inset on the drawable)
+                // so the glass surface covers the whole pill and the word sits
+                // fully inside it, exactly like MeeroX meeroGlassPillHeaderButton.
+                meeroEditItem.setPadding(dp(12), 0, dp(12), 0);
                 if (iBlur3FactoryLiquidGlass != null) {
                     final BlurredBackgroundDrawable editGlass = iBlur3FactoryLiquidGlass.create(meeroEditItem, BlurredBackgroundProviderImpl.mainTabs(resourceProvider));
                     editGlass.setRadius(dp(MEERO_HEADER_BUTTON / 2f));
-                    editGlass.setPadding(dp(4));
                     meeroEditItem.setBackground(editGlass);
                     meeroHeaderGlassDrawables.add(editGlass);
+                    final BlurredBackgroundDrawable doneGlass = iBlur3FactoryLiquidGlass.create(meeroDoneItem, BlurredBackgroundProviderImpl.mainTabs(resourceProvider));
+                    doneGlass.setRadius(dp(MEERO_HEADER_BUTTON / 2f));
+                    meeroDoneItem.setBackground(doneGlass);
+                    meeroHeaderGlassDrawables.add(doneGlass);
                 }
                 meeroGlassHeaderGroup();
             }
@@ -7193,6 +7232,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     @Override
     public void onResume() {
         super.onResume();
+        if (meeroEditItem != null) {
+            meeroCheckEditPills();
+        }
         if (dialogStoriesCell != null) {
             dialogStoriesCell.onResume();
         }
@@ -9074,6 +9116,39 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     /** Meerogram header glass actions start */
+    /** R11.2: swap the Edit/Done pills when the folder edit mode toggles. */
+    private void meeroSetEditEditing(boolean editing) {
+        meeroEditingUI = editing;
+        if (meeroEditItem == null || meeroDoneItem == null) {
+            return;
+        }
+        meeroDoneItem.setVisibility(View.VISIBLE);
+        meeroDoneItem.animate().alpha(editing ? 1f : 0f).setDuration(150)
+                .withEndAction(() -> {
+                    if (meeroDoneItem != null && !editing) {
+                        meeroDoneItem.setVisibility(View.GONE);
+                    }
+                }).start();
+        meeroEditItem.animate().alpha(editing ? 0f : 1f).setDuration(150)
+                .withEndAction(() -> {
+                    if (meeroEditItem != null) {
+                        meeroEditItem.setVisibility(editing ? View.GONE : View.VISIBLE);
+                    }
+                }).start();
+        actionBar.invalidate();
+    }
+
+    /** R11.2: follow the real edit state (exit may come from back press or Done). */
+    public void meeroCheckEditPills() {
+        if (meeroEditItem == null || meeroDoneItem == null) {
+            return;
+        }
+        final boolean reallyEditing = filterTabsView != null && filterTabsView.isEditing();
+        if (meeroEditingUI != reallyEditing) {
+            meeroSetEditEditing(reallyEditing);
+        }
+    }
+
     private void meeroGlassHeaderGroup() {
         if (iBlur3FactoryLiquidGlass == null || actionBar == null) {
             return;
@@ -9083,7 +9158,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             return;
         }
         try {
-            for (ActionBarMenuItem it : new ActionBarMenuItem[]{meeroComposeItem, meeroScanItem, optionsItem}) {
+            for (ActionBarMenuItem it : new ActionBarMenuItem[]{meeroComposeItem, optionsItem}) {
                 if (it == null) {
                     continue;
                 }
@@ -9112,9 +9187,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     return;
                 }
                 final float buttonsAlpha = Math.max(
-                        Math.max(
-                                meeroComposeItem != null ? meeroComposeItem.getAlpha() : 0f,
-                                meeroScanItem != null ? meeroScanItem.getAlpha() : 0f),
+                        meeroComposeItem != null ? meeroComposeItem.getAlpha() : 0f,
                         optionsItem != null ? optionsItem.getAlpha() : 0f);
                 if (buttonsAlpha <= 0.01f) {
                     return;

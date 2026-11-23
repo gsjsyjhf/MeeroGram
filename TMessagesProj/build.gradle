@@ -72,6 +72,7 @@ static def getCurrentDate() {
 
 dependencies {
     implementation 'androidx.core:core-ktx:1.18.0'
+    implementation 'com.jaredrummler:truetypeparser-light:1.0.0' // MeeroGram R11.2 emoji packs
     implementation 'androidx.palette:palette-ktx:1.1.0'
     implementation 'androidx.exifinterface:exifinterface:1.4.2' // Should be the same version as used for CameraX
     implementation 'androidx.dynamicanimation:dynamicanimation:1.0.0' // Do not update - breaks animation

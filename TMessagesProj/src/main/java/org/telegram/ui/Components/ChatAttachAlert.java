@@ -1105,6 +1105,25 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
     private float doneItemAlphaByEnabled;
     private float doneItemAlphaByLayout;
     protected FrameLayout headerView;
+    /** MeeroGram R11.2: emoji pack file picker mode (ported from MeeroX). */
+    private boolean isEmojiPicker;
+
+    public boolean isEmojiPicker() {
+        return isEmojiPicker;
+    }
+
+    public void setEmojiPicker() {
+        isEmojiPicker = true;
+        try {
+            buttonsRecyclerView.setVisibility(View.GONE);
+        } catch (Throwable ignore) {
+        }
+        try {
+            selectedTextView.setText(LocaleController.getString("ChoosePhotoOrVideo", R.string.ChoosePhotoOrVideo));
+        } catch (Throwable ignore) {
+        }
+    }
+
     protected TextView selectedTextView;
     protected ActionBarMenuItem optionsItem;
     protected LinearLayout selectedView;

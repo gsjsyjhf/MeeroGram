@@ -90,7 +90,7 @@ public class ExperimentalPreferencesEntry extends BaseCGPreferencesEntry {
     @Override
     protected CharSequence getTitle() {
         FirebaseAnalyticsHelper.INSTANCE.trackEventWithEmptyBundle("experimental_preferences_screen");
-        return getString(R.string.EP_Category_Experimental) + " // W.I.P";
+        return getString(R.string.EP_Category_Experimental) + getString(R.string.MG_Ex2_Wip);
     }
 
     @Override
@@ -126,8 +126,8 @@ public class ExperimentalPreferencesEntry extends BaseCGPreferencesEntry {
                     SettingsHelper.asExpandableSwitch(
                             oomSectionRow,
                             R.drawable.msg2_data,
-                            "OOM Handler",
-                            " "
+                            getString(R.string.MG_Ex2_OomHandler),
+                            getString(R.string.MG_Ex2_Blank)
                     )
                     .setCollapsed(!expandedOomSectionRow)
                     .setClickCallback(v -> {
@@ -144,8 +144,8 @@ public class ExperimentalPreferencesEntry extends BaseCGPreferencesEntry {
 
                 tableView.addFullRow(getString(R.string.MG_Exp_HeapInfo), true, true, 15, false);
                 tableView.addRow(getString(R.string.MG_Exp_MaxHeap), monitor.getMaxMemoryMb() + " MB");
-                tableView.addRow("Used heap", monitor.getUsedMemoryMb() + " MB");
-                tableView.addRow("Used heap (%)", String.format(Locale.US, "%.1f%%", monitor.getCurrentUsagePercent()));
+                tableView.addRow(getString(R.string.MG_Ex2_UsedHeap), monitor.getUsedMemoryMb() + " MB");
+                tableView.addRow(getString(R.string.MG_Ex2_UsedHeapPercent), String.format(Locale.US, "%.1f%%", monitor.getCurrentUsagePercent()));
 
                 items.add(SettingsHelper.asCustomWithBackground(tableView));
                 items.add(UItem.asButton(cleanupHeapRow, getString(R.string.MG_Exp_CleanupHeap))
@@ -158,7 +158,7 @@ public class ExperimentalPreferencesEntry extends BaseCGPreferencesEntry {
                 items.add(UItem.asShadow(null));
 
                 if (CherrygramExperimentalConfig.INSTANCE.getOomHandlerPopup()) {
-                    items.add(UItem.asHeader("Warn when app memory usage exceeds"));
+                    items.add(UItem.asHeader(getString(R.string.MG_Ex2_WarnMemExceed)));
                     items.add(
                             UItem.asIntSlideView(
                                     1,
@@ -188,9 +188,9 @@ public class ExperimentalPreferencesEntry extends BaseCGPreferencesEntry {
             }
         }
 
-        items.add(UItem.asHeader("Misc"));
+        items.add(UItem.asHeader(getString(R.string.MG_Ex2_Misc)));
         if (!CherrygramCoreConfig.isStandaloneStableBuild() && !CherrygramCoreConfig.isPlayStoreBuild()) {
-            items.add(SettingsHelper.asSwitchCG(toastRpcRow, "Toast all RPC errors *", "You'll see RPC errors from Telegram's backend as toast messages.")
+            items.add(SettingsHelper.asSwitchCG(toastRpcRow, getString(R.string.MG_Ex2_ToastRpc), getString(R.string.MG_Ex2_ToastRpcDesc))
                     .setChecked(CherrygramDebugConfig.INSTANCE.getShowRPCErrors())
                     .slug("toastRpcErrors")
             );
@@ -200,11 +200,11 @@ public class ExperimentalPreferencesEntry extends BaseCGPreferencesEntry {
                 .slug("oldTimeStyle")
         );
         if (CherrygramCoreConfig.isDevBuild()) {
-            items.add(SettingsHelper.asSwitchCG(safeStarsRow, "Use SafeStars *")
+            items.add(SettingsHelper.asSwitchCG(safeStarsRow, getString(R.string.MG_Ex2_SafeStars))
                     .setChecked(CherrygramFirebaseConfig.INSTANCE.getAllowSafeStars())
                     .slug("safeStars")
             );
-            items.add(SettingsHelper.asSwitchCG(safeSurfRow, "Use SafeSurf *")
+            items.add(SettingsHelper.asSwitchCG(safeSurfRow, getString(R.string.MG_Ex2_SafeSurf))
                     .setChecked(CherrygramFirebaseConfig.INSTANCE.getAllowSafeSurf())
                     .slug("safeSurf")
             );
@@ -213,18 +213,18 @@ public class ExperimentalPreferencesEntry extends BaseCGPreferencesEntry {
                 .slug("performanceClass")
         );
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            items.add(UItem.asButton(fixCallsNotifRow, "Fix calls notification *")
+            items.add(UItem.asButton(fixCallsNotifRow, getString(R.string.MG_Ex2_FixCallsNotif))
                     .slug("fixCalls")
             );
         }
         items.add(UItem.asShadow(null));
 
         items.add(UItem.asHeader(getString(R.string.FilterChats)));
-        items.add(SettingsHelper.asSwitchCG(replacePunctuationRow, "Replace punctuation marks *", "Replace quotation marks and dashes like on TDesktop")
+        items.add(SettingsHelper.asSwitchCG(replacePunctuationRow, getString(R.string.MG_Ex2_ReplacePunct), getString(R.string.MG_Ex2_ReplacePunctDesc))
                 .setChecked(CherrygramDebugConfig.INSTANCE.getReplacePunctuationMarks())
                 .slug("replacePunctuation")
         );
-        items.add(SettingsHelper.asSwitchCG(editTextFixRow, "EditTextSugestionsFix *", "Emojis/formatting disappear when Samsung puts suggestions in edit")
+        items.add(SettingsHelper.asSwitchCG(editTextFixRow, getString(R.string.MG_Ex2_EditTextFix), getString(R.string.MG_Ex2_EditTextFixDesc))
                 .setChecked(CherrygramDebugConfig.INSTANCE.getEditTextSuggestionsFix())
                 .slug("editTextSuggestionsFix")
         );
@@ -236,24 +236,24 @@ public class ExperimentalPreferencesEntry extends BaseCGPreferencesEntry {
 
         items.add(UItem.asHeader(getString(R.string.CP_Header_Record)));
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            items.add(UItem.asButton(audioSourceRow, "Microphone Audio Source *", getAudioSourceValue())
+            items.add(UItem.asButton(audioSourceRow, getString(R.string.MG_Ex2_MicSource), getAudioSourceValue())
                     .slug("audioSource")
             );
         }
-        items.add(SettingsHelper.asSwitchCG(sendMaxQualityRow, "Send videos at max quality *", "Max quality will be automatically selected when you send a video")
+        items.add(SettingsHelper.asSwitchCG(sendMaxQualityRow, getString(R.string.MG_Ex2_SendMaxQuality), getString(R.string.MG_Ex2_SendMaxQualityDesc))
                 .setChecked(CherrygramDebugConfig.INSTANCE.getSendVideosAtMaxQuality())
                 .slug("sendVideosMaxQuality")
         );
-        items.add(SettingsHelper.asSwitchCG(playGifAsVideoRow, "Play GIFs as Videos *")
+        items.add(SettingsHelper.asSwitchCG(playGifAsVideoRow, getString(R.string.MG_Ex2_PlayGif))
                 .setChecked(CherrygramDebugConfig.INSTANCE.getPlayGIFsAsVideos())
                 .slug("playGifsAsVideos")
         );
-        items.add(SettingsHelper.asSwitchCG(hideTimestampRow, "Hide video timestamp *", "Saved progress for videos. Return exactly where you left off.")
+        items.add(SettingsHelper.asSwitchCG(hideTimestampRow, getString(R.string.MG_Ex2_HideTimestamp), getString(R.string.MG_Ex2_HideTimestampDesc))
                 .setChecked(CherrygramDebugConfig.INSTANCE.getHideVideoTimestamp())
                 .slug("hideVideoTimestamp")
         );
 
-        items.add(UItem.asShadow("* Cherrygram's feature."));
+        items.add(UItem.asShadow(getString(R.string.MG_Ex2_CgFeature)));
     }
 
     @Override
@@ -346,9 +346,9 @@ public class ExperimentalPreferencesEntry extends BaseCGPreferencesEntry {
         int currentClass = SharedConfig.getDevicePerformanceClass();
         int trueClass = SharedConfig.measureDevicePerformanceClass();
         builder2.setItems(new CharSequence[]{
-                AndroidUtilities.replaceTags((currentClass == SharedConfig.PERFORMANCE_CLASS_HIGH ? "**HIGH**" : "HIGH") + (trueClass == SharedConfig.PERFORMANCE_CLASS_HIGH ? " (measured)" : "")),
-                AndroidUtilities.replaceTags((currentClass == SharedConfig.PERFORMANCE_CLASS_AVERAGE ? "**AVERAGE**" : "AVERAGE") + (trueClass == SharedConfig.PERFORMANCE_CLASS_AVERAGE ? " (measured)" : "")),
-                AndroidUtilities.replaceTags((currentClass == SharedConfig.PERFORMANCE_CLASS_LOW ? "**LOW**" : "LOW") + (trueClass == SharedConfig.PERFORMANCE_CLASS_LOW ? " (measured)" : ""))
+                AndroidUtilities.replaceTags((currentClass == SharedConfig.PERFORMANCE_CLASS_HIGH ? "**HIGH**" : "HIGH") + (trueClass == SharedConfig.PERFORMANCE_CLASS_HIGH ? getString(R.string.MG_Ex2_Measured) : "")),
+                AndroidUtilities.replaceTags((currentClass == SharedConfig.PERFORMANCE_CLASS_AVERAGE ? "**AVERAGE**" : "AVERAGE") + (trueClass == SharedConfig.PERFORMANCE_CLASS_AVERAGE ? getString(R.string.MG_Ex2_Measured) : "")),
+                AndroidUtilities.replaceTags((currentClass == SharedConfig.PERFORMANCE_CLASS_LOW ? "**LOW**" : "LOW") + (trueClass == SharedConfig.PERFORMANCE_CLASS_LOW ? getString(R.string.MG_Ex2_Measured) : ""))
         }, (dialog2, which2) -> {
             int newClass = 2 - which2;
             if (newClass == trueClass) {
@@ -402,7 +402,7 @@ public class ExperimentalPreferencesEntry extends BaseCGPreferencesEntry {
         configStringKeys.add("VOICE_UPLINK");
         configValues.add(CherrygramDebugConfig.AUDIO_SOURCE_VOICE_UPLINK);
 
-        PopupHelper.show(configStringKeys, "Microphone Audio Source *", configValues.indexOf(CherrygramDebugConfig.INSTANCE.getAudioSource()), getContext(), i -> {
+        PopupHelper.show(configStringKeys, getString(R.string.MG_Ex2_MicSource), configValues.indexOf(CherrygramDebugConfig.INSTANCE.getAudioSource()), getContext(), i -> {
             CherrygramDebugConfig.INSTANCE.setAudioSource(configValues.get(i));
             if (runnable != null) runnable.run();
         });
