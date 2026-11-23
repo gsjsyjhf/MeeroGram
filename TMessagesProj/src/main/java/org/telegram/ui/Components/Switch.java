@@ -408,6 +408,7 @@ public class Switch extends View implements Theme.Colorable {
         int tx;
         int width = AndroidUtilities.dp(30.5F);
         int thumb;
+        int meeroTrackW, meeroTrackH;
 
         if (CherrygramAppearanceConfig.INSTANCE.getOneUI_SwitchStyle()) {
             thumb = AndroidUtilities.dp(17.5F);
@@ -419,13 +420,13 @@ public class Switch extends View implements Theme.Colorable {
 
             tx = (int) (start + (end - start) * progress);
         } else if (CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()) {
-            // MeeroGram R11.2: plain iOS26 switch - a real UISwitch capsule
-            // (51x31dp), white knob, no letters or icons on it.
-            int meeroTrackW = Math.min(AndroidUtilities.dp(51), getMeasuredWidth());
-            int meeroTrackH = AndroidUtilities.dp(31);
+            // R11.3: real iOS26 keyboard switch - 63x28dp track, 37x24dp
+            // capsule knob, 2dp pad, 22dp travel (Ios26CapsuleSwitch).
+            meeroTrackW = Math.min(AndroidUtilities.dp(63), getMeasuredWidth());
+            meeroTrackH = AndroidUtilities.dp(28);
             x = (getMeasuredWidth() - meeroTrackW) / 2;
             y = getMeasuredHeight() / 2 - meeroTrackH / 2;
-            thumb = AndroidUtilities.dp(27);
+            thumb = AndroidUtilities.dp(37);
 
             float start = x + thumb / 2f + AndroidUtilities.dp(2);
             float end = x + meeroTrackW - thumb / 2f - AndroidUtilities.dp(2);
@@ -522,17 +523,22 @@ public class Switch extends View implements Theme.Colorable {
                 canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(11), AndroidUtilities.dpf2(11), paint);
                 canvasToDraw.drawCircle(tx, ty, AndroidUtilities.dpf2(11), paint);
             } else if (CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()) {
-                // MeeroGram R11.2: the plain 51x31dp capsule.
-                int meeroTrackW = Math.min(AndroidUtilities.dp(51), getMeasuredWidth());
-                int meeroTrackH = AndroidUtilities.dp(31);
+                // R11.3: 63x28dp track capsule + subtle inner specular rim
+                // (Ios26CapsuleSwitch drawBehind: white 16% stroke, inset 1dp).
                 int meeroX = (getMeasuredWidth() - meeroTrackW) / 2;
                 int meeroY = getMeasuredHeight() / 2 - meeroTrackH / 2;
                 rectF.set(meeroX, meeroY, meeroX + meeroTrackW, meeroY + meeroTrackH);
                 if (!isChecked && Color.alpha(color) < 255) {
                     Paint grayPaint = Theme.isCurrentThemeDark() || Theme.isCurrentThemeNight() ? paint5 : paint4;
-                    canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(15.5f), AndroidUtilities.dpf2(15.5f), grayPaint);
+                    canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(14f), AndroidUtilities.dpf2(14f), grayPaint);
                 }
-                canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(15.5f), AndroidUtilities.dpf2(15.5f), paint);
+                canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(14f), AndroidUtilities.dpf2(14f), paint);
+                Paint rimPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                rimPaint.setStyle(Paint.Style.STROKE);
+                rimPaint.setStrokeWidth(Math.max(1, AndroidUtilities.dp(1)));
+                rimPaint.setColor(0x29FFFFFF);
+                rectF.set(meeroX + 1, meeroY + 1, meeroX + meeroTrackW - 1, meeroY + meeroTrackH - 1);
+                canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(13f), AndroidUtilities.dpf2(13f), rimPaint);
             } else {
                 rectF.set(x, y, x + width, y + AndroidUtilities.dpf2(14));
                 canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(7), AndroidUtilities.dpf2(7), paint);
@@ -587,8 +593,57 @@ public class Switch extends View implements Theme.Colorable {
             if (CherrygramAppearanceConfig.INSTANCE.getOneUI_SwitchStyle()) {
                 canvasToDraw.drawCircle(tx, ty, AndroidUtilities.dp(9.5F), paint3);
             } else if (CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()) {
-                // MeeroGram R11.2: iOS26 white knob (27dp).
-                canvasToDraw.drawCircle(tx, ty, AndroidUtilities.dp(13.5F), paint3);
+                // R11.3: 37x24dp capsule knob. While the switch glides
+                // (0<progress<1) it renders as the Liquid Glass droplet -
+                // swells 1.34x/1.46x, turns translucent with the liquid
+                // surface gradient, specular arc and chromatic caustic rim.
+                final float glide = progress < 0.02f || progress > 0.98f ? 0f
+                        : (float) Math.sin(progress * Math.PI);
+                final float swellX = 1f + 0.34f * glide;
+                final float swellY = 1f + 0.46f * glide;
+                final float hw = AndroidUtilities.dp(18.5f) * swellX;
+                final float hh = AndroidUtilities.dp(12f) * swellY;
+                if (glide > 0f) {
+                    canvas.save();
+                    canvas.translate(tx, ty);
+                    canvas.scale(swellX, swellY);
+                    // solid white fading out as the droplet takes over
+                    Paint knobPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    knobPaint.setColor(paint3.getColor());
+                    knobPaint.setAlpha((int) (255f * (1f - 0.84f * glide)));
+                    android.graphics.RectF knobRect = new android.graphics.RectF(-AndroidUtilities.dp(18.5f), -AndroidUtilities.dp(12f), AndroidUtilities.dp(18.5f), AndroidUtilities.dp(12f));
+                    canvasToDraw.drawRoundRect(knobRect, AndroidUtilities.dpf2(12f), AndroidUtilities.dpf2(12f), knobPaint);
+                    // liquid surface gradient
+                    Paint dropPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    dropPaint.setShader(new android.graphics.LinearGradient(0, -hh, 0, hh,
+                            new int[]{0x61FFFFFF, 0x14FFFFFF, 0x47FFFFFF},
+                            new float[]{0f, 0.48f, 1f}, android.graphics.Shader.TileMode.CLAMP));
+                    canvasToDraw.drawRoundRect(knobRect, AndroidUtilities.dpf2(12f), AndroidUtilities.dpf2(12f), dropPaint);
+                    // upper specular highlight arc
+                    Paint hiPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    hiPaint.setShader(new android.graphics.LinearGradient(0, -hh, 0, 0f,
+                            new int[]{0xE6FFFFFF, 0x0DFFFFFF},
+                            new float[]{0f, 1f}, android.graphics.Shader.TileMode.CLAMP));
+                    android.graphics.RectF hiRect = new android.graphics.RectF(-AndroidUtilities.dp(15.5f), -AndroidUtilities.dp(11f), AndroidUtilities.dp(15.5f), -hh * 0.06f);
+                    canvasToDraw.drawRoundRect(hiRect, AndroidUtilities.dpf2(10.5f), AndroidUtilities.dpf2(10.5f), hiPaint);
+                    // chromatic caustic rim (cyan -> white -> green)
+                    Paint rimPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    rimPaint.setStyle(Paint.Style.STROKE);
+                    rimPaint.setStrokeWidth(Math.max(1, AndroidUtilities.dp(1.25f)));
+                    rimPaint.setShader(new android.graphics.LinearGradient(-hw, 0, hw, 0,
+                            new int[]{0x4700B4FF, 0xEBFFFFFF, 0x4D34C759},
+                            new float[]{0f, 0.5f, 1f}, android.graphics.Shader.TileMode.CLAMP));
+                    canvasToDraw.drawRoundRect(knobRect, AndroidUtilities.dpf2(12f), AndroidUtilities.dpf2(12f), rimPaint);
+                    canvas.restore();
+                } else {
+                    android.graphics.RectF knobRect = new android.graphics.RectF(tx - AndroidUtilities.dp(18.5f), ty - AndroidUtilities.dp(12f), tx + AndroidUtilities.dp(18.5f), ty + AndroidUtilities.dp(12f));
+                    canvasToDraw.drawRoundRect(knobRect, AndroidUtilities.dpf2(12f), AndroidUtilities.dpf2(12f), paint3);
+                    Paint rimPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    rimPaint.setStyle(Paint.Style.STROKE);
+                    rimPaint.setStrokeWidth(Math.max(1, AndroidUtilities.dp(0.8f)));
+                    rimPaint.setColor(0xF5FFFFFF);
+                    canvasToDraw.drawRoundRect(knobRect, AndroidUtilities.dpf2(12f), AndroidUtilities.dpf2(12f), rimPaint);
+                }
             } else {
                 canvasToDraw.drawCircle(tx, ty, AndroidUtilities.dp(8), paint);
             }

@@ -40,6 +40,7 @@ import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.util.ClickHelper;
 
 import uz.unnarsx.cherrygram.core.configs.CherrygramAppearanceConfig;
+import uz.unnarsx.cherrygram.core.ui.mainTabs.MeeroLiquidPhysics;
 import uz.unnarsx.cherrygram.core.ui.mainTabs.MeeroTabDragHelper;
 
 @SuppressLint("ViewConstructor")
@@ -324,11 +325,41 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
 
     @Override
+    public void draw(@NonNull Canvas canvas) {
+        /** Meerogram liquid pill start */
+        if (meeroPillMode && meeroPhysics != null
+                && (meeroPhysics.pressProgress.value > 0.001f
+                    || Math.abs(meeroPhysics.panelOffset.value) > 0.5f)) {
+            final android.graphics.drawable.Drawable bg = getBackground();
+            canvas.save();
+            canvas.translate(meeroPanelOffsetPx, 0f);
+            final float s = 1f + dp(16) * meeroPhysics.pressProgress.value / Math.max(1, getWidth());
+            canvas.scale(s, s, getWidth() / 2f, getHeight() / 2f);
+            if (bg != null) {
+                bg.draw(canvas);
+            }
+            canvas.restore();
+            dispatchDraw(canvas);
+            return;
+        }
+        /** Meerogram liquid pill finish */
+        super.draw(canvas);
+    }
+
+    @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
         /** Meerogram liquid pill start */
         if (meeroPillMode) {
             meeroTickPill(canvas);
-            super.dispatchDraw(canvas);
+            // YTXTube: the tab row (and the pill) shift with the panel offset.
+            if (meeroPanelOffsetPx != 0f) {
+                canvas.save();
+                canvas.translate(meeroPanelOffsetPx, 0f);
+                super.dispatchDraw(canvas);
+                canvas.restore();
+            } else {
+                super.dispatchDraw(canvas);
+            }
             return;
         }
         /** Meerogram liquid pill finish */
@@ -675,27 +706,37 @@ public class MainTabsLayout extends AnimatedLinearLayout {
                 }
                 releaseTabDragPress();
                 tabDragPressedView = tab;
-                if (tab != null) {
-                    // gentle press feedback on ACTION_DOWN
-                    tab.animate().scaleX(1.05f).scaleY(1.05f)
-                        .setDuration(120).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).start();
+                // R11.3: YTXTube press - the whole liquid system swells.
+                meeroGestureWasDrag = false;
+                if (meeroPillMode && meeroPhysics != null) {
+                    meeroPhysics.press();
                 }
             } else {
                 releaseTabDragPress();
+                if (meeroPillMode && meeroPhysics != null && !meeroGestureWasDrag) {
+                    meeroPhysics.release();
+                }
             }
         }
 
         @Override
         public void onTabDragStarted() {
             lastTabDragTickIndex = -1;
+            meeroGestureWasDrag = true;
             if (tabDragPressedView != null) {
                 tabDragPressedView.animate().cancel();
+            }
+            // R11.3: YTXTube onDragStarted - press + haptic(18ms, 170).
+            if (meeroPillMode && meeroPhysics != null) {
+                meeroHaptic(18L, 170);
+                meeroPhysics.press();
+                meeroDragStartTarget = meeroPhysics.value.target;
             }
         }
 
         @Override
-        public void onTabDragProgress(float position, float velocity) {
-            applyTabDragVisual(position, velocity);
+        public void onTabDragProgress(float position, float velocity, float xSinceStart, float xDelta) {
+            applyTabDragVisual(position, velocity, xSinceStart, xDelta);
         }
 
         @Override
@@ -704,7 +745,10 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             tabDragPressedView = null;
             lastTabDragTickIndex = -1;
             if (nearestTab != null) {
-                nearestTab.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+                if (!meeroGestureWasDrag) {
+                    // R11.3: YTXTube tab click haptic(12ms, 130).
+                    meeroHaptic(12L, 130);
+                }
                 // snap: exact same code path as a normal tap — the tab's own
                 // OnClickListener performs selectTab + viewPager.scrollToPosition
                 nearestTab.performClick();
@@ -728,16 +772,28 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     }
 
     /**
-     * The selection highlight of every visible tab follows the finger
-     * proportionally (gestureSelectedOverride interpolation between adjacent
-     * tabs, elongated in the drag direction by the finger velocity), plus a
-     * gentle scale on the tab icons. Bar dimensions are never changed.
+     * R11.3: pill mode feeds the YTXTube physics (target += dx / tabWidth,
+     * per-tab-crossing haptic 16ms/170, panel offset accumulates raw dx);
+     * official style keeps the previous per-tab highlight behavior.
      */
-    private void applyTabDragVisual(float position, float velocity) {
+    private void applyTabDragVisual(float position, float velocity, float xSinceStart, float xDelta) {
         final int count = tabDragHelper.getVisibleTabCount();
         if (count == 0) {
             return;
         }
+        /** Meerogram liquid pill start */
+        if (meeroPillMode && meeroPhysics != null) {
+            final float tabWidth = Math.max(1f, (getWidth() - dp(8)) / (float) count);
+            final int before = Math.round(meeroPhysics.value.target);
+            meeroPhysics.updateValue(meeroDragStartTarget + xSinceStart / tabWidth);
+            if (Math.round(meeroPhysics.value.target) != before) {
+                meeroHaptic(16L, 170);
+            }
+            meeroPhysics.panelOffset.snapTo(meeroPhysics.panelOffset.value + xDelta);
+            invalidate();
+            return;
+        }
+        /** Meerogram liquid pill finish */
         final float[] factors = tabDragHelper.computeTabFactors(position, velocity);
         for (int i = 0; i < count; i++) {
             final View child = tabDragHelper.getVisibleTab(i);
@@ -761,25 +817,21 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             }
             lastTabDragTickIndex = index;
         }
-        /** Meerogram liquid pill start */
-        if (meeroPillMode) {
-            meeroPillTarget = position;
-            meeroPillDragging = true;
-            final float v = MathUtils.clamp(velocity / 3000f, -0.2f, 0.2f);
-            meeroPillScaleXTarget = 1f + v;
-            meeroPillScaleYTarget = 1f - v * 0.4f;
-        }
-        /** Meerogram liquid pill finish */
         invalidate();
     }
 
     private void restoreTabDragVisual() {
         /** Meerogram liquid pill start */
-        if (meeroPillMode) {
-            meeroPillDragging = false;
-            meeroPillScaleXTarget = 1f;
-            meeroPillScaleYTarget = 1f;
-            meeroUpdatePillTarget(findSelectedTab(), true);
+        if (meeroPillMode && meeroPhysics != null) {
+            // R11.3: YTXTube onDragStopped - round to the nearest tab, haptic
+            // 20ms/190, animate the pill there and spring the offset home.
+            final int count = Math.max(1, meeroVisibleTabCount());
+            final int targetIndex = MathUtils.clamp(Math.round(meeroPhysics.value.target), 0, count - 1);
+            meeroHaptic(20L, 190);
+            meeroPhysics.animateToValue(targetIndex);
+            meeroPhysics.panelOffset.target = 0f;
+            invalidate();
+            return;
         }
         /** Meerogram liquid pill finish */
         final int count = tabDragHelper != null ? tabDragHelper.getVisibleTabCount() : 0;
@@ -916,25 +968,59 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     // Only created for the main tabs bar; other usages of MainTabsLayout
     // (MediaActivity, StatisticActivity) keep their exact previous behavior.
     /** Meerogram liquid pill start */
-    // YTXTube-style liquid glass pill: one frosted capsule slides behind the
-    // tab icons, follows the finger while dragging (with a velocity squish)
-    // and glides to the selected tab at rest. Same glass as the bar itself,
-    // sized to Telegram's official bar dimensions.
+    // R11.3: YTXTube / Glasstube liquid bar, exact physics via
+    // MeeroLiquidPhysics (DampedDragAnimation + InteractiveHighlight).
+    // One frosted capsule slides behind the tab icons, spring-follows the
+    // finger with a velocity squish, grows 78/56 while pressed, the bar
+    // surface scales 1+16dp/width and everything shifts by the eased panel
+    // offset; on release it rounds to the nearest tab (GlassNavBar.kt).
     private BlurredBackgroundDrawableViewFactory meeroGlassFactory;
     private BlurredBackgroundDrawable meeroPillGlass;
     private boolean meeroPillMode;
     private boolean meeroPillInit;
-    private boolean meeroPillDragging;
-    private float meeroPillPosition;
-    private float meeroPillTarget;
-    private float meeroPillScaleX = 1f, meeroPillScaleY = 1f;
-    private float meeroPillScaleXTarget = 1f, meeroPillScaleYTarget = 1f;
+    private MeeroLiquidPhysics meeroPhysics;
+    private float meeroPanelOffsetPx;
+    private float meeroDragStartTarget;
+    private boolean meeroGestureWasDrag;
+    private long meeroLastFrame;
     private final RectF meeroPillRect = new RectF();
+    private final RectF meeroGlowRect = new RectF();
     private final Paint meeroPillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint meeroLensPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint meeroGlowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+    private void meeroHaptic(long durationMs, int amplitude) {
+        try {
+            final android.os.Vibrator vibrator = (android.os.Vibrator) getContext().getSystemService(android.content.Context.VIBRATOR_SERVICE);
+            boolean done = vibrator != null && vibrator.hasVibrator();
+            if (done) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    vibrator.vibrate(android.os.VibrationEffect.createOneShot(durationMs, Math.max(1, Math.min(255, amplitude))));
+                } else {
+                    vibrator.vibrate(durationMs);
+                }
+            } else {
+                performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+            }
+        } catch (Exception e) {
+            performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+        }
+    }
+
+    private void meeroEnsurePhysics() {
+        final int count = Math.max(1, meeroVisibleTabCount());
+        if (meeroPhysics == null) {
+            meeroPhysics = new MeeroLiquidPhysics(0f, 0f, count - 1);
+        } else if (Math.abs(meeroPhysics.valueRangeEnd - (count - 1)) > 0.01f) {
+            meeroPhysics = new MeeroLiquidPhysics(meeroPhysics.value.value, 0f, count - 1);
+        }
+    }
 
     public void setMeeroGlassFactory(BlurredBackgroundDrawableViewFactory factory) {
         meeroGlassFactory = factory;
-        meeroPillMode = factory != null && isForMainTabsCG;
+        // R11.3 item: glass (YTXTube) pill style toggle; off = official bar.
+        meeroPillMode = factory != null && isForMainTabsCG
+                && CherrygramAppearanceConfig.INSTANCE.getGlassBarStyle();
         if (meeroPillMode) {
             try {
                 meeroPillGlass = factory.create(this, BlurredBackgroundProviderImpl.mainTabs(resourcesProvider));
@@ -1001,11 +1087,14 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         }
         final int index = tab == null ? -1 : meeroIndexOf(tab);
         if (index >= 0) {
+            meeroEnsurePhysics();
             if (!meeroPillInit) {
-                meeroPillPosition = index;
+                meeroPhysics.snapValue(index);
                 meeroPillInit = true;
+            } else if (!meeroPhysics.isPressed()) {
+                // YTXTube LaunchedEffect(selectedTabIndex): animateToValue.
+                meeroPhysics.animateToValue(index);
             }
-            meeroPillTarget = index;
             for (int a = 0, N = getChildCount(); a < N; a++) {
                 final View child = getChildAt(a);
                 if (child instanceof GlassTabView) {
@@ -1026,59 +1115,155 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             if (selected != null) {
                 meeroUpdatePillTarget(selected, false);
             }
+            meeroPillInit = true;
         }
-        meeroPillPosition = MathUtils.clamp(meeroPillPosition, 0, count - 1);
-        meeroPillTarget = MathUtils.clamp(meeroPillTarget, 0, count - 1);
-        if (meeroPillDragging) {
-            meeroPillPosition = meeroPillTarget;
-        } else {
-            meeroPillPosition += (meeroPillTarget - meeroPillPosition) * 0.35f;
-            if (Math.abs(meeroPillTarget - meeroPillPosition) > 0.002f) {
-                postInvalidateOnAnimation();
+        meeroEnsurePhysics();
+
+        // ---- physics step (fixed-substep springs, YTXTube specs) ----
+        final long now = android.os.SystemClock.elapsedRealtime();
+        float dt = meeroLastFrame == 0 ? 1f / 60f : (now - meeroLastFrame) / 1000f;
+        meeroLastFrame = now;
+        dt = Math.max(1f / 240f, Math.min(1f / 20f, dt));
+        final boolean animating = meeroPhysics.step(dt);
+
+        // ---- panel offset: 4dp * sign * EaseOut(|fraction|) (GlassNavBar) ----
+        final float rawOff = meeroPhysics.panelOffset.value;
+        final float fraction = Math.max(-1f, Math.min(1f, rawOff / Math.max(1, getWidth())));
+        meeroPanelOffsetPx = Math.signum(fraction) * dp(4) * MeeroLiquidPhysics.easeOut(Math.abs(fraction));
+
+        final float p = meeroPhysics.pressProgress.value;
+
+        // ---- tab content scale: lerp(1, 1.15, pressProgress) ----
+        final float tabScale = lerp(1f, 1.15f, p);
+        for (int a = 0, N = getChildCount(); a < N; a++) {
+            final View child = getChildAt(a);
+            if (child instanceof GlassTabView) {
+                child.setScaleX(tabScale);
+                child.setScaleY(tabScale);
             }
         }
-        meeroPillScaleX += (meeroPillScaleXTarget - meeroPillScaleX) * 0.35f;
-        meeroPillScaleY += (meeroPillScaleYTarget - meeroPillScaleY) * 0.35f;
 
-        final float p = meeroPillPosition;
-        final int low = MathUtils.clamp((int) Math.floor(p), 0, count - 1);
-        final int high = MathUtils.clamp((int) Math.ceil(p), 0, count - 1);
-        final float t = p - low;
+        // ---- pill rect: interpolate the real tab rects + panel offset ----
+        final float pv = MathUtils.clamp(meeroPhysics.value.value, 0, count - 1);
+        final int low = MathUtils.clamp((int) Math.floor(pv), 0, count - 1);
+        final int high = MathUtils.clamp((int) Math.ceil(pv), 0, count - 1);
+        final float t = pv - low;
         final View lowTab = meeroTabAt(low);
         final View highTab = meeroTabAt(high);
         if (lowTab == null || highTab == null) {
             return;
         }
-        final float left = lerp(lowTab.getLeft(), highTab.getLeft(), t);
-        final float right = lerp(lowTab.getRight(), highTab.getRight(), t);
+        final float left = lerp(lowTab.getLeft(), highTab.getLeft(), t) + meeroPanelOffsetPx;
+        final float right = lerp(lowTab.getRight(), highTab.getRight(), t) + meeroPanelOffsetPx;
         final float innerTop = getPaddingTop() + dp(4);
         final float innerBottom = getHeight() - getPaddingBottom() - dp(4);
         meeroPillRect.set(left, innerTop, right, innerBottom);
 
+        // ---- interactive highlight glow (Plus blend) at the pill center ----
+        if (p > 0.01f) {
+            meeroGlowPaint.setStyle(Paint.Style.FILL);
+            // InteractiveHighlight: flat white 0.08*progress over the whole bar
+            meeroGlowPaint.setColor(Theme.multAlpha(0xFFFFFFFF, (int) (255f * 0.08f * p)));
+            meeroGlowPaint.setXfermode(new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.ADD));
+            final int saveFlat = canvas.save();
+            canvas.clipRect(getPaddingLeft(), getPaddingTop(), getWidth() - getPaddingRight(), getHeight() - getPaddingBottom());
+            canvas.drawPaint(meeroGlowPaint);
+            canvas.restoreToCount(saveFlat);
+            meeroGlowRect.set(meeroPillRect);
+            final float gr = meeroGlowRect.height() / 2f;
+            meeroGlowPaint.setShader(new android.graphics.RadialGradient(
+                    meeroGlowRect.centerX(), meeroGlowRect.centerY(),
+                    Math.max(1f, Math.min(meeroGlowRect.width(), meeroGlowRect.height()) * 1.5f),
+                    new int[]{Theme.multAlpha(0xFFFFFFFF, (int) (255f * 0.15f * p)), Theme.multAlpha(0xFFFFFFFF, 0)},
+                    new float[]{0f, 1f}, android.graphics.Shader.TileMode.CLAMP));
+            final int saveGlow = canvas.save();
+            canvas.clipRect(meeroPillRect.left - gr, meeroPillRect.top - gr, meeroPillRect.right + gr, meeroPillRect.bottom + gr);
+            canvas.drawRoundRect(meeroGlowRect, gr, gr, meeroGlowPaint);
+            canvas.restoreToCount(saveGlow);
+            meeroGlowPaint.setXfermode(null);
+            meeroGlowPaint.setShader(null);
+        }
+
         canvas.save();
-        canvas.scale(meeroPillScaleX, meeroPillScaleY, meeroPillRect.centerX(), meeroPillRect.centerY());
+        // ---- pill scale: press 78/56 + velocity squish (layerBlock) ----
+        float psx = meeroPhysics.scaleX.value;
+        float psy = meeroPhysics.scaleY.value;
+        final float vel = meeroPhysics.getVelocity() / 10f;
+        psx /= 1f - Math.max(-0.2f, Math.min(0.2f, vel * 0.75f));
+        psy *= 1f - Math.max(-0.2f, Math.min(0.2f, vel * 0.25f));
+        canvas.scale(psx, psy, meeroPillRect.centerX(), meeroPillRect.centerY());
         final float radius = meeroPillRect.height() / 2f;
+        final boolean meeroDark = Theme.isCurrentThemeDark() || Theme.isCurrentThemeNight();
+
+        // 1. frosted glass backdrop, clearing while pressed (blur 8dp*(1-p))
         if (meeroPillGlass != null) {
             try {
+                meeroPillGlass.setAlpha((int) (255f * (1f - p)));
                 meeroPillGlass.setRadius(radius);
                 meeroPillGlass.setBounds((int) meeroPillRect.left, (int) meeroPillRect.top, (int) meeroPillRect.right, (int) meeroPillRect.bottom);
                 meeroPillGlass.draw(canvas);
             } catch (Throwable ignore) {
             }
-        } else {
-            meeroPillPaint.setStyle(Paint.Style.FILL);
-            // MeeroGram R11.2: YTXTube pill surface - white 12% over dark,
-            // black 12% over light (GlassNavBar onDrawSurface tint).
-            final boolean meeroDark = Theme.isCurrentThemeDark() || Theme.isCurrentThemeNight();
-            meeroPillPaint.setColor(Theme.multAlpha(meeroDark ? 0xFFFFFFFF : 0xFF000000, 0.12f));
-            canvas.drawRoundRect(meeroPillRect, radius, radius, meeroPillPaint);
         }
-        // Hairline highlight along the pill edge, like the reference glass.
-        meeroPillPaint.setStyle(Paint.Style.STROKE);
-        meeroPillPaint.setStrokeWidth(dp(1));
-        meeroPillPaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.18f));
+
+        // 2. glass optics while pressed (Ios26GlassCapsuleRenderer look)
+        if (p > 0.02f) {
+            // liquid surface gradient (top white -> mid -> bottom)
+            meeroLensPaint.setStyle(Paint.Style.FILL);
+            meeroLensPaint.setShader(new android.graphics.LinearGradient(
+                    0, meeroPillRect.top, 0, meeroPillRect.bottom,
+                    new int[]{
+                            Theme.multAlpha(0xFFFFFFFF, (int) (255f * (meeroDark ? 0.28f : 0.38f) * p)),
+                            Theme.multAlpha(0xFFFFFFFF, (int) (255f * 0.08f * p)),
+                            Theme.multAlpha(0xFFFFFFFF, (int) (255f * (meeroDark ? 0.20f : 0.28f) * p)),
+                    },
+                    new float[]{0f, 0.48f, 1f}, android.graphics.Shader.TileMode.CLAMP));
+            canvas.drawRoundRect(meeroPillRect, radius, radius, meeroLensPaint);
+            meeroLensPaint.setShader(null);
+            // upper specular liquid highlight arc
+            final float hiH = meeroPillRect.height() * 0.44f;
+            meeroLensPaint.setShader(new android.graphics.LinearGradient(
+                    0, meeroPillRect.top + dp(1), 0, meeroPillRect.top + dp(1) + hiH,
+                    new int[]{Theme.multAlpha(0xFFFFFFFF, (int) (255f * 0.90f * p)), Theme.multAlpha(0xFFFFFFFF, (int) (255f * 0.05f * p))},
+                    new float[]{0f, 1f}, android.graphics.Shader.TileMode.CLAMP));
+            canvas.drawRoundRect(meeroPillRect.left + dp(3), meeroPillRect.top + dp(1),
+                    meeroPillRect.right - dp(3), meeroPillRect.top + dp(1) + hiH,
+                    hiH / 2f, hiH / 2f, meeroLensPaint);
+            meeroLensPaint.setShader(null);
+            // chromatic caustic edge rim (cyan -> white -> green dispersion)
+            meeroLensPaint.setStyle(Paint.Style.STROKE);
+            meeroLensPaint.setStrokeWidth(dp(1.25f));
+            meeroLensPaint.setShader(new android.graphics.LinearGradient(
+                    meeroPillRect.left, 0, meeroPillRect.right, 0,
+                    new int[]{
+                            Theme.multAlpha(0xFF00B4FF, (int) (255f * 0.28f * p)),
+                            Theme.multAlpha(0xFFFFFFFF, (int) (255f * 0.92f * p)),
+                            Theme.multAlpha(0xFF34C759, (int) (255f * 0.30f * p)),
+                    },
+                    new float[]{0f, 0.5f, 1f}, android.graphics.Shader.TileMode.CLAMP));
+            canvas.drawRoundRect(meeroPillRect, radius, radius, meeroLensPaint);
+            meeroLensPaint.setShader(null);
+            meeroLensPaint.setStyle(Paint.Style.FILL);
+        } else {
+            // crisp resting hairline (Highlight.Default rim)
+            meeroLensPaint.setStyle(Paint.Style.STROKE);
+            meeroLensPaint.setStrokeWidth(dp(1));
+            meeroLensPaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.18f));
+            canvas.drawRoundRect(meeroPillRect, radius, radius, meeroLensPaint);
+            meeroLensPaint.setStyle(Paint.Style.FILL);
+        }
+
+        // 3. onDrawSurface: 12% tint fading out + black 3%p (GlassNavBar)
+        meeroPillPaint.setStyle(Paint.Style.FILL);
+        meeroPillPaint.setColor(Theme.multAlpha(meeroDark ? 0xFFFFFFFF : 0xFF000000, 0.12f * (1f - p)));
+        canvas.drawRoundRect(meeroPillRect, radius, radius, meeroPillPaint);
+        meeroPillPaint.setColor(Theme.multAlpha(0xFF000000, 0.03f * p));
         canvas.drawRoundRect(meeroPillRect, radius, radius, meeroPillPaint);
         canvas.restore();
+
+        if (animating) {
+            postInvalidateOnAnimation();
+        }
     }
     /** Meerogram liquid pill finish */
 

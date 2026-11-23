@@ -1489,6 +1489,8 @@
     <string name="MG_Tab_Settings">الإعدادات</string>
     <string name="MG_SearchBar">شريط البحث في قائمة المحادثات</string>
     <string name="MG_SearchBar_Desc">إظهار شريط بحث دائم أعلى قائمة المحادثات مثل تيليجرام الرسمي.</string>
+    <string name="MG_GlassBarStyle">شكل الشريط الزجاجي (YTXTube)</string>
+    <string name="MG_GlassBarStyle_Desc">الحبة الزجاجية السائلة تتبع إصبعك بفيزياء مخمدة. عند الإطفاء يعود شكل الشريط السفلي الرسمي.</string>
     <string name="MG_SearchInTabs">زر البحث في شريط التبويبات</string>
     <string name="MG_SearchInTabs_Desc">إظهار زر البحث الزجاجي بجانب تبويبات الشريط السفلي.</string>
     <string name="MainTabsChats">المحادثات</string>

@@ -1265,9 +1265,10 @@ public class NotificationsController extends BaseController implements Notificat
                 long topicId = MessageObject.getTopicId(currentAccount, messageObject.messageOwner, getMessagesController().isForum(messageObject));
                 if (dialogId == openedDialogId && ApplicationLoader.isScreenOn && !messageObject.isStoryReactionPush && !messageObject.isOauthPush) {
                     if (!isFcm) {
-                        if (CherrygramChatsConfig.INSTANCE.getNotificationSound() != CherrygramChatsConfig.NOTIF_SOUND_DISABLE) {
-                            playInChatSound();
-                        }
+                        // R11.3: frozen MeeroX behavior - the in-chat sound is
+                        // unconditional here (playInChatSound applies its own
+                        // config gates), never gated by notification settings.
+                        playInChatSound();
                         if (!CherrygramChatsConfig.INSTANCE.getDisableVibration() && CherrygramChatsConfig.INSTANCE.getVibrateInChats() != CherrygramChatsConfig.VIBRATION_DISABLE) {
                             if (CherrygramChatsConfig.INSTANCE.getVibrateInChats() == CherrygramChatsConfig.VIBRATION_CLICK) {
                                 VibrateUtil.INSTANCE.makeClickVibration();
@@ -3477,16 +3478,11 @@ public class NotificationsController extends BaseController implements Notificat
                     }
                     if (soundIn == 0 && !soundInLoaded) {
                         soundInLoaded = true;
-                        // MeeroGram R11.1: iOS26 in-chat receive sound, an
-                        // option separate from the notification sound.
-                        int sound;
-                        if (CherrygramChatsConfig.INSTANCE.getIos26ChatSounds()) {
-                            sound = R.raw.meerox_ios_in;
-                        } else if (CherrygramChatsConfig.INSTANCE.getNotificationSound() == CherrygramChatsConfig.NOTIF_SOUND_IOS) {
-                            sound = R.raw.sound_in_ios;
-                        } else {
-                            sound = R.raw.sound_in;
-                        }
+                        // R11.3: frozen MeeroX selection - the toggle alone
+                        // decides (meerox_ios_in : sound_in), two branches.
+                        int sound = CherrygramChatsConfig.INSTANCE.getIos26ChatSounds()
+                                ? R.raw.meerox_ios_in
+                                : R.raw.sound_in;
                         soundIn = soundPool.load(ApplicationLoader.applicationContext, sound, 1);
                     }
                     if (soundIn != 0) {

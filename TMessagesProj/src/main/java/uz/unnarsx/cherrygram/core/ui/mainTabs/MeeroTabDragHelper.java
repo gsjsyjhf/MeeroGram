@@ -44,9 +44,12 @@ public class MeeroTabDragHelper {
 
         /**
          * The finger moved: position is the fractional tab index interpolated between adjacent
-         * tabs, velocity is the finger velocity in px/s (for the "liquid" elongation of the highlight).
+         * tabs, velocity is the finger velocity in px/s, xSinceStart is the raw pointer offset
+         * from the drag start and xDelta the raw movement since the previous event
+         * (R11.3: the liquid physics accumulates target += dx / tabWidth exactly like
+         * YTXTube DampedDragAnimation.onDrag).
          */
-        void onTabDragProgress(float position, float velocity);
+        void onTabDragProgress(float position, float velocity, float xSinceStart, float xDelta);
 
         /** The finger was released: snap to nearestTab and open it through the normal tap code path. */
         void onTabDragFinished(float position, float velocity, @Nullable View nearestTab);
@@ -69,6 +72,7 @@ public class MeeroTabDragHelper {
     private boolean dragging;
 
     private float downX, downY;
+    private float dragStartX, dragLastX;
 
     private final ArrayList<View> visibleTabs = new ArrayList<>();
     private float[] cachedFactors;
@@ -106,6 +110,8 @@ public class MeeroTabDragHelper {
                 dragging = false;
                 downX = ev.getX();
                 downY = ev.getY();
+                dragStartX = ev.getX();
+                dragLastX = ev.getX();
                 if (velocityTracker == null) {
                     velocityTracker = VelocityTracker.obtain();
                 } else {
@@ -131,8 +137,12 @@ public class MeeroTabDragHelper {
                     // horizontal-only detection: a vertical movement must keep scrolling the content
                     if (Math.abs(dx) > touchSlop && Math.abs(dx) > Math.abs(dy)) {
                         dragging = true;
+                        dragStartX = downX;
+                        dragLastX = ev.getX();
                         delegate.onTabDragStarted();
-                        delegate.onTabDragProgress(positionForX(ev.getX()), 0f);
+                        delegate.onTabDragProgress(positionForX(ev.getX()), 0f,
+                                ev.getX() - dragStartX, ev.getX() - dragLastX);
+                        dragLastX = ev.getX();
                     } else if (Math.abs(dy) > touchSlop && Math.abs(dy) > Math.abs(dx)) {
                         // vertical gesture wins: not ours
                         finishGesture(false);
@@ -140,7 +150,10 @@ public class MeeroTabDragHelper {
                     }
                 } else {
                     velocityTracker.computeCurrentVelocity(1000);
-                    delegate.onTabDragProgress(positionForX(ev.getX()), velocityTracker.getXVelocity());
+                    final float xNow = ev.getX();
+                    delegate.onTabDragProgress(positionForX(xNow), velocityTracker.getXVelocity(),
+                            xNow - dragStartX, xNow - dragLastX);
+                    dragLastX = xNow;
                 }
                 break;
             }

@@ -3532,13 +3532,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 });
                 // R11.2: the pill must open the same folder edit mode as the
                 // frozen MeeroX Edit button - reorder/delete the dialog folders.
+                // R11.3: real editing - the pill opens the bottom tabs
+                // organizer (reorder / enable / disable tabs, incl. Calls).
                 meeroEditItem.setOnClickListener(v -> {
-                    if (filterTabsView == null) {
-                        return;
-                    }
-                    final boolean editing = filterTabsView.isEditing();
-                    filterTabsView.setIsEditing(!editing);
-                    meeroSetEditEditing(!editing);
+                    presentFragment(new uz.unnarsx.cherrygram.preferences.tabs.MainTabsPreferencesEntry());
                 });
                 // R11.2: side padding on the ITEM (not an inset on the drawable)
                 // so the glass surface covers the whole pill and the word sits

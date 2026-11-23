@@ -91,6 +91,9 @@ object CherrygramAppearanceConfig {
     var meeroIosSearch by sharedPreferences.boolean("MG_MeeroIosSearch", true)
     var meeroDialogsStyle by sharedPreferences.boolean("MG_MeeroDialogsStyle", true)
     var showMainTabsTitle by sharedPreferences.boolean("AP_ShowMainTabsTitle", true)
+
+    /** R11.3: glass (YTXTube) pill style for the bottom bar; off = official bar look. */
+    var glassBarStyle by sharedPreferences.boolean("MG_GlassBarStyle", true)
     var mainTabsForceOpenChats by sharedPreferences.boolean("AP_MainTabsForceOpenChats", false)
     /** Main tabs finish */
 

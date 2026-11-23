@@ -11799,6 +11799,8 @@
     <!-- MeeroGram: chat list search bar -->
     <string name="MG_SearchBar">Chat List Search Bar</string>
     <string name="MG_SearchBar_Desc">Show a persistent search bar at the top of the chat list, like the official Telegram.</string>
+    <string name="MG_GlassBarStyle">Glass bar style (YTXTube)</string>
+    <string name="MG_GlassBarStyle_Desc">The liquid-glass pill follows your finger with damped physics. Turn off to restore the official bottom bar look.</string>
     <string name="MG_SearchInTabs">Search Button in the Tab Bar</string>
     <string name="MG_SearchInTabs_Desc">Show the glass search button next to the bottom navigation tabs.</string>
 </resources>

@@ -46,6 +46,8 @@ public class MainTabsPreferencesEntry extends BaseCGPreferencesEntry {
     private final int showTabTitleRow = 4;
     private final int forceOpenChats = 5;
     private final int searchInTabsRow = 6;
+    // R11.3: glass (YTXTube) pill style; off restores the official bar look.
+    private final int glassStyleRow = 7;
 
     private MainTabsPreviewCell tabsView;
     private ArrayList<MainTabsManager.Tab> tabs;
@@ -121,6 +123,11 @@ public class MainTabsPreferencesEntry extends BaseCGPreferencesEntry {
             // MeeroGram: toggle for the glass Search button in the tab bar.
             items.add(SettingsHelper.asSwitchCG(searchInTabsRow, getString(R.string.MG_SearchInTabs), getString(R.string.MG_SearchInTabs_Desc))
                     .setChecked(CherrygramAppearanceConfig.INSTANCE.getShowSearchInTabs())
+            );
+            // R11.3: glass (YTXTube) bar style switch - off = official look.
+            items.add(SettingsHelper.asSwitchCG(glassStyleRow, getString(R.string.MG_GlassBarStyle), getString(R.string.MG_GlassBarStyle_Desc))
+                    .setChecked(CherrygramAppearanceConfig.INSTANCE.getGlassBarStyle())
+                    .slug("glassBarStyle")
             );
             items.add(UItem.asShadow(getString(R.string.CP_MainTabs_Layout_Desc)));
 
@@ -201,6 +208,10 @@ public class MainTabsPreferencesEntry extends BaseCGPreferencesEntry {
         } else if (item.id == searchInTabsRow) {
             CherrygramAppearanceConfig.INSTANCE.setShowSearchInTabs(!CherrygramAppearanceConfig.INSTANCE.getShowSearchInTabs());
             SettingsHelper.updateCheckState(view, CherrygramAppearanceConfig.INSTANCE.getShowSearchInTabs());
+        } else if (item.id == glassStyleRow) {
+            CherrygramAppearanceConfig.INSTANCE.setGlassBarStyle(!CherrygramAppearanceConfig.INSTANCE.getGlassBarStyle());
+            SettingsHelper.updateCheckState(view, CherrygramAppearanceConfig.INSTANCE.getGlassBarStyle());
+            onTabsChanged();
         }
     }
 
@@ -215,6 +226,9 @@ public class MainTabsPreferencesEntry extends BaseCGPreferencesEntry {
     }
 
     private void onTabsChanged() {
+        // R11.3: persist the order/visibility (saveTabs was never called
+        // before, so editor changes silently vanished).
+        MainTabsManager.INSTANCE.saveTabs(tabs);
         tabsChanged = true;
         if (getParentLayout() != null) {
             getParentLayout().rebuildAllFragmentViews(false, false);
