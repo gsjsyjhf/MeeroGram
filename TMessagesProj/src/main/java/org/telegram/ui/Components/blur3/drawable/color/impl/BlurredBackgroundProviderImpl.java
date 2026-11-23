@@ -21,13 +21,14 @@ public class BlurredBackgroundProviderImpl {
     public static BlurredBackgroundProvider mainTabs(Theme.ResourcesProvider resourcesProvider) {
         return new BlurredBackgroundProviderBuilder(resourcesProvider)
             .setBackgroundColor((r, isDark) -> {
-                // MeeroGram R11.2: YTXTube glass - the surface tint is 0.4 alpha
-                // (glasstube GlassNavBar: 0xFF121212/.4 dark, 0xFFFAFAFA/.4 light)
-                // so the content behind the bar really reads through.
+                // MeeroGram R11.5: Glasstube GlassNavBar surface - a DIRECT
+                // tint, never solveSrcColor against key_glass_targetMainTabs.
+                // That key defaults to 0xFFFFFFFF and imported dark themes
+                // that skip it made the solved fill go white ("البياض") on the
+                // bar and the pill. The Glasstube recipe tints the blur
+                // surface directly: 0xFF121212@0.4 dark / 0xFFFAFAFA@0.4 light.
                 final float alpha = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0.42f : 0.76f;
-                final int colorBg = Theme.getColor(Theme.key_windowBackgroundWhite, r);
-                final int colorTarget = Theme.getColor(Theme.key_glass_targetMainTabs, r);
-                return solveSrcColor(colorBg, colorTarget, alpha);
+                return Theme.multAlpha(isDark ? 0xFF121212 : 0xFFFAFAFA, alpha);
             })
             .setStrokeColorTop(0x11000000, 0x06FFFFFF)
             .setStrokeColorBottom(0x20000000, 0x11FFFFFF)

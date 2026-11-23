@@ -744,6 +744,13 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             restoreTabDragVisual();
             tabDragPressedView = null;
             lastTabDragTickIndex = -1;
+            // R11.5: a drag ends with press() still engaged (release() was
+            // suppressed for drags) - leave the pressed state here, otherwise
+            // meeroUpdatePillTarget skips every later animateToValue and the
+            // pill freezes on the last dragged tab (the "stuck" bar).
+            if (meeroPillMode && meeroPhysics != null) {
+                meeroPhysics.release();
+            }
             if (nearestTab != null) {
                 if (!meeroGestureWasDrag) {
                     // R11.3: YTXTube tab click haptic(12ms, 130).
@@ -760,6 +767,10 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             restoreTabDragVisual();
             tabDragPressedView = null;
             lastTabDragTickIndex = -1;
+            // R11.5: same as onTabDragFinished - never leave press() engaged.
+            if (meeroPillMode && meeroPhysics != null) {
+                meeroPhysics.release();
+            }
         }
     };
 
@@ -1022,11 +1033,12 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         meeroPillMode = factory != null && isForMainTabsCG
                 && CherrygramAppearanceConfig.INSTANCE.getGlassBarStyle();
         if (meeroPillMode) {
-            try {
-                meeroPillGlass = factory.create(this, BlurredBackgroundProviderImpl.mainTabs(resourcesProvider));
-            } catch (Throwable ignore) {
-                meeroPillGlass = null;
-            }
+            // R11.5: the sliding pill is painted deterministically inside
+            // meeroTickPill - no BlurredBackgroundDrawable for it anymore, so
+            // an imported theme that skips the glass_target* keys (white
+            // defaults) or a lost blur capture can never render it as a solid
+            // white / navy square on top of the bar.
+            meeroPillGlass = null;
             for (int a = 0, N = getChildCount(); a < N; a++) {
                 final View child = getChildAt(a);
                 if (child instanceof GlassTabView) {
@@ -1163,6 +1175,14 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         final float innerTop = getPaddingTop() + dp(4);
         final float innerBottom = getHeight() - getPaddingBottom() - dp(4);
         meeroPillRect.set(left, innerTop, right, innerBottom);
+        // R11.5 sanity clamp: the pill spans exactly one interpolated tab -
+        // against stale tab rects never let it grow past the bar itself.
+        if (meeroPillRect.width() <= 0f || meeroPillRect.width() > getWidth()) {
+            if (animating) {
+                postInvalidateOnAnimation();
+            }
+            return;
+        }
 
         // ---- interactive highlight glow (Plus blend) at the pill center ----
         if (p > 0.01f) {
@@ -1200,24 +1220,33 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         final float radius = meeroPillRect.height() / 2f;
         final boolean meeroDark = Theme.isCurrentThemeDark() || Theme.isCurrentThemeNight();
 
-        // 1. frosted glass backdrop - GlassNavBar keeps the backdrop visible
-        // through the pill at ALL times (press only fades the blur amount,
-        // never the backdrop itself; fading it out is what made the drag look
-        // white in R11.3).
-        if (meeroPillGlass != null) {
-            try {
-                meeroPillGlass.setAlpha(255);
-                meeroPillGlass.setRadius(radius);
-                meeroPillGlass.setBounds((int) meeroPillRect.left, (int) meeroPillRect.top, (int) meeroPillRect.right, (int) meeroPillRect.bottom);
-                meeroPillGlass.draw(canvas);
-            } catch (Throwable ignore) {
-            }
-        }
+        // 1. R11.5: deterministic liquid pill (GlassNavBar surface recipe).
+        // Painted directly - never through a BlurredBackgroundDrawable: an
+        // imported theme skipping the glass_target* keys (white defaults) or
+        // a lost blur capture used to render this as a solid white/navy
+        // square ("البياض"). The bar's own frosted backdrop sits behind the
+        // pill, so the pill only needs surface optics to read as a higher
+        // glass layer.
+        final android.graphics.Path meeroPillPath = new android.graphics.Path();
+        meeroPillPath.addRoundRect(meeroPillRect, radius, radius, android.graphics.Path.Direction.CW);
+        canvas.save();
+        canvas.clipPath(meeroPillPath);
+        // frosted liquid surface: vertical white gradient (dark) / stronger
+        // white frost (light)
+        meeroPillPaint.setShader(new android.graphics.LinearGradient(
+                0, meeroPillRect.top, 0, meeroPillRect.bottom,
+                new int[]{
+                        Theme.multAlpha(0xFFFFFFFF, meeroDark ? 0x26 : 0x46),
+                        Theme.multAlpha(0xFFFFFFFF, meeroDark ? 0x12 : 0x2C),
+                        Theme.multAlpha(0xFFFFFFFF, meeroDark ? 0x1E : 0x3C),
+                },
+                new float[]{0f, 0.48f, 1f}, android.graphics.Shader.TileMode.CLAMP));
+        canvas.drawRoundRect(meeroPillRect, radius, radius, meeroPillPaint);
+        meeroPillPaint.setShader(null);
 
         // 2. GlassNavBar pill optics - the SAME glass while resting, pressed or
-        // dragging. The press only fades Highlight + Shadow + InnerShadow IN
-        // with pressProgress over the backdrop (no white gradients, no chromatic
-        // rim - those are the switch thumb's droplet, not this bar).
+        // dragging. The press only fades Highlight + InnerShadow IN with
+        // pressProgress over the surface.
         if (p > 0.02f) {
             // Highlight.Default.copy(alpha = progress): soft rim brightening in
             meeroLensPaint.setStyle(Paint.Style.STROKE);
@@ -1237,7 +1266,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             // at rest: hairline glass edge (the lens refraction edge in the original)
             meeroLensPaint.setStyle(Paint.Style.STROKE);
             meeroLensPaint.setStrokeWidth(dp(1));
-            meeroLensPaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.12f));
+            meeroLensPaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.16f));
             canvas.drawRoundRect(meeroPillRect, radius, radius, meeroLensPaint);
         }
         meeroLensPaint.setStyle(Paint.Style.FILL);
@@ -1248,6 +1277,8 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         canvas.drawRoundRect(meeroPillRect, radius, radius, meeroPillPaint);
         meeroPillPaint.setColor(Theme.multAlpha(0xFF000000, 0.03f * p));
         canvas.drawRoundRect(meeroPillRect, radius, radius, meeroPillPaint);
+        canvas.restore();
+
         canvas.restore();
 
         if (animating) {

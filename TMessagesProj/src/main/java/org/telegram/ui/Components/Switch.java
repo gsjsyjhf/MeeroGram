@@ -557,22 +557,9 @@ public class Switch extends View implements Theme.Colorable {
                 rimPaint.setColor(0x29FFFFFF);
                 rectF.set(meeroX + 1, meeroY + 1, meeroX + meeroTrackW - 1, meeroY + meeroTrackH - 1);
                 canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(13f), AndroidUtilities.dpf2(13f), rimPaint);
-                // iOS micro-indicators (Ios26CapsuleSwitch drawBehind)
-                final boolean meeroOn = meeroPointerActive ? meeroDragPreviewOn : isChecked;
-                if (meeroOn) {
-                    final float barW = AndroidUtilities.dp(2), barH = AndroidUtilities.dp(10);
-                    rimPaint.setStyle(Paint.Style.FILL);
-                    rimPaint.setColor(0x9EFFFFFF);
-                    rectF.set(meeroX + AndroidUtilities.dp(11), meeroY + (meeroTrackH - barH) / 2f,
-                            meeroX + AndroidUtilities.dp(11) + barW, meeroY + (meeroTrackH - barH) / 2f + barH);
-                    canvasToDraw.drawRoundRect(rectF, barW / 2f, barW / 2f, rimPaint);
-                } else {
-                    rimPaint.setStyle(Paint.Style.STROKE);
-                    rimPaint.setStrokeWidth(AndroidUtilities.dpf2(1.6f));
-                    rimPaint.setColor(0x948E8E93);
-                    canvasToDraw.drawCircle(meeroX + meeroTrackW - AndroidUtilities.dp(13), meeroY + meeroTrackH / 2f,
-                            AndroidUtilities.dp(4), rimPaint);
-                }
+                // R11.5: the iOS micro-indicators (on = white bar, off = grey
+                // ring) are removed - users read them as stray "O"/"I" glyphs
+                // on the switch. The track stays a clean iOS capsule.
                 rimPaint.setStyle(Paint.Style.FILL);
             } else {
                 rectF.set(x, y, x + width, y + AndroidUtilities.dpf2(14));
@@ -929,8 +916,23 @@ public class Switch extends View implements Theme.Colorable {
                 }
                 meeroPointerActive = false;
                 final boolean wasMoved = meeroMoved;
+                final boolean wasCancelled = event.getActionMasked() == MotionEvent.ACTION_CANCEL;
                 meeroMoved = false;
-                final boolean nextChecked = !wasMoved ? isChecked : meeroThumbX >= meeroMaxTravel() * 0.5f;
+                // R11.5 exact Ios26CapsuleSwitch semantics: a tap (no move)
+                // TOGGLES (!latestChecked); a drag commits at the 50% mark;
+                // a system-cancelled gesture never toggles - it glides home.
+                final float max = meeroMaxTravel();
+                final boolean nextChecked = wasCancelled || !wasMoved
+                        ? (wasCancelled ? isChecked : !isChecked)
+                        : meeroThumbX >= max * 0.5f;
+                if (wasMoved) {
+                    // hand the knob over from the finger position: snap the
+                    // progress to the visual drag point, then let the progress
+                    // animator glide it to the decided state (spring-back or
+                    // commit) - the knob never teleports back to its rest.
+                    cancelCheckAnimator();
+                    setProgress(Math.max(0f, Math.min(1f, meeroThumbX / max)));
+                }
                 meeroStretchTo(1f, 1f, 260);
                 if (meeroGlassSettle != null) {
                     removeCallbacks(meeroGlassSettle);
@@ -941,13 +943,17 @@ public class Switch extends View implements Theme.Colorable {
                     }
                 };
                 postDelayed(meeroGlassSettle, wasMoved ? 130 : 250);
-                if (nextChecked != isChecked) {
+                if (!wasCancelled && (!wasMoved || nextChecked != isChecked)) {
                     // route through the enclosing cell's click handler so every
                     // screen keeps its exact behavior (dialogs, dependencies...)
                     final ViewParent p = getParent();
                     if (p instanceof View) {
                         ((View) p).performClick();
                     }
+                } else if (wasMoved) {
+                    // drag released without committing: glide back to the
+                    // unchanged state from the finger position
+                    animateToCheckedState(isChecked);
                 }
                 invalidate();
                 return true;
