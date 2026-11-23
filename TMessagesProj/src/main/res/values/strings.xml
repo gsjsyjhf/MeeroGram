@@ -11701,6 +11701,27 @@
     <string name="MG_Ghost_Read_Desc">Messages are never marked as read on the server - others see no blue double checks.</string>
     <string name="MG_Ghost_Typing">Hide Typing Indicators</string>
     <string name="MG_Ghost_Typing_Desc">Typing, voice/video recording and file upload indicators are never sent.</string>
+    <string name="MG_Ghost_Stories">Hide Story Views</string>
+    <string name="MG_Ghost_Stories_Desc">Watching stories never marks them as viewed or read - the owner cannot see that you watched.</string>
+    <string name="MG_ChatsTitle">Chats Screen Title</string>
+    <string name="MG_ChatsTitle_Desc">Show \"Chats\" instead of the app name at the top of the main chat list.</string>
+    <string name="MG_Exp_HeapInfo">Heap info</string>
+    <string name="MG_Exp_MaxHeap">Max heap available</string>
+    <string name="MG_Exp_CleanupHeap">Cleanup heap</string>
+    <string name="MG_Exp_ForDev">For dev</string>
+    <string name="MG_Exp_TestOOM">Test OOM notification</string>
+    <string name="MG_Exp_DefaultTimeStyle">Default time style in chats *</string>
+    <string name="MG_Exp_UnlikeIOS">Unlike iOS and TDesktop</string>
+    <string name="MG_Exp_ForcePerfClass">Force performance class</string>
+    <string name="MG_Exp_FixChineseKb">Fix Chinese keyboards *</string>
+    <string name="MG_Exp_FixChineseKbDesc">Fix empty keyboard input</string>
+    <string name="MG_iOS26_Switch_Style">iOS26-Style Switches</string>
+    <string name="MG_iOS26_Switch_Desc">New pill switch look - enabling it turns the OneUI style off.</string>
+    <string name="MG_FloatingActions">Floating Glass Actions</string>
+    <string name="MG_FloatingActions_Desc">Show floating glass pill buttons above the chat list (scan QR and new message) with an Edit pill.</string>
+    <string name="MG_StackedStories">Stacked Stories (iOS26)</string>
+    <string name="MG_StackedStories_Desc">Show unviewed story avatars stacked like iOS 26.</string>
+    <string name="MG_BubbleStyle">Message Bubble Style</string>
 
     <!-- MeeroGram: bottom navigation bar -->
     <string name="MG_BottomBar">Bottom Navigation Bar</string>

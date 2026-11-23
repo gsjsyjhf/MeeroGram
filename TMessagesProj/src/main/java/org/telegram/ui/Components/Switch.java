@@ -418,6 +418,16 @@ public class Switch extends View implements Theme.Colorable {
             float end = x + width - thumb / 2f + AndroidUtilities.dp(2);
 
             tx = (int) (start + (end - start) * progress);
+        } else if (CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()) {
+            // MeeroGram R11: iOS26-style geometry - taller full pill, larger thumb.
+            thumb = AndroidUtilities.dp(19);
+            x = (getMeasuredWidth() - width) / 2;
+            y = getMeasuredHeight() / 2 - AndroidUtilities.dp(11);
+
+            float start = x + thumb / 2f + AndroidUtilities.dp(1);
+            float end = x + width - thumb / 2f + AndroidUtilities.dp(1);
+
+            tx = (int) (start + (end - start) * progress);
         } else {
             thumb = AndroidUtilities.dp(20);
             x = (getMeasuredWidth() - width) / 2;
@@ -508,6 +518,14 @@ public class Switch extends View implements Theme.Colorable {
                 }
                 canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(11), AndroidUtilities.dpf2(11), paint);
                 canvasToDraw.drawCircle(tx, ty, AndroidUtilities.dpf2(11), paint);
+            } else if (CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()) {
+                // MeeroGram R11: iOS26 track - a single full pill.
+                rectF.set(x, ty - AndroidUtilities.dpf2(11), getMeasuredWidth(), ty + AndroidUtilities.dpf2(11));
+                if (!isChecked && Color.alpha(color) < 255) {
+                    Paint grayPaint = Theme.isCurrentThemeDark() || Theme.isCurrentThemeNight() ? paint5 : paint4;
+                    canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(11), AndroidUtilities.dpf2(11), grayPaint);
+                }
+                canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(11), AndroidUtilities.dpf2(11), paint);
             } else {
                 rectF.set(x, y, x + width, y + AndroidUtilities.dpf2(14));
                 canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(7), AndroidUtilities.dpf2(7), paint);
@@ -559,7 +577,9 @@ public class Switch extends View implements Theme.Colorable {
             alpha = (int) (a1 + (a2 - a1) * colorProgress);
             paint.setColor(((alpha & 0xff) << 24) | ((red & 0xff) << 16) | ((green & 0xff) << 8) | (blue & 0xff));
 
-            if (CherrygramAppearanceConfig.INSTANCE.getOneUI_SwitchStyle()) {
+            if (CherrygramAppearanceConfig.INSTANCE.getOneUI_SwitchStyle()
+                    || CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()) {
+                // MeeroGram R11: OneUI and iOS26 styles share the white thumb.
                 canvasToDraw.drawCircle(tx, ty, AndroidUtilities.dp(9.5F), paint3);
             } else {
                 canvasToDraw.drawCircle(tx, ty, AndroidUtilities.dp(8), paint);

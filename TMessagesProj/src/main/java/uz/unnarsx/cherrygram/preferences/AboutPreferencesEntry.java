@@ -107,8 +107,10 @@ public class AboutPreferencesEntry extends BaseCGPreferencesEntry {
         items.add(UItem.asShadow(null));
 
         if (!cherrygramSupportChatLoaded) {
-            addLinksItems(items);
-
+            // MeeroGram R13: do NOT draw the plain links here - drawing them and
+            // swapping to the community card a moment later made the section flash.
+            // Render nothing until the community chat resolves (fallback links
+            // appear below only if resolution comes back empty).
             getChatWithFallback(Constants.Cherrygram_Support, Constants.CG_CHAT_USERNAME,
                     cgCommunity -> {
                         if (getParentActivity() == null) return;
@@ -136,21 +138,8 @@ public class AboutPreferencesEntry extends BaseCGPreferencesEntry {
             }
         }
 
-        if (!CherrygramCoreConfig.isStandalonePremiumBuild()) {
-            String value;
-            if (CherrygramCoreConfig.isStandaloneBetaBuild() || CherrygramCoreConfig.isDevBuild()) {
-                value = "GitHub";
-            } else {
-                value = "commit " + BuildConfig.GIT_COMMIT_HASH.substring(0, 8);
-            }
-            items.add(UItem.asButton(githubRow, R.drawable.github_cat, getString(R.string.CGP_Source), value)
-                    .slug("source_code")
-            );
-        }
-
-        items.add(UItem.asButton(crowdinRow, R.drawable.msg_translate_solar, getString(R.string.CGP_Crowdin), "Crowdin")
-                .slug("crowdin")
-        );
+        // MeeroGram R13: "Source code" and "Help translate" rows removed
+        // (user request). Only the privacy policy button remains here.
         items.add(UItem.asButton(policyRow, R.drawable.msg_policy_solar, getString(R.string.PrivacyPolicy))
                 .slug("policy")
         );
@@ -191,14 +180,6 @@ public class AboutPreferencesEntry extends BaseCGPreferencesEntry {
             if (cgCommunity != null) {
                 showDialog(new CommunitySheet(this, cgCommunity.linked_community_id));
             }
-        } else if (item.id == githubRow) {
-            if (CherrygramCoreConfig.isStandaloneBetaBuild() || CherrygramCoreConfig.isDevBuild()) {
-                Browser.openUrl(getContext(), Constants.CG_GITHUB_URL);
-            } else {
-                Browser.openUrl(getContext(), Constants.CG_GITHUB_URL + "/commit/" + BuildConfig.GIT_COMMIT_HASH);
-            }
-        } else if (item.id == crowdinRow) {
-            Browser.openUrl(getContext(), Constants.CG_CROWDIN_URL);
         } else if (item.id == policyRow) {
             Browser.openUrl(getContext(), Constants.CG_PRIVACY_URL);
         }
@@ -226,9 +207,6 @@ public class AboutPreferencesEntry extends BaseCGPreferencesEntry {
             return true;
         } else if (item.id == offtopicChatRow) {
             AndroidUtilities.addToClipboard("@" + Constants.CG_OFFTOPIC_CHAT_USERNAME);
-            return true;
-        } else if (item.id == crowdinRow) {
-            AndroidUtilities.addToClipboard(Constants.CG_CROWDIN_URL);
             return true;
         } else if (item.id == policyRow) {
             AndroidUtilities.addToClipboard(Constants.CG_PRIVACY_URL);

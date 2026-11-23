@@ -98,6 +98,10 @@ object CherrygramCoreConfig: CoroutineScope by CoroutineScope(
     var tabletMode by sharedPreferences.int("AP_Tablet_Mode", TABLET_MODE_AUTO)
     /** Miscellaneous finish */
 
+    /** Login UI start */
+    var ios26Login by sharedPreferences.boolean("MG_Ios26Login", true)
+    /** Login UI finish */
+
     /** Network start */
     const val BOOST_NONE = 0
     const val BOOST_AVERAGE = 1

@@ -25,6 +25,7 @@ public class GhostModePreferencesEntry extends BaseCGPreferencesEntry {
     private final int ghostOnlineRow = 2;
     private final int ghostReadRow = 3;
     private final int ghostTypingRow = 4;
+    private final int ghostStoriesRow = 5;
 
     @Override
     protected CharSequence getTitle() {
@@ -58,6 +59,11 @@ public class GhostModePreferencesEntry extends BaseCGPreferencesEntry {
                         .setChecked(MeeroGhostConfig.INSTANCE.getGhostHideTyping())
                         .setEnabled(MeeroGhostConfig.INSTANCE.getGhostMaster())
         );
+        items.add(
+                SettingsHelper.asSwitchCG(ghostStoriesRow, getString(R.string.MG_Ghost_Stories), getString(R.string.MG_Ghost_Stories_Desc))
+                        .setChecked(MeeroGhostConfig.INSTANCE.getGhostHideStories())
+                        .setEnabled(MeeroGhostConfig.INSTANCE.getGhostMaster())
+        );
         items.add(UItem.asShadow(null));
     }
 
@@ -74,6 +80,9 @@ public class GhostModePreferencesEntry extends BaseCGPreferencesEntry {
             updateRows(true);
         } else if (item.id == ghostTypingRow) {
             MeeroGhostConfig.INSTANCE.setGhostHideTyping(!MeeroGhostConfig.INSTANCE.getGhostHideTyping());
+            updateRows(true);
+        } else if (item.id == ghostStoriesRow) {
+            MeeroGhostConfig.INSTANCE.setGhostHideStories(!MeeroGhostConfig.INSTANCE.getGhostHideStories());
             updateRows(true);
         }
     }

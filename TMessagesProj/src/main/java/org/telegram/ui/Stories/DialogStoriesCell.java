@@ -102,6 +102,7 @@ import java.util.Objects;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.animator.ReplaceAnimator;
+import uz.unnarsx.cherrygram.core.configs.CherrygramChatsConfig;
 import uz.unnarsx.cherrygram.core.configs.CherrygramCoreConfig;
 import uz.unnarsx.cherrygram.helpers.ui.FontHelper;
 
@@ -113,6 +114,19 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     private static final float COLLAPSED_DIS = 16;
     private static final float ITEM_WIDTH = 70;
     private static final int FAKE_TOP_PADDING = 4;
+
+    // MeeroGram: stacked (iOS 26 style) pile of unviewed story avatars
+    private static final float STACK_PEEK_DP = 7f; // horizontal peek of each avatar behind the pile top
+    private static final float STACK_DY_BEHIND1_DP = -1.66f; // vertical offset of the 1st avatar behind the pile top
+    private static final float STACK_DY_BEHIND2_DP = 2.33f; // vertical offset of the 2nd avatar behind the pile top
+    private static final float STACK_ROT_BEHIND1 = -3f; // rotation (degrees) of the 1st avatar behind the pile top
+    private static final float STACK_ROT_BEHIND2 = 4f; // rotation (degrees) of the 2nd avatar behind the pile top
+    // per-item stack role: 0 = normal row, 1 = pile top (front), 2/3 = 1st/2nd avatar behind the pile top
+    private final ArrayList<Integer> stackedRoles = new ArrayList<>();
+    private final ArrayList<Integer> stackedFrontIndex = new ArrayList<>();
+    private int stackedPileSize;
+    private long stackedFrontDialogId;
+    private boolean stackedFlagCache;
 
     private static final int ANIMATOR_ID_HAS_TITLE_TEXT = 1;
     private final BoolAnimator animatorHasTitleText = new BoolAnimator(ANIMATOR_ID_HAS_TITLE_TEXT, this, CubicBezierInterpolator.EASE_OUT_QUINT, 380);
@@ -312,7 +326,8 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         recyclerListView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false));
         RecyclerListView.OnItemClickListener itemClickListener = (view, position) -> {
             StoryCell cell = (StoryCell) view;
-            openStoryForCell(cell, false);
+            StoryCell stackFrontCell = findStackFrontCell(cell);
+            openStoryForCell(stackFrontCell != null ? stackFrontCell : cell, false);
         };
         recyclerListView.setOnItemClickListener(itemClickListener);
         recyclerListView.setOnItemLongClickListener((view, position) -> {
@@ -667,6 +682,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             recyclerListView.setItemAnimator(null);
             listViewMini.setItemAnimator(null);
         }
+        updateStackedMapping();
         adapter.setItems(oldItems, items);
         miniAdapter.setItems(oldMiniItems, miniItems);
 
@@ -697,6 +713,11 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             viewsDrawInParent.get(i).drawInParent = false;
         }
         viewsDrawInParent.clear();
+        final boolean stackedNow = CherrygramChatsConfig.INSTANCE.getStackedStories();
+        if (stackedNow != stackedFlagCache) {
+            stackedFlagCache = stackedNow;
+            updateStackedMapping();
+        }
         int animateFromPosition = -1;
         boolean crossfade = false;
         if ((currentState == TRANSITION_STATE || currentState == EXPANDED_STATE) && !animateToDialogIds.isEmpty()) {
@@ -744,6 +765,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                 StoryCell cell = (StoryCell) recyclerListView.getChildAt(i);
                 cell.setClipInParent(false);
                 int adapterPosition = recyclerListView.getChildAdapterPosition(cell);
+                applyStackParams(cell, adapterPosition);
                 float cellCollapsedProgress = collapsedProgress;
                 if (adapterPosition >= animateFromPosition && adapterPosition < animateFromPosition + animateToDialogIds.size()) {
                     int positionOffset = adapterPosition - animateFromPosition;
@@ -765,7 +787,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                 cell.params.leftBottomAngleToExclude = 0;
                 if (adapterPosition > animateFromPosition && adapterPosition < animateFromPosition + animateToDialogIds.size()) {
                     StoryCell previousCell = (StoryCell) recyclerListView.getChildAt(i - 1);
-                    if (previousCell != null) {
+                    if (previousCell != null && !(stackedNow && collapsedProgress == 0 && (previousCell.stackRole >= 1 || cell.stackRole >= 1))) {
                         float size = dp(48);
                         float collapsedSize = dp(COLLAPSED_SIZE);
                         float previousSize = AndroidUtilities.lerp(size, collapsedSize, previousCell.progressToCollapsed) + dp(8);
@@ -893,6 +915,13 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                     }
                     cell.setTranslationX(translationX);
                     cell.setTranslationY(translationY);
+                }
+                if (stackedNow && stackedPileSize >= 2 && cell.stackRole >= 1) {
+                    // keep the pile top avatar drawn on top of the ones stacked behind it
+                    if (!cell.drawInParent) {
+                        cell.drawInParent = true;
+                        viewsDrawInParent.add(cell);
+                    }
                 }
                 if (cell.drawInParent) {
                     float right = recyclerListView.getX() + cell.getX() + cell.getMeasuredWidth() / 2f + dp(ITEM_WIDTH) / 2f;
@@ -1407,6 +1436,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                 cell.setDialogId(miniItems.get(position).dialogId);
             } else {
                 cell.setDialogId(items.get(position).dialogId);
+                applyStackParams(cell, position);
             }
         }
 
@@ -1463,6 +1493,94 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         return null;
     }
 
+    /** MeeroGram start: stacked (iOS 26 style) unviewed story avatars */
+
+    private void updateStackedMapping() {
+        stackedRoles.clear();
+        stackedFrontIndex.clear();
+        stackedPileSize = 0;
+        stackedFrontDialogId = 0;
+        if (!CherrygramChatsConfig.INSTANCE.getStackedStories()) {
+            return;
+        }
+        int frontIndex = -1;
+        int behindCount = 0;
+        for (int i = 0; i < items.size(); i++) {
+            long dialogId = items.get(i).dialogId;
+            boolean self = dialogId == UserConfig.getInstance(currentAccount).getClientUserId();
+            boolean unread = !self && storiesController.getUnreadState(dialogId) != StoriesController.STATE_READ;
+            if (!unread) {
+                stackedRoles.add(0);
+                stackedFrontIndex.add(-1);
+            } else if (frontIndex == -1) {
+                frontIndex = i;
+                stackedRoles.add(1);
+                stackedFrontIndex.add(frontIndex);
+                stackedFrontDialogId = dialogId;
+                stackedPileSize++;
+            } else if (behindCount < 2) {
+                behindCount++;
+                stackedRoles.add(behindCount + 1);
+                stackedFrontIndex.add(frontIndex);
+                stackedPileSize++;
+            } else {
+                stackedRoles.add(0);
+                stackedFrontIndex.add(-1);
+            }
+        }
+    }
+
+    private void applyStackParams(StoryCell cell, int itemPosition) {
+        cell.stackRole = 0;
+        cell.stackOffsetX = 0f;
+        cell.stackOffsetY = 0f;
+        cell.stackRotation = 0f;
+        cell.stackFrontDialogId = 0;
+        if (itemPosition < 0 || itemPosition >= stackedRoles.size() || itemPosition >= items.size()) {
+            return;
+        }
+        int role = stackedRoles.get(itemPosition);
+        cell.stackRole = role;
+        if (role < 2) {
+            return;
+        }
+        int frontIndex = itemPosition < stackedFrontIndex.size() ? stackedFrontIndex.get(itemPosition) : -1;
+        if (frontIndex < 0 || frontIndex >= items.size()) {
+            cell.stackRole = 0;
+            return;
+        }
+        cell.stackFrontDialogId = items.get(frontIndex).dialogId;
+        int distance = itemPosition - frontIndex;
+        int behindIndex = role - 1;
+        float direction = LocaleController.isRTL ? -1f : 1f;
+        cell.stackOffsetX = direction * (-distance * ITEM_WIDTH + behindIndex * STACK_PEEK_DP);
+        if (behindIndex == 1) {
+            cell.stackOffsetY = STACK_DY_BEHIND1_DP;
+            cell.stackRotation = direction * STACK_ROT_BEHIND1;
+        } else {
+            cell.stackOffsetY = STACK_DY_BEHIND2_DP;
+            cell.stackRotation = direction * STACK_ROT_BEHIND2;
+        }
+    }
+
+    private StoryCell findStackFrontCell(StoryCell cell) {
+        if (cell == null || !CherrygramChatsConfig.INSTANCE.getStackedStories() || cell.stackRole < 2 || cell.stackFrontDialogId == 0) {
+            return null;
+        }
+        for (int i = 0; i < recyclerListView.getChildCount(); i++) {
+            View child = recyclerListView.getChildAt(i);
+            if (child instanceof StoryCell) {
+                StoryCell storyCell = (StoryCell) child;
+                if (storyCell.dialogId == cell.stackFrontDialogId) {
+                    return storyCell;
+                }
+            }
+        }
+        return null;
+    }
+
+    /** MeeroGram finish */
+
 
 
     public class StoryCell extends FrameLayout {
@@ -1502,6 +1620,13 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         private float overscrollProgress;
         private boolean selectedForOverscroll;
         boolean progressWasDrawn;
+
+        // MeeroGram stacked stories (iOS 26 style pile)
+        public int stackRole;
+        public float stackOffsetX;
+        public float stackOffsetY;
+        public float stackRotation;
+        public long stackFrontDialogId;
 
         private final AnimatedFloat failT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
 
@@ -1685,6 +1810,11 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             float fromX = getMeasuredWidth() / 2f - radius;
             float x = AndroidUtilities.lerp(fromX, 0, progressToCollapsed);
             float y = AndroidUtilities.lerp(dp(5), (ActionBar.getCurrentActionBarHeight() - collapsedSize) / 2f, progressToCollapsed);
+            if (stackRole >= 2) {
+                float stackFade = 1f - progressToCollapsed;
+                x += dpf2(stackOffsetX) * stackFade;
+                y += dpf2(stackOffsetY) * stackFade;
+            }
 
             float progressHalf = Utilities.clamp(progressToCollapsed / 0.5f, 1f, 0f);
 
@@ -1710,6 +1840,9 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
             canvas.save();
             canvas.scale(bounceScale, bounceScale, cx, cy);
+            if (stackRole >= 2 && stackRotation != 0f) {
+                canvas.rotate(stackRotation * (1f - progressToCollapsed), cx, cy);
+            }
             if (radialProgress == null) {
                 radialProgress = DialogStoriesCell.this.radialProgress;
             }
@@ -1842,6 +1975,9 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                         p = params.currentState == StoriesUtilities.STATE_READ ? 1f : 0f;
                     }
                     textAlpha = params.globalState == StoriesUtilities.STATE_READ ? 0.7f : 1f;//AndroidUtilities.lerp(1f, 0.7f, p);
+                }
+                if (stackRole >= 2) {
+                    textAlpha = 0f;
                 }
                 final float alpha = textAlphaTransition * textAlpha;
                 textViewContainer.setAlpha(alpha);

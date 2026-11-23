@@ -206,7 +206,8 @@ public class MainTabsPreferencesEntry extends BaseCGPreferencesEntry {
 
     private void resetMainTabsOrder() {
         // MeeroGram: five items by default - Chats, Contacts, Profile, Settings + Search.
-        CherrygramAppearanceConfig.INSTANCE.setMainTabsOrder("SETTINGS,CHATS,PROFILE,CONTACTS,!CALLS,SEARCH");
+        // R11: Contacts sits before Profile (user request).
+        CherrygramAppearanceConfig.INSTANCE.setMainTabsOrder("SETTINGS,CHATS,CONTACTS,PROFILE,!CALLS,SEARCH");
         CherrygramAppearanceConfig.INSTANCE.setShowSearchInTabs(true);
         tabs.clear();
         tabs.addAll(MainTabsManager.INSTANCE.getAllTabs());

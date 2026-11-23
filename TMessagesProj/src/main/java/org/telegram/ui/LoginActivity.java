@@ -4413,7 +4413,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     }
                 };
 
-                addView(codeFieldContainer, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 42, Gravity.CENTER_HORIZONTAL, 0, 32, 0, 0));
+                // Meerogram: iOS 26 code boxes are 51dp tall; WRAP_CONTENT lets
+                // the container claim the real height once the boxes exist
+                // (MgIos26LoginStyle). Falls back to 42 when the switch is off.
+                addView(codeFieldContainer, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, CodeFieldContainer.mgHostHeight(), Gravity.CENTER_HORIZONTAL, 0, 32, 0, 0));
             }
             if (currentType == AUTH_TYPE_FLASH_CALL) {
                 codeFieldContainer.setVisibility(GONE);
@@ -7002,7 +7005,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 }
             };
 
-            addView(codeFieldContainer, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 42, Gravity.CENTER_HORIZONTAL, 0, setup ? 48 : 32, 0, 0));
+            // Meerogram: iOS 26 host height (see LoginActivitySmsView above).
+            addView(codeFieldContainer, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, CodeFieldContainer.mgHostHeight(), Gravity.CENTER_HORIZONTAL, 0, setup ? 48 : 32, 0, 0));
 
             signInWithGoogleView = new TextView(context);
             signInWithGoogleView.setGravity(Gravity.CENTER);
@@ -7832,7 +7836,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 });
             }
 
-            addView(codeFieldContainer, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 42, Gravity.CENTER_HORIZONTAL, 0, 32, 0, 0));
+            // Meerogram: iOS 26 host height (see LoginActivitySmsView above).
+            addView(codeFieldContainer, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, CodeFieldContainer.mgHostHeight(), Gravity.CENTER_HORIZONTAL, 0, 32, 0, 0));
 
             troubleButton = new SpoilersTextView(context, false);
             troubleButton.setGravity(Gravity.CENTER);

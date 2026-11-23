@@ -72,6 +72,11 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
     private final int videoSeekSliderRow = 27;
 
     private final int notificationSoundRow = 28, vibrateInChatsRow = 29;
+    // MeeroGram R11: "Chats" title option on the main screen.
+    private final int chatsTitleRow = 30;
+    // MeeroGram R11: floating glass pills + stacked stories.
+    private final int floatingActionsRow = 31;
+    private final int stackedStoriesRow = 32;
 
     private boolean expandedHeaderSettingsSection = false;
     private boolean expandedBottomBarSettingsSection = false;
@@ -143,6 +148,22 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
             }
         }
         items.add(UItem.asShadow(null));
+
+        // MeeroGram R11: show "Chats" instead of the app name on the main screen.
+        items.add(SettingsHelper.asSwitchCG(chatsTitleRow, getString(R.string.MG_ChatsTitle), getString(R.string.MG_ChatsTitle_Desc))
+                .setChecked(CherrygramChatsConfig.INSTANCE.getChatsTitleAsTabs())
+                .slug("chatsTitle")
+        );
+        // MeeroGram R11: floating glass action pills (YouTube style).
+        items.add(SettingsHelper.asSwitchCG(floatingActionsRow, getString(R.string.MG_FloatingActions), getString(R.string.MG_FloatingActions_Desc))
+                .setChecked(CherrygramChatsConfig.INSTANCE.getFloatingActions())
+                .slug("floatingActions")
+        );
+        // MeeroGram R11: stacked (iOS26-like) story avatars.
+        items.add(SettingsHelper.asSwitchCG(stackedStoriesRow, getString(R.string.MG_StackedStories), getString(R.string.MG_StackedStories_Desc))
+                .setChecked(CherrygramChatsConfig.INSTANCE.getStackedStories())
+                .slug("stackedStories")
+        );
 
         items.add(UItem.asButton(chatMenuShortcutsRow, R.drawable.msg_list, getString(R.string.CP_ChatMenuShortcuts))
                 .slug("chatMenuShortcuts")
@@ -334,6 +355,24 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
             updateRows(true);
         } else if (item.id == chatMenuShortcutsRow) {
             showChatMenuItemsConfigurator(this);
+        } else if (item.id == chatsTitleRow) {
+            // MeeroGram R11: main screen title = "Chats".
+            CherrygramChatsConfig.INSTANCE.setChatsTitleAsTabs(!CherrygramChatsConfig.INSTANCE.getChatsTitleAsTabs());
+            SettingsHelper.updateCheckState(view, CherrygramChatsConfig.INSTANCE.getChatsTitleAsTabs());
+
+            getParentLayout().rebuildAllFragmentViews(false, false);
+        } else if (item.id == floatingActionsRow) {
+            // MeeroGram R11: floating glass pills above the chat list.
+            CherrygramChatsConfig.INSTANCE.setFloatingActions(!CherrygramChatsConfig.INSTANCE.getFloatingActions());
+            SettingsHelper.updateCheckState(view, CherrygramChatsConfig.INSTANCE.getFloatingActions());
+
+            getParentLayout().rebuildAllFragmentViews(false, false);
+        } else if (item.id == stackedStoriesRow) {
+            // MeeroGram R11: stacked story avatars.
+            CherrygramChatsConfig.INSTANCE.setStackedStories(!CherrygramChatsConfig.INSTANCE.getStackedStories());
+            SettingsHelper.updateCheckState(view, CherrygramChatsConfig.INSTANCE.getStackedStories());
+
+            getParentLayout().rebuildAllFragmentViews(false, false);
         } else if (item.id == customBackgroundInChatsRow) {
             CherrygramChatsConfig.INSTANCE.setCustomWallpapers(!CherrygramChatsConfig.INSTANCE.getCustomWallpapers());
             SettingsHelper.updateCheckState(view, CherrygramChatsConfig.INSTANCE.getCustomWallpapers());
@@ -411,7 +450,15 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
             showNotificationSoundSelector(() -> {
                 SettingsHelper.updateButtonValue(view, getNotificationSoundValue());
 
-                int tone = (CherrygramChatsConfig.INSTANCE.getNotificationSound() == CherrygramChatsConfig.NOTIF_SOUND_DEFAULT) ? R.raw.sound_in : R.raw.sound_in_ios;
+                int tone;
+                int ns = CherrygramChatsConfig.INSTANCE.getNotificationSound();
+                if (ns == CherrygramChatsConfig.NOTIF_SOUND_IOS26) {
+                    tone = R.raw.sound_in_ios26;
+                } else if (ns == CherrygramChatsConfig.NOTIF_SOUND_IOS) {
+                    tone = R.raw.sound_in_ios;
+                } else {
+                    tone = R.raw.sound_in;
+                }
                 try {
                     MediaPlayer mp = MediaPlayer.create(getContext(), tone);
                     mp.start();
@@ -629,6 +676,7 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
         return switch (CherrygramChatsConfig.INSTANCE.getNotificationSound()) {
             case CherrygramChatsConfig.NOTIF_SOUND_DEFAULT -> getString(R.string.Default);
             case CherrygramChatsConfig.NOTIF_SOUND_IOS -> "iOS";
+            case CherrygramChatsConfig.NOTIF_SOUND_IOS26 -> "iOS26";
             default -> getString(R.string.PopupDisabled);
         };
     }
@@ -645,6 +693,10 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
 
         configStringKeys.add("iOS");
         configValues.add(CherrygramChatsConfig.NOTIF_SOUND_IOS);
+
+        // MeeroGram R11: iOS26 chat sound.
+        configStringKeys.add("iOS26");
+        configValues.add(CherrygramChatsConfig.NOTIF_SOUND_IOS26);
 
         PopupHelper.show(configStringKeys, getString(R.string.NotificationsSound), configValues.indexOf(CherrygramChatsConfig.INSTANCE.getNotificationSound()), getContext(), i -> {
             CherrygramChatsConfig.INSTANCE.setNotificationSound(configValues.get(i));

@@ -19,9 +19,29 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
+import uz.unnarsx.cherrygram.core.ui.login.MgIos26LoginStyle;
 
 public class CodeFieldContainer extends LinearLayout {
     public final static int TYPE_PASSCODE = 10;
+
+    /**
+     * Meerogram: iOS 26 code entry metrics, ported from MeeroX.
+     *
+     * Telegram for iOS lays this screen out in CodeInputView.swift. Its boxes
+     * are much softer and further apart than Android's, and that difference -
+     * a 4dp radius against iOS's 15 - is what makes the stock screen read as
+     * Android at a glance. All numbers live in MgIos26LoginStyle; when the
+     * MG_Ios26Login switch is off every call site below falls back to the
+     * stock Android layout.
+     */
+    public static boolean mgIosCode() {
+        return MgIos26LoginStyle.enabled();
+    }
+
+    /** Meerogram: the layout height a host should give this container. */
+    public static int mgHostHeight() {
+        return mgIosCode() ? LayoutHelper.WRAP_CONTENT : 42;
+    }
 
     Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     Paint bitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -39,8 +59,26 @@ public class CodeFieldContainer extends LinearLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        // Meerogram: the hosts in LoginActivity size this slot before
+        // setNumbersCount has run, so the boxes did not exist yet and the
+        // slot fell back to the old 42dp. iOS's box is 51dp, so the bottom
+        // 9dp - the whole lower curve - was being clipped away, which is what
+        // made every outline read as an upside-down U.
+        //
+        // Measuring the children first and then claiming their real height
+        // keeps the slot correct no matter when the digits get added.
+        if (mgIosCode() && codeField != null && codeField.length > 0) {
+            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(
+                    AndroidUtilities.dp(MgIos26LoginStyle.codeBoxHeight(codeField.length)), MeasureSpec.EXACTLY));
+            paint.setStrokeWidth(strokeWidth = AndroidUtilities.dp(1f) + 1f);
+            return;
+        }
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        paint.setStrokeWidth(strokeWidth = AndroidUtilities.dp(1.5f));
+        // iOS strokes these at 1pt plus a single screen pixel; Android's 1.5dp
+        // reads noticeably heavier against the softer corners.
+        paint.setStrokeWidth(strokeWidth = mgIosCode()
+                ? AndroidUtilities.dp(1f) + 1f
+                : AndroidUtilities.dp(1.5f));
     }
 
     @Override
@@ -67,7 +105,10 @@ public class CodeFieldContainer extends LinearLayout {
                     AndroidUtilities.rectTmp.inset(offset, offset);
                 }
 
-                canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
+                // iOS rounds these to 15pt, against Android's 4dp. That single
+                // number is the clearest tell between the two screens.
+                final float radius = AndroidUtilities.dp(mgIosCode() ? MgIos26LoginStyle.CODE_RADIUS_DP : 4);
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, paint);
             }
         }
         super.dispatchDraw(canvas);
@@ -169,9 +210,18 @@ public class CodeFieldContainer extends LinearLayout {
                 };
 
                 codeField[a].setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-                codeField[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+                if (mgIosCode()) {
+                    // iOS scales the digit with the box and sets it in the
+                    // system monospaced face, so the digits never shift
+                    // sideways as they are typed.
+                    codeField[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP,
+                            (float) Math.floor(MgIos26LoginStyle.CODE_FONT_RATIO * MgIos26LoginStyle.codeBoxHeight(length)));
+                    codeField[a].setTypeface(android.graphics.Typeface.MONOSPACE);
+                } else {
+                    codeField[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+                    codeField[a].setTypeface(AndroidUtilities.bold());
+                }
                 codeField[a].setMaxLines(1);
-                codeField[a].setTypeface(AndroidUtilities.bold());
                 codeField[a].setPadding(0, 0, 0, 0);
                 codeField[a].setGravity(Gravity.CENTER);
                 if (currentType == 3) {
@@ -184,7 +234,14 @@ public class CodeFieldContainer extends LinearLayout {
                 int width;
                 int height;
                 int gapSize;
-                if (currentType == TYPE_PASSCODE) {
+                if (mgIosCode() && currentType != LoginActivity.AUTH_TYPE_MISSED_CALL) {
+                    // iOS derives the width from the height, so the box keeps
+                    // its proportions whichever of the two heights applies.
+                    final float h = MgIos26LoginStyle.codeBoxHeight(length);
+                    height = Math.round(h);
+                    width = (int) Math.floor(MgIos26LoginStyle.CODE_WIDTH_RATIO * h);
+                    gapSize = Math.round(MgIos26LoginStyle.CODE_SPACING_DP);
+                } else if (currentType == TYPE_PASSCODE) {
                     width = 42;
                     height = 47;
                     gapSize = 10;

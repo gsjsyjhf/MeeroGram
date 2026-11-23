@@ -3477,7 +3477,16 @@ public class NotificationsController extends BaseController implements Notificat
                     }
                     if (soundIn == 0 && !soundInLoaded) {
                         soundInLoaded = true;
-                        int sound = CherrygramChatsConfig.INSTANCE.getNotificationSound() == CherrygramChatsConfig.NOTIF_SOUND_IOS ? R.raw.sound_in_ios : R.raw.sound_in;
+                        // MeeroGram R11: iOS26 chat sound option (bundled sound_in_ios26).
+                        int sound;
+                        int notifSound = CherrygramChatsConfig.INSTANCE.getNotificationSound();
+                        if (notifSound == CherrygramChatsConfig.NOTIF_SOUND_IOS26) {
+                            sound = R.raw.sound_in_ios26;
+                        } else if (notifSound == CherrygramChatsConfig.NOTIF_SOUND_IOS) {
+                            sound = R.raw.sound_in_ios;
+                        } else {
+                            sound = R.raw.sound_in;
+                        }
                         soundIn = soundPool.load(ApplicationLoader.applicationContext, sound, 1);
                     }
                     if (soundIn != 0) {

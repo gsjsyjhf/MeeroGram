@@ -142,13 +142,13 @@ public class ExperimentalPreferencesEntry extends BaseCGPreferencesEntry {
                 final TableView tableView = new TableView(getContext(), getResourceProvider());
                 tableView.setPadding(dp(15), dp(10), dp(15), dp(10));
 
-                tableView.addFullRow("Heap info", true, true, 15, false);
-                tableView.addRow("Max heap available", monitor.getMaxMemoryMb() + " MB");
+                tableView.addFullRow(getString(R.string.MG_Exp_HeapInfo), true, true, 15, false);
+                tableView.addRow(getString(R.string.MG_Exp_MaxHeap), monitor.getMaxMemoryMb() + " MB");
                 tableView.addRow("Used heap", monitor.getUsedMemoryMb() + " MB");
                 tableView.addRow("Used heap (%)", String.format(Locale.US, "%.1f%%", monitor.getCurrentUsagePercent()));
 
                 items.add(SettingsHelper.asCustomWithBackground(tableView));
-                items.add(UItem.asButton(cleanupHeapRow, "Cleanup heap")
+                items.add(UItem.asButton(cleanupHeapRow, getString(R.string.MG_Exp_CleanupHeap))
                         .slug("cleanupHeap")
                 );
                 items.add(SettingsHelper.asSwitchCG(restartPopupRow, getString(R.string.CG_LowMemoryWarning))
@@ -177,8 +177,8 @@ public class ExperimentalPreferencesEntry extends BaseCGPreferencesEntry {
                 }
 
                 if (CherrygramCoreConfig.isDevBuild()) {
-                    items.add(UItem.asHeader("For dev"));
-                    items.add(UItem.asButton(testOOMNotificationRow, "Test OOM notification")
+                    items.add(UItem.asHeader(getString(R.string.MG_Exp_ForDev)));
+                    items.add(UItem.asButton(testOOMNotificationRow, getString(R.string.MG_Exp_TestOOM))
                             .slug("testOOMNotification")
                     );
                     items.add(UItem.asShadow(null));
@@ -195,7 +195,7 @@ public class ExperimentalPreferencesEntry extends BaseCGPreferencesEntry {
                     .slug("toastRpcErrors")
             );
         }
-        items.add(SettingsHelper.asSwitchCG(oldTimeStyleRow, "Default time style in chats *", "Unlike iOS and TDesktop")
+        items.add(SettingsHelper.asSwitchCG(oldTimeStyleRow, getString(R.string.MG_Exp_DefaultTimeStyle), getString(R.string.MG_Exp_UnlikeIOS))
                 .setChecked(CherrygramDebugConfig.INSTANCE.getOldTimeStyle())
                 .slug("oldTimeStyle")
         );
@@ -209,7 +209,7 @@ public class ExperimentalPreferencesEntry extends BaseCGPreferencesEntry {
                     .slug("safeSurf")
             );
         }
-        items.add(UItem.asButton(performanceClassRow, "Force performance class", SharedConfig.performanceClassName(SharedConfig.getDevicePerformanceClass()))
+        items.add(UItem.asButton(performanceClassRow, getString(R.string.MG_Exp_ForcePerfClass), SharedConfig.performanceClassName(SharedConfig.getDevicePerformanceClass()))
                 .slug("performanceClass")
         );
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -228,7 +228,7 @@ public class ExperimentalPreferencesEntry extends BaseCGPreferencesEntry {
                 .setChecked(CherrygramDebugConfig.INSTANCE.getEditTextSuggestionsFix())
                 .slug("editTextSuggestionsFix")
         );
-        items.add(SettingsHelper.asSwitchCG(fixChineseKeyboardsRow, "Fix Chinese keyboards *", "Fix empty keyboard input")
+        items.add(SettingsHelper.asSwitchCG(fixChineseKeyboardsRow, getString(R.string.MG_Exp_FixChineseKb), getString(R.string.MG_Exp_FixChineseKbDesc))
                 .setChecked(CherrygramDebugConfig.INSTANCE.getFixChineseKeyboards())
                 .slug("fixChineseKeyboards")
         );
@@ -342,7 +342,7 @@ public class ExperimentalPreferencesEntry extends BaseCGPreferencesEntry {
 
     private void showPerformanceClassDialog(View view) {
         AlertDialog.Builder builder2 = new AlertDialog.Builder(getParentActivity(), getResourceProvider());
-        builder2.setTitle("Force performance class");
+        builder2.setTitle(getString(R.string.MG_Exp_ForcePerfClass));
         int currentClass = SharedConfig.getDevicePerformanceClass();
         int trueClass = SharedConfig.measureDevicePerformanceClass();
         builder2.setItems(new CharSequence[]{

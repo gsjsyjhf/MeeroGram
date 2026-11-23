@@ -9,9 +9,11 @@
 
 package uz.unnarsx.cherrygram.core.ui.mainTabs
 
+import android.app.Activity
 import android.content.Context
 import android.view.View
 import androidx.recyclerview.widget.RecyclerView
+import org.telegram.messenger.ApplicationLoader
 import org.telegram.messenger.R
 import org.telegram.ui.ActionBar.Theme
 import org.telegram.ui.Components.glass.GlassTabView
@@ -59,9 +61,27 @@ object MainTabsManager {
     }
 
     // MeeroGram: match the config default - Contacts and Profile enabled.
-    private const val DEFAULT_ORDER = "SETTINGS,CHATS,PROFILE,CONTACTS,!CALLS,SEARCH"
+    // R11: Contacts sits where Profile used to be (user request).
+    private const val DEFAULT_ORDER = "SETTINGS,CHATS,CONTACTS,PROFILE,!CALLS,SEARCH"
+
+    // MeeroGram R11: one-time migration swapping Profile/Contacts in the
+    // stored tab order so existing installs get the new default too.
+    private var orderSwapMigrated = false
+
+    private fun migrateContactsProfileSwap() {
+        if (orderSwapMigrated) return
+        orderSwapMigrated = true
+        val prefs = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE)
+        if (prefs.getBoolean("MG_TabSwap_ContactsProfile", false)) return
+        val stored = prefs.getString("AP_MainTabsPosition_New", null)
+        if (stored != null && stored.contains("PROFILE,CONTACTS")) {
+            prefs.edit().putString("AP_MainTabsPosition_New", stored.replace("PROFILE,CONTACTS", "CONTACTS,PROFILE")).apply()
+        }
+        prefs.edit().putBoolean("MG_TabSwap_ContactsProfile", true).apply()
+    }
 
     private fun loadTabs(): MutableList<Tab> {
+        migrateContactsProfileSwap()
         val allPossibleTypes = TabType.entries.toMutableList()
         val value = CherrygramAppearanceConfig.mainTabsOrder ?: DEFAULT_ORDER
 

@@ -89,7 +89,22 @@ object CherrygramChatsConfig: CoroutineScope by CoroutineScope(
     const val NOTIF_SOUND_DISABLE = 0
     const val NOTIF_SOUND_DEFAULT = 1
     const val NOTIF_SOUND_IOS = 2
+    const val NOTIF_SOUND_IOS26 = 3
     var notificationSound by sharedPreferences.int("CP_Notification_Sound", NOTIF_SOUND_IOS)
+
+    /** Chats screen title: show "Chats" instead of the app name (R11). */
+    var chatsTitleAsTabs by sharedPreferences.boolean("MG_ChatsTitleAsTabs", false)
+
+    /** MeeroGram R11: floating glass action pills above the chat list (YouTube style). */
+    var floatingActions by sharedPreferences.boolean("MG_FloatingActions", false)
+
+    /** MeeroGram R11: stacked (iOS26-like) story avatars on the main screen. */
+    var stackedStories by sharedPreferences.boolean("MG_StackedStories", false)
+
+    /** MeeroGram R11: message bubble style - 0 stock, 1 iOS26. */
+    var bubbleStyle by sharedPreferences.int("MG_BubbleStyle", 0)
+    const val BUBBLE_STOCK = 0
+    const val BUBBLE_IOS26 = 1
 
     const val VIBRATION_DISABLE = 0
     const val VIBRATION_CLICK = 1

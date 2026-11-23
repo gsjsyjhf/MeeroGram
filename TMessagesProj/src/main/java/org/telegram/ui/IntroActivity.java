@@ -378,9 +378,13 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         startMessagingButton.setText(LocaleController.getString(R.string.StartMessaging));
         startMessagingButton.setGravity(Gravity.CENTER);
         startMessagingButton.setTypeface(AndroidUtilities.bold());
-        startMessagingButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        // Meerogram: iOS labels its solid buttons at 17pt regular, not 15 bold
+        // (MeeroX MeeroIntro motion table, gated by MG_Ios26Login).
+        startMessagingButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, uz.unnarsx.cherrygram.core.ui.login.MgIos26LoginStyle.enabled() ? uz.unnarsx.cherrygram.core.ui.login.MgIos26LoginStyle.INTRO_BUTTON_TEXT_DP : 15);
         startMessagingButton.setPadding(dp(34), 0, dp(34), 0);
-        frameContainerView.addView(startMessagingButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 16, 0, 16, 76));
+        // Meerogram: iOS's SolidRoundedButtonNode is 50pt tall; the shape is
+        // already a capsule here, so only the height needs to follow.
+        frameContainerView.addView(startMessagingButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, uz.unnarsx.cherrygram.core.ui.login.MgIos26LoginStyle.enabled() ? (int) uz.unnarsx.cherrygram.core.ui.login.MgIos26LoginStyle.INTRO_BUTTON_HEIGHT_DP : 48, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 16, 0, 16, 76));
         startMessagingButton.setOnClickListener(view -> {
             if (startPressed) {
                 return;
@@ -592,7 +596,10 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             };
 
             ThemeBind.textColor(headerTextView, Theme.key_windowBackgroundWhiteBlackText);
-            headerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 26);
+            // Meerogram: iOS sets the intro headline at 28pt semibold
+            // (AuthorizationSequenceSplashController); Android's 26 sits just
+            // under it, so the page reads slightly quieter than the original.
+            headerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, uz.unnarsx.cherrygram.core.ui.login.MgIos26LoginStyle.enabled() ? uz.unnarsx.cherrygram.core.ui.login.MgIos26LoginStyle.INTRO_HEADLINE_DP : 26);
             headerTextView.setTypeface(AndroidUtilities.bold());
             headerTextView.setGravity(Gravity.CENTER);
             frameLayout.addView(headerTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 18, 244, 18, 0));

@@ -35,6 +35,9 @@ object MeeroGhostConfig {
     /** Never send typing / recording / upload indicators. */
     var ghostHideTyping by sharedPreferences.boolean("MG_Ghost_Typing", true)
 
+    /** Never report story views / read stories (watch stories invisibly). */
+    var ghostHideStories by sharedPreferences.boolean("MG_Ghost_Stories", true)
+
     /**
      * Called from ConnectionsManager.sendRequestInternal for every outgoing
      * request; returns true when the request must be silently dropped.
@@ -46,6 +49,8 @@ object MeeroGhostConfig {
         return when (req) {
             is TL_account.updateStatus -> ghostHideOnline && !req.offline
             is TLRPC.TL_messages_setTyping -> ghostHideTyping
+            is org.telegram.tgnet.tl.TL_stories.TL_stories_incrementStoryViews,
+            is org.telegram.tgnet.tl.TL_stories.TL_stories_readStories -> ghostHideStories
             is TLRPC.TL_messages_readHistory,
             is TLRPC.TL_messages_readMentions,
             is TLRPC.TL_messages_readMessageContents,

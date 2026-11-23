@@ -53,6 +53,9 @@ object CherrygramAppearanceConfig {
     }
 
     var oneUI_SwitchStyle by sharedPreferences.boolean("AP_OneUI_SwitchStyle", true)
+
+    /** MeeroGram R11: iOS26-style settings switches - enabling it turns the OneUI style off. */
+    var ios26_SwitchStyle by sharedPreferences.boolean("AP_iOS26_SwitchStyle", false)
     var disableDividers by sharedPreferences.boolean("AP_DisableDividers", true)
 
     const val GLARE_EFFECTS_DISABLE = 0

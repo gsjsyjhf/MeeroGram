@@ -290,8 +290,10 @@ import uz.unnarsx.cherrygram.core.configs.CherrygramCoreConfig;
 import uz.unnarsx.cherrygram.core.configs.CherrygramMessagesConfig;
 import uz.unnarsx.cherrygram.core.configs.CherrygramPrivacyConfig;
 import uz.unnarsx.cherrygram.core.firebase.crashlytics.FirebaseCrashlyticsHelper;
+import uz.unnarsx.cherrygram.core.ui.floating.MeeroFloatingActionsView;
 import uz.unnarsx.cherrygram.core.ui.folders.FoldersHelper;
 import uz.unnarsx.cherrygram.core.ui.mainTabs.MainTabsManager;
+import uz.unnarsx.cherrygram.preferences.tabs.MainTabsPreferencesEntry;
 import uz.unnarsx.cherrygram.misc.Constants;
 import uz.unnarsx.cherrygram.core.firebase.crashlytics.CrashReportBottomSheet;
 import uz.unnarsx.cherrygram.core.firebase.crashlytics.Crashlytics;
@@ -533,6 +535,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private boolean storyHintShown;
     public FragmentFloatingButton floatingButton3;
     private FragmentFloatingButton floatingButtonStories;
+    /** Meerogram floating glass actions */
+    private MeeroFloatingActionsView floatingActionsView;
     private ButtonWithCounterView addChatsToCommunityButton;
     private ChatActivityFadeView communityBottomFadeView;
     private ChatAvatarContainer avatarContainer;
@@ -3528,7 +3532,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 actionBar.setTitle(actionBarDefaultTitle = ssb, statusDrawable);
                 updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);*/
 
-                actionBar.setTitle(actionBarDefaultTitle = getString(R.string.CG_AppName), statusDrawable, true);
+                // MeeroGram R11: optional "Chats" title instead of the app name.
+                actionBar.setTitle(actionBarDefaultTitle = getString(
+                        CherrygramChatsConfig.INSTANCE.getChatsTitleAsTabs() ? R.string.MG_Tab_Chats : R.string.CG_AppName
+                ), statusDrawable, true);
                 updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);
             }
             if (folderId == 0) {
@@ -5713,6 +5720,31 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         glassEngine.setGlassInvalidationListener(this::invalidateBlurCaptures);
         glassEngine.setPositionsMerger(new GlassPositionsMerger(Float.POSITIVE_INFINITY, dp(48)));
+
+        /** Meerogram floating glass actions start */
+        if (CherrygramChatsConfig.INSTANCE.getFloatingActions() && initialDialogsType == DIALOGS_TYPE_DEFAULT && !onlySelect && folderId == 0 && communityId == 0) {
+            floatingActionsView = new MeeroFloatingActionsView(context, resourceProvider, iBlur3FactoryLiquidGlass);
+            floatingActionsView.setOnScanClickListener(v -> openQrScanner());
+            floatingActionsView.setOnComposeClickListener(v -> {
+                if (parentLayout != null && parentLayout.isInPreviewMode()) {
+                    finishPreviewFragment();
+                    return;
+                }
+                if (MessagesController.getInstance(currentAccount).isFrozen()) {
+                    AccountFrozenAlert.show(currentAccount);
+                    return;
+                }
+                openWriteContacts();
+            });
+            floatingActionsView.setOnEditClickListener(v -> presentFragment(new MainTabsPreferencesEntry()));
+            contentView.addView(floatingActionsView, LayoutHelper.createFrame(
+                LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT,
+                (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM,
+                12, 0, 12, 0));
+            updateFloatingActionsOffset();
+            checkFloatingActionsVisibility();
+        }
+        /** Meerogram floating glass actions finish */
 
         ViewCompat.setOnApplyWindowInsetsListener(fragmentView, this::onApplyWindowInsets);
         return fragmentView;
@@ -8981,6 +9013,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (floatingButtonStories != null) {
             floatingButtonStories.setButtonVisible(isVisible && storiesEnabled, animated);
         }
+
+        checkFloatingActionsVisibility();
     }
 
     private void updateFloatingButtonOffset() {
@@ -9002,7 +9036,56 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 storyHint.setTranslationY(baseTranslationY - dp(52) - floatingButtonsOffset);
             }
         }
+
+        updateFloatingActionsOffset();
     }
+
+    /** Meerogram floating glass actions start */
+    private void updateFloatingActionsOffset() {
+        if (floatingActionsView == null) {
+            return;
+        }
+        floatingActionsView.setTranslationY(-(navigationBarHeight + additionNavigationBarHeight + dp(6)));
+    }
+
+    private void checkFloatingActionsVisibility() {
+        if (floatingActionsView == null) {
+            return;
+        }
+        final boolean visible = !inPreviewMode && !searching && folderId == 0 && communityId == 0 && !onlySelect && initialDialogsType == DIALOGS_TYPE_DEFAULT;
+        floatingActionsView.setVisibility(visible ? View.VISIBLE : View.GONE);
+    }
+
+    private void openQrScanner() {
+        final Activity activity = getParentActivity();
+        if (activity == null) {
+            return;
+        }
+        CameraScanActivity.showAsSheet(activity, false, CameraScanActivity.TYPE_QR, new CameraScanActivity.CameraScanActivityDelegate() {
+            @Override
+            public void didFindQr(String text) {
+                final String username = Browser.extractUsername(text);
+                if (TextUtils.isEmpty(username)) {
+                    AndroidUtilities.runOnUIThread(() -> BulletinFactory.global().createSimpleBulletin(
+                        LocaleController.getString(R.string.ScanQrCode),
+                        LocaleController.getString(R.string.ErrorOccurred)
+                    ).show());
+                    return;
+                }
+                MessagesController.getInstance(currentAccount).getUserNameResolver().resolve(username, peerId -> AndroidUtilities.runOnUIThread(() -> {
+                    if (peerId == null || peerId == Long.MAX_VALUE) {
+                        BulletinFactory.global().createSimpleBulletin(
+                            LocaleController.getString(R.string.ScanQrCode),
+                            LocaleController.getString(R.string.ErrorOccurred)
+                        ).show();
+                    } else {
+                        presentFragment(ProfileActivity.of(peerId));
+                    }
+                }));
+            }
+        });
+    }
+    /** Meerogram floating glass actions finish */
 
     public boolean storiesEnabled = !CherrygramCoreConfig.INSTANCE.getHideStories();
     private void updateStoriesPosting() {

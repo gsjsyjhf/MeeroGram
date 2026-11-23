@@ -60,6 +60,9 @@ public class AppearancePreferencesEntry extends BaseCGPreferencesEntry {
     private final int glareEffectsStyleRow = 12;
     private boolean expandedGlareEffectsSectionRow = false;
 
+    // MeeroGram R11: iOS26-style switches.
+    private final int ios26SwitchesRow = 13;
+
     private static final Set<String> GLARE_EFFECTS_SECTION_SLUG = Set.of(
             "glareEffectsType"
     );
@@ -107,6 +110,11 @@ public class AppearancePreferencesEntry extends BaseCGPreferencesEntry {
         items.add(SettingsHelper.asSwitchCG(oneUISwitchesRow, getString(R.string.AP_OneUI_Switch_Style))
                 .setChecked(CherrygramAppearanceConfig.INSTANCE.getOneUI_SwitchStyle())
                 .slug("oneUI_Switches")
+        );
+        // MeeroGram R11: iOS26-style switches, right under the OneUI option.
+        items.add(SettingsHelper.asSwitchCG(ios26SwitchesRow, getString(R.string.MG_iOS26_Switch_Style), getString(R.string.MG_iOS26_Switch_Desc))
+                .setChecked(CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle())
+                .slug("ios26_Switches")
         );
         items.add(SettingsHelper.asSwitchCG(disableDividersRow, getString(R.string.AP_DisableDividers))
                 .setChecked(CherrygramAppearanceConfig.INSTANCE.getDisableDividers())
@@ -255,9 +263,26 @@ public class AppearancePreferencesEntry extends BaseCGPreferencesEntry {
                 getParentLayout().rebuildAllFragmentViews(false, false);
             });
         } else if (item.id == oneUISwitchesRow) {
-            CherrygramAppearanceConfig.INSTANCE.setOneUI_SwitchStyle(!CherrygramAppearanceConfig.INSTANCE.getOneUI_SwitchStyle());
+            boolean enable = !CherrygramAppearanceConfig.INSTANCE.getOneUI_SwitchStyle();
+            CherrygramAppearanceConfig.INSTANCE.setOneUI_SwitchStyle(enable);
+            if (enable) {
+                // MeeroGram R11: keep the switch styles mutually exclusive.
+                CherrygramAppearanceConfig.INSTANCE.setIos26_SwitchStyle(false);
+            }
             SettingsHelper.updateCheckState(view, CherrygramAppearanceConfig.INSTANCE.getOneUI_SwitchStyle());
 
+            updateRows(true);
+        } else if (item.id == ios26SwitchesRow) {
+            // MeeroGram R11: iOS26 switches - enabling one style turns the other off.
+            boolean enable = !CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle();
+            CherrygramAppearanceConfig.INSTANCE.setIos26_SwitchStyle(enable);
+            if (enable) {
+                CherrygramAppearanceConfig.INSTANCE.setOneUI_SwitchStyle(false);
+            }
+            SettingsHelper.updateCheckState(view, CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle());
+
+            Theme.applyCommonTheme();
+            getParentLayout().rebuildAllFragmentViews(false, false);
             updateRows(true);
         } else if (item.id == disableDividersRow) {
             CherrygramAppearanceConfig.INSTANCE.setDisableDividers(!CherrygramAppearanceConfig.INSTANCE.getDisableDividers());

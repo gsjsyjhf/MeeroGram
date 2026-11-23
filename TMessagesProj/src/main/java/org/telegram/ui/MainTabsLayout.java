@@ -7,12 +7,14 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.math.MathUtils;
 import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.FloatPropertyCompat;
 import androidx.dynamicanimation.animation.SpringAnimation;
@@ -34,6 +36,7 @@ import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.util.ClickHelper;
 
 import uz.unnarsx.cherrygram.core.configs.CherrygramAppearanceConfig;
+import uz.unnarsx.cherrygram.core.ui.mainTabs.MeeroTabDragHelper;
 
 @SuppressLint("ViewConstructor")
 public class MainTabsLayout extends AnimatedLinearLayout {
@@ -611,9 +614,156 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (tabDragHelper != null) {
+            // while the ClickHelper long-press drag owns the bar, the tab drag stands down
+            tabDragHelper.onDispatchTouchEvent(ev, clickHelper.inLongPress());
+            if (tabDragHelper.isDragging()) {
+                // a horizontal drag across the bar took over the gesture:
+                // cancel the pending ClickHelper long press so the two never fight
+                clickHelper.cancel(this, ev.getX(), ev.getY());
+                return super.dispatchTouchEvent(ev);
+            }
+            clickHelper.onTouchEvent(this, ev);
+            return super.dispatchTouchEvent(ev);
+        }
         clickHelper.onTouchEvent(this, ev);
         return super.dispatchTouchEvent(ev);
     }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        // once the horizontal drag is confirmed, children get ACTION_CANCEL
+        // and the bar itself handles the rest of the gesture
+        return tabDragHelper != null && tabDragHelper.isDragging();
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        // own the stream after interception (and for touches on the bar padding)
+        if (tabDragHelper != null && tabDragHelper.isHandlingTouch()) {
+            return true;
+        }
+        return super.onTouchEvent(event);
+    }
+
+    /** Meerogram: drag-to-switch delegate, wired into MeeroTabDragHelper. */
+    private final MeeroTabDragHelper.Delegate tabDragDelegate = new MeeroTabDragHelper.Delegate() {
+        @Override
+        public boolean isTabVisibleForDrag(View tab) {
+            return tab.getVisibility() == View.VISIBLE && isViewVisible(tab);
+        }
+
+        @Override
+        public void onTabDragPressChanged(View tab, boolean pressed) {
+            if (pressed) {
+                if (tabDragPressedView == tab) {
+                    return;
+                }
+                releaseTabDragPress();
+                tabDragPressedView = tab;
+                if (tab != null) {
+                    // gentle press feedback on ACTION_DOWN
+                    tab.animate().scaleX(1.05f).scaleY(1.05f)
+                        .setDuration(120).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).start();
+                }
+            } else {
+                releaseTabDragPress();
+            }
+        }
+
+        @Override
+        public void onTabDragStarted() {
+            lastTabDragTickIndex = -1;
+            if (tabDragPressedView != null) {
+                tabDragPressedView.animate().cancel();
+            }
+        }
+
+        @Override
+        public void onTabDragProgress(float position, float velocity) {
+            applyTabDragVisual(position, velocity);
+        }
+
+        @Override
+        public void onTabDragFinished(float position, float velocity, View nearestTab) {
+            restoreTabDragVisual();
+            tabDragPressedView = null;
+            lastTabDragTickIndex = -1;
+            if (nearestTab != null) {
+                nearestTab.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+                // snap: exact same code path as a normal tap — the tab's own
+                // OnClickListener performs selectTab + viewPager.scrollToPosition
+                nearestTab.performClick();
+            }
+        }
+
+        @Override
+        public void onTabDragCancelled() {
+            restoreTabDragVisual();
+            tabDragPressedView = null;
+            lastTabDragTickIndex = -1;
+        }
+    };
+
+    private void releaseTabDragPress() {
+        if (tabDragPressedView != null) {
+            tabDragPressedView.animate().scaleX(1f).scaleY(1f)
+                .setDuration(150).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).start();
+            tabDragPressedView = null;
+        }
+    }
+
+    /**
+     * The selection highlight of every visible tab follows the finger
+     * proportionally (gestureSelectedOverride interpolation between adjacent
+     * tabs, elongated in the drag direction by the finger velocity), plus a
+     * gentle scale on the tab icons. Bar dimensions are never changed.
+     */
+    private void applyTabDragVisual(float position, float velocity) {
+        final int count = tabDragHelper.getVisibleTabCount();
+        if (count == 0) {
+            return;
+        }
+        final float[] factors = tabDragHelper.computeTabFactors(position, velocity);
+        for (int i = 0; i < count; i++) {
+            final View child = tabDragHelper.getVisibleTab(i);
+            if (!(child instanceof GlassTabView)) {
+                continue;
+            }
+            final float factor = factors[i];
+            ((GlassTabView) child).setGestureSelectedOverride(factor, true);
+            final float s = lerp(1f, 1.05f, factor);
+            child.setScaleX(s);
+            child.setScaleY(s);
+        }
+        final int index = Math.round(position);
+        if (index != lastTabDragTickIndex) {
+            if (lastTabDragTickIndex != -1) {
+                final int clamped = MathUtils.clamp(index, 0, count - 1);
+                final View tickTab = tabDragHelper.getVisibleTab(clamped);
+                if (tickTab != null) {
+                    tickTab.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+                }
+            }
+            lastTabDragTickIndex = index;
+        }
+        invalidate();
+    }
+
+    private void restoreTabDragVisual() {
+        final int count = tabDragHelper != null ? tabDragHelper.getVisibleTabCount() : 0;
+        for (int i = 0; i < count; i++) {
+            final View child = tabDragHelper.getVisibleTab(i);
+            if (!(child instanceof GlassTabView)) {
+                continue;
+            }
+            ((GlassTabView) child).setGestureSelectedOverride(0f, false);
+            child.animate().scaleX(1f).scaleY(1f)
+                .setDuration(160).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).start();
+        }
+        invalidate();
+    }
+    /** Meerogram finish */
 
 
     private static float clampXToChildrenCenters(float x, ViewGroup parent) {
@@ -730,9 +880,20 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     /** Cherrygram start */
     private boolean isForMainTabsCG = false;
 
+    // Meerogram: horizontal drag-to-switch for the main bottom tab bar
+    // (see uz.unnarsx.cherrygram.core.ui.mainTabs.MeeroTabDragHelper).
+    // Only created for the main tabs bar; other usages of MainTabsLayout
+    // (MediaActivity, StatisticActivity) keep their exact previous behavior.
+    private MeeroTabDragHelper tabDragHelper;
+    private View tabDragPressedView;
+    private int lastTabDragTickIndex = -1;
+
     public void setForMainTabsCG(boolean cherrygramMainTabs) {
         if (isForMainTabsCG != cherrygramMainTabs) {
             isForMainTabsCG = cherrygramMainTabs;
+            if (cherrygramMainTabs && tabDragHelper == null) {
+                tabDragHelper = new MeeroTabDragHelper(this, tabDragDelegate);
+            }
             requestLayout();
         }
     }
