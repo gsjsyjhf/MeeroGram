@@ -408,7 +408,7 @@ public class Switch extends View implements Theme.Colorable {
         int tx;
         int width = AndroidUtilities.dp(30.5F);
         int thumb;
-        int meeroTrackW, meeroTrackH;
+        int meeroTrackW = 0, meeroTrackH = 0;
 
         if (CherrygramAppearanceConfig.INSTANCE.getOneUI_SwitchStyle()) {
             thumb = AndroidUtilities.dp(17.5F);

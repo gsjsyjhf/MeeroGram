@@ -82,14 +82,14 @@ public class MainTabsPreviewCell extends LinearLayout {
         int firstEnabled = -1;
         for (int i = 0; i < tabs.size(); i++) {
             final MainTabsManager.Tab t = tabs.get(i);
-            if (t.enabled && firstEnabled == -1 && t.type != MainTabsManager.TabType.SEARCH) {
+            if (t.enabled && firstEnabled == -1 && t.getType() != MainTabsManager.TabType.SEARCH) {
                 firstEnabled = i;
             }
         }
         for (int i = 0; i < tabs.size(); i++) {
             final MainTabsManager.Tab t = tabs.get(i);
             final GlassTabView v = MainTabsManager.INSTANCE.createTabView(
-                    getContext(), resourcesProvider, currentAccount, t.type, true, true);
+                    getContext(), resourcesProvider, currentAccount, t.getType(), true, true);
             v.setSelected(i == firstEnabled, false);
             v.setAlpha(t.enabled ? 1f : 0.35f);
             v.setOnClickListener(vv -> {
@@ -102,7 +102,7 @@ public class MainTabsPreviewCell extends LinearLayout {
                 }
                 final MainTabsManager.Tab tab = tabs.get(idx);
                 // Chats is always on (MainTabsManager.loadTabs forces it).
-                if (tab.type == MainTabsManager.TabType.CHATS) {
+                if (tab.getType() == MainTabsManager.TabType.CHATS) {
                     return;
                 }
                 tab.enabled = !tab.enabled;
