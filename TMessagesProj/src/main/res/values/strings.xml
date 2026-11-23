@@ -11730,7 +11730,7 @@
     <string name="MG_Ex2_WarnMemExceed">Warn when app memory usage exceeds</string>
     <string name="MG_Ex2_Misc">Misc</string>
     <string name="MG_Ex2_ToastRpc">Toast all RPC errors *</string>
-    <string name="MG_Ex2_ToastRpcDesc">You\'ll see RPC errors from Telegram's backend as toast messages.</string>
+    <string name="MG_Ex2_ToastRpcDesc">You\'ll see RPC errors from Telegram\'s backend as toast messages.</string>
     <string name="MG_Ex2_SafeStars">Use SafeStars *</string>
     <string name="MG_Ex2_SafeSurf">Use SafeSurf *</string>
     <string name="MG_Ex2_FixCallsNotif">Fix calls notification *</string>
