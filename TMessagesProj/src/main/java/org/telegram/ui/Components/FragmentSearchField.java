@@ -1,5 +1,7 @@
 package org.telegram.ui.Components;
 
+import uz.unnarsx.cherrygram.core.configs.CherrygramAppearanceConfig;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.animation.Animator;
@@ -9,7 +11,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Editable;
@@ -50,35 +51,33 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import java.util.HashSet;
 
-import uz.unnarsx.cherrygram.chats.helpers.ChatsHelper2;
-
 @SuppressLint("ViewConstructor")
 public class FragmentSearchField extends FrameLayout implements FactorAnimator.Target, Theme.Colorable {
     private static final int ANIMATOR_ID_CLOSE_BUTTON_VISIBLE = 0;
     private static final int ANIMATOR_ID_SEARCH_ICON_VISIBLE = 1;
     private static final int ANIMATOR_ID_SEARCH_FILTERS_WIDTH = 2;
-    private static final int ANIMATOR_ID_MENU_BUTTON_VISIBLE = 3;
 
     private final BoolAnimator animatorCloseIconVisible = new BoolAnimator(ANIMATOR_ID_CLOSE_BUTTON_VISIBLE, this, CubicBezierInterpolator.EASE_OUT_QUINT, 380, false);
     private final BoolAnimator animatorSearchIconVisible = new BoolAnimator(ANIMATOR_ID_SEARCH_ICON_VISIBLE, this, CubicBezierInterpolator.EASE_OUT_QUINT, 380, true);
     private final FactorAnimator animatorSearchFiltersWidth = new FactorAnimator(ANIMATOR_ID_SEARCH_FILTERS_WIDTH, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 280);
-    private final BoolAnimator animatorMenuIconVisible = new BoolAnimator(ANIMATOR_ID_MENU_BUTTON_VISIBLE, this, CubicBezierInterpolator.EASE_OUT_QUINT, 380, false);
 
     private final Theme.ResourcesProvider resourcesProvider;
 
     private final ImageView searchIcon;
     private final ImageView closeIcon;
-    private final ImageView menuIconImageView;
     private final LinearLayout additionalIconsLayout;
     private boolean closeButtonForcedVisible;
     public final EditTextBoldCursor editText;
     private BlurredBackgroundDrawable blurredBackgroundDrawable;
 
-    public FragmentSearchField(Context context, Theme.ResourcesProvider resourcesProvider) {
-        this(context, false, null, resourcesProvider);
+    // MeeroGram: compatibility constructor - ShareAlert passes the extra
+    // arguments the stock field used for its menu button; the capsule style
+    // has no menu button, so they are simply ignored.
+    public FragmentSearchField(Context context, boolean showMenu, ShareAlert shareAlert, Theme.ResourcesProvider resourcesProvider) {
+        this(context, resourcesProvider);
     }
 
-    public FragmentSearchField(Context context, boolean showMenu, ShareAlert shareAlert, Theme.ResourcesProvider resourcesProvider) {
+    public FragmentSearchField(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
 
@@ -89,6 +88,24 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
                 setPivotX(getPaddingLeft());
                 setPivotY(getMeasuredHeight() / 2.0f);
             }
+
+            // MeeroX: the idle centred group has to come apart the moment the
+            // field takes focus, and re-form when it loses it. Overriding the
+            // callback rather than calling setOnFocusChangeListener leaves
+            // that listener free - DialogsActivity installs its own on this
+            // same EditText to open the search, and a second setter would
+            // silently replace it.
+            @Override
+            protected void onFocusChanged(boolean focused, int direction, android.graphics.Rect previouslyFocusedRect) {
+                super.onFocusChanged(focused, direction, previouslyFocusedRect);
+                meeroRefreshIdleGroup();
+            }
+
+            // A hint change also moves the group, since the placeholder is
+            // what it is centred on. There is no hook needed for it:
+            // TextView.setHint is final anyway, and it ends in requestLayout,
+            // which runs this view's parent through onMeasure and onLayout -
+            // the two places the centring is computed.
 
             @Override
             public boolean onKeyDown(int keyCode, KeyEvent event) {
@@ -105,7 +122,9 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
                 return super.onKeyDown(keyCode, event);
             }
         };
-        editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        // iOS sets the search field at 17pt, the same body size it uses
+        // everywhere else; 15 makes the placeholder look shrunken by contrast.
+        editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, meeroIosSearch() ? 17 : 15);
         editText.setCursorWidth(1.5f);
         editText.setInputType(editText.getInputType() | InputType.TYPE_TEXT_VARIATION_FILTER);
         editText.setSingleLine(true);
@@ -130,7 +149,9 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
                     }
                 }
                 checkCloseButtonVisible();
-                checkMenuButtonVisible(showMenu);
+                // MeeroX: the first character typed ends the idle state, and
+                // clearing the last one restores it.
+                meeroRefreshIdleGroup();
             }
         });
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
@@ -139,9 +160,20 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
         addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 0, 0, 0, 0));
 
         searchIcon = new ImageView(context);
-        searchIcon.setScaleType(ImageView.ScaleType.CENTER);
+        // iOS scales the magnifier down to about 16pt and lets it sit closer
+        // to the edge; Android's 24dp glyph dominates the short pill.
+        searchIcon.setScaleType(meeroIosSearch() ? ImageView.ScaleType.FIT_CENTER : ImageView.ScaleType.CENTER);
         searchIcon.setImageResource(R.drawable.outline_search_1_24);
-        addView(searchIcon, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 12, 0, 12, 0));
+        final int meeroIconSize = meeroIosSearch() ? 17 : 24;
+        // MeeroX: while the field is idle iOS centres the magnifier and the
+        // placeholder together as one group, rather than parking the glyph on
+        // the edge with the text beside it. The icon is therefore laid out
+        // nudged by meeroPositionSearchIcon() in onLayout, which is where the
+        // measured placeholder width is finally known. The gravity below still
+        // has to name a side: once the field is focused the group slides back
+        // to the edge, and CENTER_VERTICAL alone would leave the glyph
+        // horizontally stuck in the middle behind the typed text.
+        addView(searchIcon, LayoutHelper.createFrame(meeroIconSize, meeroIconSize, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), meeroIosSearch() ? 16 : 12, 0, meeroIosSearch() ? 16 : 12, 0));
 
         additionalIconsLayout = new LinearLayout(context);
         additionalIconsLayout.setOrientation(LinearLayout.HORIZONTAL);
@@ -169,16 +201,6 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
             }
         });
         addView(closeIcon, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 12, 0, 12, 0));
-
-        menuIconImageView = new ImageView(context);
-        menuIconImageView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), 1));
-        menuIconImageView.setScaleType(ImageView.ScaleType.CENTER);
-        menuIconImageView.setImageResource(R.drawable.ic_ab_other);
-        menuIconImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogSearchIcon), PorterDuff.Mode.MULTIPLY));
-        menuIconImageView.setOnClickListener((v) -> ChatsHelper2.INSTANCE.showForwardMenu(shareAlert, menuIconImageView));
-        menuIconImageView.setVisibility(GONE);
-        addView(menuIconImageView, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 12, 0, 12, 0));
-        checkMenuButtonVisible(showMenu);
 
         searchFilterLayout = new LinearLayout(getContext()) {
             @Override
@@ -226,12 +248,53 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
                     (getHeight() - getPaddingBottom()) + dp(4));
             blurredBackgroundDrawable.draw(canvas);
         }
+        // MeeroX: hairline edge over whichever background was just drawn,
+        // matching the reference app's 1dp / 18% outline.
+        // iOS has no outline on its search bar - the fill alone defines it -
+        // so the hairline is skipped while the iOS style is on.
+        // MeeroGram: the MeeroGlass hairline helper is not part of this fork;
+        // the iOS capsule has no outline and the stock capsule keeps its plain
+        // theme background, so the decorative edge is simply skipped.
         super.dispatchDraw(canvas);
         canvas.restore();
     }
 
+    /**
+     * MeeroX: the iOS search field is a full pill rather than a lightly
+     * rounded box. 26dp fully rounds the 48dp-tall field; the theme still
+     * supplies the colour.
+     */
+    /** MeeroX: hairline edge radius, set alongside the background. */
+    private int meeroBorderRadius;
+
+    private static int meeroFieldRadius() {
+        try {
+            return CherrygramAppearanceConfig.INSTANCE.getMeeroDialogsStyle() ? dp(26) : dp(20);
+        } catch (Throwable e) {
+            return dp(20);
+        }
+    }
+
+    /**
+     * MeeroX: iOS search bar styling.
+     *
+     * The pill shape was already right - meeroFieldRadius returns a full 26dp
+     * round - so what separates this from UISearchBar is everything inside it:
+     * iOS fills the bar with a solid tint instead of showing the list through
+     * it, drops the outline entirely, and sets the magnifier smaller and
+     * dimmer than the placeholder next to it.
+     */
+    public static boolean meeroIosSearch() {
+        try {
+            return CherrygramAppearanceConfig.INSTANCE.getMeeroIosSearch();
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
     public void setupBlurredBackground(BlurredBackgroundDrawable drawable) {
-        drawable.setRadius(dp(20));
+        drawable.setRadius(meeroFieldRadius());
+        meeroBorderRadius = meeroFieldRadius();
         drawable.setPadding(dp(4));
         blurredBackgroundDrawable = drawable;
     }
@@ -262,21 +325,165 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
         checkUi_editTextPaddings();
     }
 
+    /** MeeroX: gap between the magnifier and the placeholder, measured off iOS. */
+    private static final float MEERO_ICON_TEXT_GAP = 9f;
+
+    /**
+     * MeeroX: whether the idle centred group applies right now.
+     *
+     * Only while the field is genuinely idle. Once it has focus or any text
+     * the placeholder is gone and the caret belongs at the leading edge, so
+     * the group returns to where upstream puts it. Search filters take the
+     * leading space for themselves, so they opt out too.
+     */
+    private boolean meeroIdleCentered() {
+        // Guarded because the EditText subclass above can reach this through
+        // onFocusChanged() while the constructor is still running - editText
+        // itself and currentSearchFilters are assigned further down the
+        // class, so both are still null at that point.
+        if (!meeroIosSearch() || editText == null || currentSearchFilters == null) {
+            return false;
+        }
+        final CharSequence hint = editText.getHint();
+        return editText.length() == 0
+                && !editText.isFocused()
+                && currentSearchFilters.isEmpty()
+                && hint != null
+                && hint.length() > 0;
+    }
+
+    /** MeeroX: width the placeholder will occupy, in pixels. */
+    private float meeroHintWidth() {
+        final CharSequence hint = editText.getHint();
+        if (hint == null || hint.length() == 0) {
+            return 0;
+        }
+        return editText.getPaint().measureText(hint, 0, hint.length());
+    }
+
+    /**
+     * MeeroX: left edge of the centred magnifier + placeholder group.
+     *
+     * Both the icon's offset and the text's padding are derived from this one
+     * figure so the two cannot drift apart - they are computed in different
+     * passes (measure for the padding, layout for the icon) and any second
+     * copy of the arithmetic would eventually disagree.
+     */
+    private int meeroGroupLeft(int iconWidth, float hintWidth) {
+        final int inner = getMeasuredWidth() - getPaddingLeft() - getPaddingRight();
+        final int groupWidth = (int) (iconWidth + dp(MEERO_ICON_TEXT_GAP) + hintWidth);
+        return getPaddingLeft() + Math.max(0, (inner - groupWidth) / 2);
+    }
+
     private void checkUi_editTextPaddings() {
         final int filtersWidth = (int) animatorSearchFiltersWidth.getFactor() + dp(6); //searchFilterLayout.getWidth();
         final int pStart = Math.max(filtersWidth, dp(48));
         final int pEnd = dp(48) + additionalIconsLayout.getMeasuredWidth();
 
-        final int pLeft = LocaleController.isRTL ? pEnd : pStart;
-        final int pRight = LocaleController.isRTL ? pStart : pEnd;
+        int pLeft = LocaleController.isRTL ? pEnd : pStart;
+        int pRight = LocaleController.isRTL ? pStart : pEnd;
+
+        // MeeroX: iOS centres the magnifier and the placeholder as one group
+        // while the bar is idle, instead of pinning the glyph to the edge.
+        // The padding is what positions the hint - editText is gravity LEFT on
+        // LTR and RIGHT on RTL, so setting both sides puts the text in the
+        // same place either way: LEFT draws it at pLeft, RIGHT draws it ending
+        // at width - pRight, and those are the two edges of the same span.
+        if (meeroIdleCentered() && getMeasuredWidth() > 0) {
+            final int iconW = searchIcon.getMeasuredWidth() > 0
+                    ? searchIcon.getMeasuredWidth() : dp(17);
+            final float hintW = meeroHintWidth();
+            final int textLeft = meeroGroupLeft(iconW, hintW) + iconW + (int) dp(MEERO_ICON_TEXT_GAP);
+            final int textRight = (int) (textLeft + hintW);
+            final int candidateLeft = textLeft;
+            final int candidateRight = getMeasuredWidth() - textRight;
+            // Never let the centring squeeze the text against an edge - if the
+            // placeholder is long enough that the group no longer fits, fall
+            // back to the stock padding rather than clipping it.
+            if (candidateLeft >= 0 && candidateRight >= 0) {
+                pLeft = candidateLeft;
+                pRight = candidateRight;
+            }
+        }
+
+        // MeeroX: the clip has to be wider than the padding when the group is
+        // centred. Upstream can clip exactly at its paddings because those sit
+        // at a fixed 48dp, far from any glyph. The centred paddings are
+        // derived from measureText, which returns the advance width - the pen
+        // travel - and Arabic glyphs routinely paint outside it: "بحث" ends in
+        // a ث whose bowl and dots swing past where the pen stops, so clipping
+        // exactly at the advance sliced the letter off with a hard vertical
+        // edge.
+        //
+        // The clip is kept only to stop a long typed value spilling under the
+        // icons, and while the field is idle showing a placeholder there is no
+        // value to spill. Widening it by the padding difference keeps the
+        // original guarantee for the icons while giving the glyphs their
+        // overhang back.
+        final int clipLeft;
+        final int clipRight;
+        if (meeroIdleCentered() && getMeasuredWidth() > 0) {
+            clipLeft = Math.min(pLeft, LocaleController.isRTL ? pEnd : pStart);
+            clipRight = editText.getMeasuredWidth()
+                    - Math.min(pRight, LocaleController.isRTL ? pStart : pEnd);
+        } else {
+            clipLeft = pLeft;
+            clipRight = editText.getMeasuredWidth() - pRight;
+        }
 
         AndroidUtilities.rectTmp2.set(
-            pLeft, 0,
-            editText.getMeasuredWidth() - pRight,
+            clipLeft, 0,
+            clipRight,
             editText.getMeasuredHeight()
         );
         editText.setClipBounds(AndroidUtilities.rectTmp2);
         editText.setPadding(pLeft, 0, pRight, 0);
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        meeroPositionSearchIcon();
+    }
+
+    /**
+     * MeeroX: re-runs the centring after something it depends on changed.
+     *
+     * Called from focus, text and hint changes. It is safe before the view has
+     * been measured - checkUi_editTextPaddings falls back to the stock padding
+     * while getMeasuredWidth() is still zero, and onLayout runs the icon side
+     * again once real dimensions exist.
+     */
+    private void meeroRefreshIdleGroup() {
+        // Same construction-order guard as meeroIdleCentered: this can be
+        // reached from onFocusChanged() before the fields it touches exist.
+        if (!meeroIosSearch() || editText == null || searchIcon == null
+                || additionalIconsLayout == null || currentSearchFilters == null) {
+            return;
+        }
+        checkUi_editTextPaddings();
+        meeroPositionSearchIcon();
+    }
+
+    /**
+     * MeeroX: slides the magnifier to the head of the centred group.
+     *
+     * Done as a translation after layout rather than a margin, because the
+     * offset depends on the measured placeholder width - a margin would have
+     * to be right before the text is measured, and it changes with the
+     * locale's wording.
+     */
+    private void meeroPositionSearchIcon() {
+        if (!meeroIdleCentered()) {
+            searchIcon.setTranslationX(0);
+            return;
+        }
+        final int iconW = searchIcon.getMeasuredWidth();
+        if (iconW <= 0) {
+            searchIcon.setTranslationX(0);
+            return;
+        }
+        searchIcon.setTranslationX(meeroGroupLeft(iconW, meeroHintWidth()) - searchIcon.getLeft());
     }
 
     public boolean isSectionBackground;
@@ -296,14 +503,21 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
     @Override
     public void updateColors() {
         final boolean isDark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
+        final int meeroRad = meeroFieldRadius();
+        // MeeroX: iOS fills its search bar with a solid tint rather than
+        // letting the list show through. UISearchBar sits at roughly 12% of
+        // the label colour on dark and 8% on light; the stock 0.07/0.05 here
+        // is faint enough that the field reads as an outline, not a surface.
+        final float fillAlpha = meeroIosSearch()
+                ? (isDark ? 0.12f : 0.08f)
+                : (isDark ? 0.07f : 0.05f);
         bg = isSectionBackground ?
-            Theme.createRoundRectDrawableShadowed(dp(20), getThemedColor(Theme.key_windowBackgroundWhite)) :
-            Theme.createRoundRectDrawable(dp(20), isWhiteBackground ? getThemedColor(Theme.key_windowBackgroundWhite) : getThemedColor(Theme.key_windowBackgroundWhiteBlackText, isDark ? 0.07f : 0.05f));
-        searchIcon.setColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText, 0.6f), PorterDuff.Mode.MULTIPLY);
+            Theme.createRoundRectDrawableShadowed(meeroRad, getThemedColor(Theme.key_windowBackgroundWhite)) :
+            Theme.createRoundRectDrawable(meeroRad, isWhiteBackground ? getThemedColor(Theme.key_windowBackgroundWhite) : getThemedColor(Theme.key_windowBackgroundWhiteBlackText, fillAlpha));
+        // iOS draws the magnifier smaller and dimmer than the text beside it.
+        searchIcon.setColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText, meeroIosSearch() ? 0.45f : 0.6f), PorterDuff.Mode.MULTIPLY);
         closeIcon.setColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText, 0.6f), PorterDuff.Mode.MULTIPLY);
         closeIcon.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, dp(17)));
-        menuIconImageView.setColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText, 0.6f), PorterDuff.Mode.MULTIPLY);
-        menuIconImageView.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, dp(17)));
         editText.setHintTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText, 0.5f));
         editText.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         editText.setCursorColor(getThemedColor(Theme.key_groupcreate_cursor));
@@ -355,15 +569,10 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
     public void setCloseButtonVisible(boolean visible) {
         closeButtonForcedVisible = visible;
         checkCloseButtonVisible();
-        checkMenuButtonVisible(false);
     }
 
     private void checkCloseButtonVisible() {
         animatorCloseIconVisible.setValue(closeButtonForcedVisible || editText.length() > 0, true);
-    }
-
-    private void checkMenuButtonVisible(boolean showMenuIcon) {
-        animatorMenuIconVisible.setValue(showMenuIcon && editText.length() <= 0, true);
     }
 
     @Override
@@ -375,8 +584,6 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
             FragmentFloatingButton.setAnimatedVisibility(searchIcon, factor);
         } else if (id == ANIMATOR_ID_SEARCH_FILTERS_WIDTH) {
             checkUi_editTextPaddings();
-        } else if (id == ANIMATOR_ID_MENU_BUTTON_VISIBLE) {
-            FragmentFloatingButton.setAnimatedVisibility(menuIconImageView, factor);
         }
     }
 

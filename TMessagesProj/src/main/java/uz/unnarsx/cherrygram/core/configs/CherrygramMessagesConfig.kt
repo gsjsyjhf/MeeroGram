@@ -159,12 +159,12 @@ object CherrygramMessagesConfig {
 
     val dL = mutableSetOf<String>()
     fun alo(): Boolean {
+        // MeeroGram: this was a hidden donor-verification gate that silently
+        // killed the message context menu when the iOS-style menu toggle was
+        // on for non-donors. Everything is unlocked in this build, so the
+        // gate always passes.
         dL.clear()
-
-        val res = vA()
-        val i = dL.contains(DonatesManager.decodeBase64Array(VERIF_LOG))
-
-        return res && i
+        return true
     }
 
     fun iV(userId: Long): Boolean {

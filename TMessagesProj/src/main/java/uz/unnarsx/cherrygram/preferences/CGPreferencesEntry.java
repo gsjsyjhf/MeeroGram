@@ -223,6 +223,9 @@ public class CGPreferencesEntry extends BaseCGPreferencesEntry {
             CherrygramPreferencesNavigator.INSTANCE.createExperimental(this);
         } else if (item.id == privacyRow) {
             CherrygramPreferencesNavigator.INSTANCE.createPrivacy(this);
+        } else if (item.id == ghostRow) {
+            // MeeroGram: open the Ghost mode section.
+            CherrygramPreferencesNavigator.INSTANCE.createGhost(this);
         } else if (item.id == aboutRow) {
             CherrygramPreferencesNavigator.INSTANCE.createAbout(this);
         } else if (item.id == supportRow) {

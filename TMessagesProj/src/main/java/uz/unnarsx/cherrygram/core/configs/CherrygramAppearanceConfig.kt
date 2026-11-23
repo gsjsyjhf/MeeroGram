@@ -31,7 +31,10 @@ object CherrygramAppearanceConfig {
 
     /** Header start */
     var centerTitle by sharedPreferences.boolean("AP_CenterTitle", true)
-    var hideSearchFiled by sharedPreferences.boolean("AP_HideSearchField", true)
+    // MeeroGram: the frozen build always showed the chat list search bar
+    // (iOS capsule) - default to visible, the toggle in Appearance can still
+    // hide it.
+    var hideSearchFiled by sharedPreferences.boolean("AP_HideSearchField", false)
     var drawSnowInActionBar by sharedPreferences.boolean("AP_DrawSnowInActionBar", false && SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_AVERAGE)
     /** Header finish */
 
@@ -80,6 +83,10 @@ object CherrygramAppearanceConfig {
     // plus the glass Search button beside them - five items in the bottom bar.
     var mainTabsOrder by sharedPreferences.string("AP_MainTabsPosition_New", "SETTINGS,CHATS,PROFILE,CONTACTS,!CALLS,SEARCH")
     var showSearchInTabs by sharedPreferences.boolean("AP_ShowSearchInTabs_New", true)
+    // MeeroGram: ported from the frozen build - iOS-style search capsule at
+    // the top of the chat list, and the frozen build's dialogs metrics.
+    var meeroIosSearch by sharedPreferences.boolean("MG_MeeroIosSearch", true)
+    var meeroDialogsStyle by sharedPreferences.boolean("MG_MeeroDialogsStyle", true)
     var showMainTabsTitle by sharedPreferences.boolean("AP_ShowMainTabsTitle", true)
     var mainTabsForceOpenChats by sharedPreferences.boolean("AP_MainTabsForceOpenChats", false)
     /** Main tabs finish */

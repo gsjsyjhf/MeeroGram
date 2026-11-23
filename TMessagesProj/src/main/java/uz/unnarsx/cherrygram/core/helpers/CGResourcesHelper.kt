@@ -33,14 +33,15 @@ object CGResourcesHelper {
     /** About app start */
     @JvmStatic
     fun getAppName(): String {
+        // MeeroGram: every build variant carries the Meerogram name.
         if (CherrygramCoreConfig.isStandaloneStableBuild() || CherrygramCoreConfig.isPlayStoreBuild()) {
-            return "Cherrygram"
+            return "Meerogram"
         } else if (CherrygramCoreConfig.isStandaloneBetaBuild()) {
-            return "Cherrygram Beta"
+            return "Meerogram Beta"
         } else if (CherrygramCoreConfig.isStandalonePremiumBuild()) {
-            return "Cherrygram Premium"
+            return "Meerogram Premium"
         } else if (CherrygramCoreConfig.isDevBuild()) {
-            return "Cherrygram Dev"
+            return "Meerogram Dev"
         }
         return getString(R.string.CG_AppName)
     }
