@@ -25,6 +25,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import uz.unnarsx.cherrygram.core.configs.CherrygramAppearanceConfig;
 import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox2;
@@ -70,7 +71,7 @@ public class AvailableReactionCell extends FrameLayout {
         } else {
             switchView = new Switch(context);
             switchView.setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_switchTrackBlueThumb, Theme.key_switchTrackBlueThumbChecked);
-            addView(switchView, LayoutHelper.createFrameRelatively(39, 40, Gravity.END | Gravity.CENTER_VERTICAL, 0, 0, 22, 0));
+            addView(switchView, LayoutHelper.createFrameRelatively(CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle() ? 63 : 39, 40, Gravity.END | Gravity.CENTER_VERTICAL, 0, 0, 22, 0));
         }
         overlaySelectorView = new View(context);
         overlaySelectorView.setBackground(Theme.getSelectorDrawable(false));

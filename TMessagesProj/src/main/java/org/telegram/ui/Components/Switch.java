@@ -29,7 +29,9 @@ import android.graphics.drawable.RippleDrawable;
 import android.os.Build;
 import android.util.StateSet;
 import android.view.HapticFeedbackConstants;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewParent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.Interpolator;
 
@@ -312,6 +314,9 @@ public class Switch extends View implements Theme.Colorable {
                 cancelCheckAnimator();
                 setProgress(checked ? 1.0f : 0.0f);
             }
+            // R11.4: Ios26CapsuleSwitch LaunchedEffect(checked) - droplet rises
+            // on external changes too, settles after 250ms.
+            meeroOnExternalToggle(attachedToWindow && animated);
             if (onCheckedChangeListener != null) {
                 onCheckedChangeListener.onCheckedChanged(this, checked);
             }
@@ -432,6 +437,10 @@ public class Switch extends View implements Theme.Colorable {
             float end = x + meeroTrackW - thumb / 2f - AndroidUtilities.dp(2);
 
             tx = (int) (start + (end - start) * progress);
+            if (meeroPointerActive) {
+                // R11.4: the knob follows the finger (rubber-banded thumb x)
+                tx = (int) (start + meeroThumbX);
+            }
         } else {
             thumb = AndroidUtilities.dp(20);
             x = (getMeasuredWidth() - width) / 2;
@@ -523,15 +532,24 @@ public class Switch extends View implements Theme.Colorable {
                 canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(11), AndroidUtilities.dpf2(11), paint);
                 canvasToDraw.drawCircle(tx, ty, AndroidUtilities.dpf2(11), paint);
             } else if (CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()) {
-                // R11.3: 63x28dp track capsule + subtle inner specular rim
-                // (Ios26CapsuleSwitch drawBehind: white 16% stroke, inset 1dp).
-                int meeroX = (getMeasuredWidth() - meeroTrackW) / 2;
-                int meeroY = getMeasuredHeight() / 2 - meeroTrackH / 2;
-                rectF.set(meeroX, meeroY, meeroX + meeroTrackW, meeroY + meeroTrackH);
-                if (!isChecked && Color.alpha(color) < 255) {
-                    Paint grayPaint = Theme.isCurrentThemeDark() || Theme.isCurrentThemeNight() ? paint5 : paint4;
-                    canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(14f), AndroidUtilities.dpf2(14f), grayPaint);
+                // R11.4: Ios26CapsuleSwitch track - fixed iOS palette (off
+                // 0xFF787880 @38% dark / 24% light, on IosGreen 0xFF34C759),
+                // inner specular rim white 16% (inset 1dp), iOS micro-indicators
+                // (white bar when on, grey ring when off) visible through the
+                // glass droplet. The blend factor follows the finger while
+                // dragging (thumbX / travel), colorProgress otherwise.
+                final int meeroX = (getMeasuredWidth() - meeroTrackW) / 2;
+                final int meeroY = getMeasuredHeight() / 2 - meeroTrackH / 2;
+                final boolean meeroDark = Theme.isCurrentThemeDark() || Theme.isCurrentThemeNight();
+                final float meeroColorT = meeroPointerActive
+                        ? Math.max(0f, Math.min(1f, meeroThumbX / meeroMaxTravel()))
+                        : colorProgress;
+                if (a == 0 && overrideColorProgress == 0) {
+                    paint.setColor(meeroBlend(
+                            Theme.multAlpha(0xFF787880, meeroDark ? 0x61 : 0x3D),
+                            0xFF34C759, meeroColorT));
                 }
+                rectF.set(meeroX, meeroY, meeroX + meeroTrackW, meeroY + meeroTrackH);
                 canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(14f), AndroidUtilities.dpf2(14f), paint);
                 Paint rimPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                 rimPaint.setStyle(Paint.Style.STROKE);
@@ -539,6 +557,23 @@ public class Switch extends View implements Theme.Colorable {
                 rimPaint.setColor(0x29FFFFFF);
                 rectF.set(meeroX + 1, meeroY + 1, meeroX + meeroTrackW - 1, meeroY + meeroTrackH - 1);
                 canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(13f), AndroidUtilities.dpf2(13f), rimPaint);
+                // iOS micro-indicators (Ios26CapsuleSwitch drawBehind)
+                final boolean meeroOn = meeroPointerActive ? meeroDragPreviewOn : isChecked;
+                if (meeroOn) {
+                    final float barW = AndroidUtilities.dp(2), barH = AndroidUtilities.dp(10);
+                    rimPaint.setStyle(Paint.Style.FILL);
+                    rimPaint.setColor(0x9EFFFFFF);
+                    rectF.set(meeroX + AndroidUtilities.dp(11), meeroY + (meeroTrackH - barH) / 2f,
+                            meeroX + AndroidUtilities.dp(11) + barW, meeroY + (meeroTrackH - barH) / 2f + barH);
+                    canvasToDraw.drawRoundRect(rectF, barW / 2f, barW / 2f, rimPaint);
+                } else {
+                    rimPaint.setStyle(Paint.Style.STROKE);
+                    rimPaint.setStrokeWidth(AndroidUtilities.dpf2(1.6f));
+                    rimPaint.setColor(0x948E8E93);
+                    canvasToDraw.drawCircle(meeroX + meeroTrackW - AndroidUtilities.dp(13), meeroY + meeroTrackH / 2f,
+                            AndroidUtilities.dp(4), rimPaint);
+                }
+                rimPaint.setStyle(Paint.Style.FILL);
             } else {
                 rectF.set(x, y, x + width, y + AndroidUtilities.dpf2(14));
                 canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(7), AndroidUtilities.dpf2(7), paint);
@@ -593,36 +628,50 @@ public class Switch extends View implements Theme.Colorable {
             if (CherrygramAppearanceConfig.INSTANCE.getOneUI_SwitchStyle()) {
                 canvasToDraw.drawCircle(tx, ty, AndroidUtilities.dp(9.5F), paint3);
             } else if (CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()) {
-                // R11.3: 37x24dp capsule knob. While the switch glides
-                // (0<progress<1) it renders as the Liquid Glass droplet -
-                // swells 1.34x/1.46x, turns translucent with the liquid
-                // surface gradient, specular arc and chromatic caustic rim.
-                final float glide = progress < 0.02f || progress > 0.98f ? 0f
-                        : (float) Math.sin(progress * Math.PI);
-                final float swellX = 1f + 0.34f * glide;
-                final float swellY = 1f + 0.46f * glide;
+                // R11.4: Ios26CapsuleSwitch knob - the Liquid Glass droplet rises
+                // while the finger touches/drags (glassFrac) and on external
+                // toggles, exactly like the uploaded keyboard source (native
+                // style): swells (1+0.34g)*(1+0.46g) over the track edges,
+                // translucent white (alpha 1-0.84g), liquid surface gradient,
+                // upper specular arc, chromatic caustic rim, drop shadow.
+                final boolean meeroDark = Theme.isCurrentThemeDark() || Theme.isCurrentThemeNight();
+                final float g = meeroGlassFrac;
+                final float swellX = (1f + 0.34f * g) * meeroStretchX;
+                final float swellY = (1f + 0.46f * g) * meeroStretchY;
                 final float hw = AndroidUtilities.dp(18.5f) * swellX;
                 final float hh = AndroidUtilities.dp(12f) * swellY;
-                if (glide > 0f) {
+                if (g > 0.02f) {
                     canvas.save();
                     canvas.translate(tx, ty);
                     canvas.scale(swellX, swellY);
+                    // soft drop shadow (elevation 2.5 + 6.5g dp, dark 55% / light 24%)
+                    Paint shPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    final float shadowA = (meeroDark ? 0.40f : 0.18f) * Math.min(1f, 0.35f + 0.65f * g);
+                    shPaint.setShader(new android.graphics.RadialGradient(0, AndroidUtilities.dp(1.5f),
+                            AndroidUtilities.dp(19f),
+                            new int[]{Theme.multAlpha(0xFF000000, (int) (255f * shadowA)), 0},
+                            new float[]{0.55f, 1f}, android.graphics.Shader.TileMode.CLAMP));
+                    canvasToDraw.drawCircle(0, AndroidUtilities.dp(1.5f), AndroidUtilities.dp(19f), shPaint);
                     // solid white fading out as the droplet takes over
                     Paint knobPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                     knobPaint.setColor(paint3.getColor());
-                    knobPaint.setAlpha((int) (255f * (1f - 0.84f * glide)));
+                    knobPaint.setAlpha((int) (255f * (1f - 0.84f * g)));
                     android.graphics.RectF knobRect = new android.graphics.RectF(-AndroidUtilities.dp(18.5f), -AndroidUtilities.dp(12f), AndroidUtilities.dp(18.5f), AndroidUtilities.dp(12f));
                     canvasToDraw.drawRoundRect(knobRect, AndroidUtilities.dpf2(12f), AndroidUtilities.dpf2(12f), knobPaint);
-                    // liquid surface gradient
+                    // liquid surface gradient (native style: white tints)
                     Paint dropPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                     dropPaint.setShader(new android.graphics.LinearGradient(0, -hh, 0, hh,
-                            new int[]{0x61FFFFFF, 0x14FFFFFF, 0x47FFFFFF},
+                            new int[]{
+                                    Theme.multAlpha(0xFFFFFFFF, (int) (255f * (meeroDark ? 0.28f : 0.38f) * g)),
+                                    Theme.multAlpha(0xFFFFFFFF, (int) (255f * 0.08f * g)),
+                                    Theme.multAlpha(0xFFFFFFFF, (int) (255f * (meeroDark ? 0.20f : 0.28f) * g)),
+                            },
                             new float[]{0f, 0.48f, 1f}, android.graphics.Shader.TileMode.CLAMP));
                     canvasToDraw.drawRoundRect(knobRect, AndroidUtilities.dpf2(12f), AndroidUtilities.dpf2(12f), dropPaint);
-                    // upper specular highlight arc
+                    // upper specular liquid highlight arc
                     Paint hiPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                     hiPaint.setShader(new android.graphics.LinearGradient(0, -hh, 0, 0f,
-                            new int[]{0xE6FFFFFF, 0x0DFFFFFF},
+                            new int[]{Theme.multAlpha(0xFFFFFFFF, (int) (255f * 0.90f * g)), Theme.multAlpha(0xFFFFFFFF, (int) (255f * 0.05f * g))},
                             new float[]{0f, 1f}, android.graphics.Shader.TileMode.CLAMP));
                     android.graphics.RectF hiRect = new android.graphics.RectF(-AndroidUtilities.dp(15.5f), -AndroidUtilities.dp(11f), AndroidUtilities.dp(15.5f), -hh * 0.06f);
                     canvasToDraw.drawRoundRect(hiRect, AndroidUtilities.dpf2(10.5f), AndroidUtilities.dpf2(10.5f), hiPaint);
@@ -631,7 +680,11 @@ public class Switch extends View implements Theme.Colorable {
                     rimPaint.setStyle(Paint.Style.STROKE);
                     rimPaint.setStrokeWidth(Math.max(1, AndroidUtilities.dp(1.25f)));
                     rimPaint.setShader(new android.graphics.LinearGradient(-hw, 0, hw, 0,
-                            new int[]{0x4700B4FF, 0xEBFFFFFF, 0x4D34C759},
+                            new int[]{
+                                    Theme.multAlpha(0xFF00B4FF, (int) (255f * 0.28f * g)),
+                                    Theme.multAlpha(0xFFFFFFFF, (int) (255f * 0.92f * g)),
+                                    Theme.multAlpha(0xFF34C759, (int) (255f * 0.30f * g)),
+                            },
                             new float[]{0f, 0.5f, 1f}, android.graphics.Shader.TileMode.CLAMP));
                     canvasToDraw.drawRoundRect(knobRect, AndroidUtilities.dpf2(12f), AndroidUtilities.dpf2(12f), rimPaint);
                     canvas.restore();
@@ -703,6 +756,204 @@ public class Switch extends View implements Theme.Colorable {
         if (overrideColorProgress != 0) {
             canvas.drawBitmap(overlayBitmap[1], 0, 0, null);
         }
+    }
+
+    // ================= R11.4: Ios26CapsuleSwitch finger interaction =================
+    // Exact pointer semantics from the uploaded keyboard source
+    // (ui/Ios26Components.kt Ios26CapsuleSwitch pointerInput).
+    private boolean meeroPointerActive;
+    private boolean meeroMoved;
+    private boolean meeroDragPreviewOn;
+    private float meeroStartPointerX;
+    private float meeroLastPointerX;
+    private float meeroThumbX;
+    private float meeroStretchX = 1f, meeroStretchY = 1f;
+    private float meeroGlassFrac;
+    private ObjectAnimator meeroGlassAnimator;
+    private ObjectAnimator meeroStretchXAnimator;
+    private ObjectAnimator meeroStretchYAnimator;
+    private Runnable meeroGlassSettle;
+
+    @Keep
+    public void setMeeroGlassFrac(float v) {
+        meeroGlassFrac = v;
+        invalidate();
+    }
+
+    @Keep
+    public float getMeeroGlassFrac() {
+        return meeroGlassFrac;
+    }
+
+    @Keep
+    public void setMeeroStretchX(float v) {
+        meeroStretchX = v;
+        invalidate();
+    }
+
+    @Keep
+    public float getMeeroStretchX() {
+        return meeroStretchX;
+    }
+
+    @Keep
+    public void setMeeroStretchY(float v) {
+        meeroStretchY = v;
+        invalidate();
+    }
+
+    @Keep
+    public float getMeeroStretchY() {
+        return meeroStretchY;
+    }
+
+    private void meeroGlassTo(float target, long duration) {
+        if (meeroGlassAnimator != null) {
+            meeroGlassAnimator.cancel();
+            meeroGlassAnimator = null;
+        }
+        meeroGlassAnimator = ObjectAnimator.ofFloat(this, "meeroGlassFrac", target);
+        meeroGlassAnimator.setDuration(duration);
+        meeroGlassAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+        meeroGlassAnimator.start();
+    }
+
+    private void meeroStretchTo(float sx, float sy, long duration) {
+        if (meeroStretchXAnimator != null) {
+            meeroStretchXAnimator.cancel();
+        }
+        if (meeroStretchYAnimator != null) {
+            meeroStretchYAnimator.cancel();
+        }
+        meeroStretchXAnimator = ObjectAnimator.ofFloat(this, "meeroStretchX", sx);
+        meeroStretchYAnimator = ObjectAnimator.ofFloat(this, "meeroStretchY", sy);
+        meeroStretchXAnimator.setDuration(duration);
+        meeroStretchYAnimator.setDuration(duration);
+        meeroStretchXAnimator.start();
+        meeroStretchYAnimator.start();
+    }
+
+    /** 63dp track, 37dp thumb, 2dp pad each side -> 22dp travel (Ios26CapsuleSwitch). */
+    private float meeroMaxTravel() {
+        final float trackW = Math.min(AndroidUtilities.dp(63), getMeasuredWidth());
+        return Math.max(AndroidUtilities.dp(1), trackW - AndroidUtilities.dp(37) - AndroidUtilities.dp(4));
+    }
+
+    private static int meeroBlend(int c1, int c2, float t) {
+        t = Math.max(0f, Math.min(1f, t));
+        final int r = (int) (Color.red(c1) + (Color.red(c2) - Color.red(c1)) * t);
+        final int g = (int) (Color.green(c1) + (Color.green(c2) - Color.green(c1)) * t);
+        final int b = (int) (Color.blue(c1) + (Color.blue(c2) - Color.blue(c1)) * t);
+        final int a = (int) (Color.alpha(c1) + (Color.alpha(c2) - Color.alpha(c1)) * t);
+        return Color.argb(a, r, g, b);
+    }
+
+    /** External toggle (cell click or programmatic): droplet rises then settles. */
+    private void meeroOnExternalToggle(boolean animated) {
+        if (!CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()) {
+            return;
+        }
+        if (!animated || !attachedToWindow) {
+            if (!meeroPointerActive) {
+                meeroGlassTo(0f, 120);
+                meeroStretchTo(1f, 1f, 200);
+            }
+            return;
+        }
+        meeroGlassTo(1f, 110);
+        meeroStretchTo(1.06f, 0.98f, 90);
+        if (meeroGlassSettle != null) {
+            removeCallbacks(meeroGlassSettle);
+        }
+        meeroGlassSettle = () -> {
+            if (!meeroPointerActive) {
+                meeroStretchTo(1f, 1f, 250);
+                meeroGlassTo(0f, 200);
+            }
+        };
+        postDelayed(meeroGlassSettle, 250);
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (!CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle() || getVisibility() != VISIBLE || !isEnabled()) {
+            return super.onTouchEvent(event);
+        }
+        switch (event.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN: {
+                meeroPointerActive = true;
+                meeroMoved = false;
+                meeroStartPointerX = meeroLastPointerX = event.getX();
+                meeroThumbX = isChecked ? meeroMaxTravel() : 0f;
+                meeroDragPreviewOn = isChecked;
+                meeroGlassTo(1f, 120);
+                meeroStretchTo(1.02f, 1.02f, 80);
+                if (meeroGlassSettle != null) {
+                    removeCallbacks(meeroGlassSettle);
+                }
+                getParent().requestDisallowInterceptTouchEvent(true);
+                return true;
+            }
+            case MotionEvent.ACTION_MOVE: {
+                if (!meeroPointerActive) {
+                    break;
+                }
+                final float dx = event.getX() - meeroStartPointerX;
+                if (!meeroMoved && Math.abs(dx) > AndroidUtilities.dpf2(4f)) {
+                    meeroMoved = true;
+                }
+                if (meeroMoved) {
+                    final float max = meeroMaxTravel();
+                    float next = (isChecked ? max : 0f) + dx;
+                    if (next < 0f) {
+                        next *= 0.18f;
+                    }
+                    if (next > max) {
+                        next = max + (next - max) * 0.18f;
+                    }
+                    meeroThumbX = next;
+                    meeroDragPreviewOn = meeroThumbX >= max * 0.5f;
+                    final float vx = event.getX() - meeroLastPointerX;
+                    final float sx = 1f + Math.min(Math.abs(vx) * 0.012f, 0.14f);
+                    meeroStretchX = sx;
+                    meeroStretchY = (float) (1f / Math.sqrt(sx));
+                    meeroLastPointerX = event.getX();
+                    invalidate();
+                }
+                return true;
+            }
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL: {
+                if (!meeroPointerActive) {
+                    break;
+                }
+                meeroPointerActive = false;
+                final boolean wasMoved = meeroMoved;
+                meeroMoved = false;
+                final boolean nextChecked = !wasMoved ? isChecked : meeroThumbX >= meeroMaxTravel() * 0.5f;
+                meeroStretchTo(1f, 1f, 260);
+                if (meeroGlassSettle != null) {
+                    removeCallbacks(meeroGlassSettle);
+                }
+                meeroGlassSettle = () -> {
+                    if (!meeroPointerActive) {
+                        meeroGlassTo(0f, 200);
+                    }
+                };
+                postDelayed(meeroGlassSettle, wasMoved ? 130 : 250);
+                if (nextChecked != isChecked) {
+                    // route through the enclosing cell's click handler so every
+                    // screen keeps its exact behavior (dialogs, dependencies...)
+                    final ViewParent p = getParent();
+                    if (p instanceof View) {
+                        ((View) p).performClick();
+                    }
+                }
+                invalidate();
+                return true;
+            }
+        }
+        return super.onTouchEvent(event);
     }
 
     @Override

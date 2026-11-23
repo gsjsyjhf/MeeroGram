@@ -32,6 +32,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import uz.unnarsx.cherrygram.core.configs.CherrygramAppearanceConfig;
 import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.LayoutHelper;
@@ -446,7 +447,7 @@ public class SessionBottomSheet extends BottomSheet {
             if (needSwitch) {
                 switchView = new Switch(context);
                 switchView.setDrawIconType(1);
-                addView(switchView, LayoutHelper.createFrame(39, 40, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 21, 0, 21, 0));
+                addView(switchView, LayoutHelper.createFrame(CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle() ? 63 : 39, 40, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 21, 0, 21, 0));
             }
         }
 

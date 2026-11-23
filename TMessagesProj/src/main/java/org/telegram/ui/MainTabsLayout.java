@@ -1140,6 +1140,11 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             if (child instanceof GlassTabView) {
                 child.setScaleX(tabScale);
                 child.setScaleY(tabScale);
+                // R11.4: the pill is the only highlight in this mode - tabs can
+                // be rebuilt anytime, so keep the per-tab selector suppressed
+                // every frame (GlassNavBar draws one sliding pill, no per-tab
+                // selection glass).
+                ((GlassTabView) child).setMeeroHideSelector(true);
             }
         }
 
@@ -1195,10 +1200,13 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         final float radius = meeroPillRect.height() / 2f;
         final boolean meeroDark = Theme.isCurrentThemeDark() || Theme.isCurrentThemeNight();
 
-        // 1. frosted glass backdrop, clearing while pressed (blur 8dp*(1-p))
+        // 1. frosted glass backdrop - GlassNavBar keeps the backdrop visible
+        // through the pill at ALL times (press only fades the blur amount,
+        // never the backdrop itself; fading it out is what made the drag look
+        // white in R11.3).
         if (meeroPillGlass != null) {
             try {
-                meeroPillGlass.setAlpha((int) (255f * (1f - p)));
+                meeroPillGlass.setAlpha(255);
                 meeroPillGlass.setRadius(radius);
                 meeroPillGlass.setBounds((int) meeroPillRect.left, (int) meeroPillRect.top, (int) meeroPillRect.right, (int) meeroPillRect.bottom);
                 meeroPillGlass.draw(canvas);
@@ -1206,52 +1214,33 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             }
         }
 
-        // 2. glass optics while pressed (Ios26GlassCapsuleRenderer look)
+        // 2. GlassNavBar pill optics - the SAME glass while resting, pressed or
+        // dragging. The press only fades Highlight + Shadow + InnerShadow IN
+        // with pressProgress over the backdrop (no white gradients, no chromatic
+        // rim - those are the switch thumb's droplet, not this bar).
         if (p > 0.02f) {
-            // liquid surface gradient (top white -> mid -> bottom)
-            meeroLensPaint.setStyle(Paint.Style.FILL);
-            meeroLensPaint.setShader(new android.graphics.LinearGradient(
-                    0, meeroPillRect.top, 0, meeroPillRect.bottom,
-                    new int[]{
-                            Theme.multAlpha(0xFFFFFFFF, (int) (255f * (meeroDark ? 0.28f : 0.38f) * p)),
-                            Theme.multAlpha(0xFFFFFFFF, (int) (255f * 0.08f * p)),
-                            Theme.multAlpha(0xFFFFFFFF, (int) (255f * (meeroDark ? 0.20f : 0.28f) * p)),
-                    },
-                    new float[]{0f, 0.48f, 1f}, android.graphics.Shader.TileMode.CLAMP));
-            canvas.drawRoundRect(meeroPillRect, radius, radius, meeroLensPaint);
-            meeroLensPaint.setShader(null);
-            // upper specular liquid highlight arc
-            final float hiH = meeroPillRect.height() * 0.44f;
-            meeroLensPaint.setShader(new android.graphics.LinearGradient(
-                    0, meeroPillRect.top + dp(1), 0, meeroPillRect.top + dp(1) + hiH,
-                    new int[]{Theme.multAlpha(0xFFFFFFFF, (int) (255f * 0.90f * p)), Theme.multAlpha(0xFFFFFFFF, (int) (255f * 0.05f * p))},
-                    new float[]{0f, 1f}, android.graphics.Shader.TileMode.CLAMP));
-            canvas.drawRoundRect(meeroPillRect.left + dp(3), meeroPillRect.top + dp(1),
-                    meeroPillRect.right - dp(3), meeroPillRect.top + dp(1) + hiH,
-                    hiH / 2f, hiH / 2f, meeroLensPaint);
-            meeroLensPaint.setShader(null);
-            // chromatic caustic edge rim (cyan -> white -> green dispersion)
-            meeroLensPaint.setStyle(Paint.Style.STROKE);
-            meeroLensPaint.setStrokeWidth(dp(1.25f));
-            meeroLensPaint.setShader(new android.graphics.LinearGradient(
-                    meeroPillRect.left, 0, meeroPillRect.right, 0,
-                    new int[]{
-                            Theme.multAlpha(0xFF00B4FF, (int) (255f * 0.28f * p)),
-                            Theme.multAlpha(0xFFFFFFFF, (int) (255f * 0.92f * p)),
-                            Theme.multAlpha(0xFF34C759, (int) (255f * 0.30f * p)),
-                    },
-                    new float[]{0f, 0.5f, 1f}, android.graphics.Shader.TileMode.CLAMP));
-            canvas.drawRoundRect(meeroPillRect, radius, radius, meeroLensPaint);
-            meeroLensPaint.setShader(null);
-            meeroLensPaint.setStyle(Paint.Style.FILL);
-        } else {
-            // crisp resting hairline (Highlight.Default rim)
+            // Highlight.Default.copy(alpha = progress): soft rim brightening in
             meeroLensPaint.setStyle(Paint.Style.STROKE);
             meeroLensPaint.setStrokeWidth(dp(1));
-            meeroLensPaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.18f));
+            meeroLensPaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.30f * p));
             canvas.drawRoundRect(meeroPillRect, radius, radius, meeroLensPaint);
+            // InnerShadow(radius = 8dp * progress, alpha = progress): top inset
             meeroLensPaint.setStyle(Paint.Style.FILL);
+            final float inner = dp(8) * p;
+            meeroLensPaint.setShader(new android.graphics.LinearGradient(
+                    0, meeroPillRect.top, 0, meeroPillRect.top + inner,
+                    new int[]{Theme.multAlpha(0xFF000000, (int) (255f * 0.22f * p)), 0},
+                    new float[]{0f, 1f}, android.graphics.Shader.TileMode.CLAMP));
+            canvas.drawRoundRect(meeroPillRect, radius, radius, meeroLensPaint);
+            meeroLensPaint.setShader(null);
+        } else {
+            // at rest: hairline glass edge (the lens refraction edge in the original)
+            meeroLensPaint.setStyle(Paint.Style.STROKE);
+            meeroLensPaint.setStrokeWidth(dp(1));
+            meeroLensPaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.12f));
+            canvas.drawRoundRect(meeroPillRect, radius, radius, meeroLensPaint);
         }
+        meeroLensPaint.setStyle(Paint.Style.FILL);
 
         // 3. onDrawSurface: 12% tint fading out + black 3%p (GlassNavBar)
         meeroPillPaint.setStyle(Paint.Style.FILL);

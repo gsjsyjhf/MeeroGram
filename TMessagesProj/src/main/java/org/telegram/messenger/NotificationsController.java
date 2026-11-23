@@ -3442,7 +3442,11 @@ public class NotificationsController extends BaseController implements Notificat
     }
 
     private void playInChatSound() {
-        if (!inChatSoundEnabled || MediaController.getInstance().isRecordingAudio()) {
+        // R11.4: frozen MeeroX behavior - with the iOS26 chat sounds toggle ON
+        // the in-chat send/receive sounds play unconditionally (the toggle alone
+        // decides); the legacy Telegram in-chat-sound switch only gates the
+        // classic sounds.
+        if ((!inChatSoundEnabled && !CherrygramChatsConfig.INSTANCE.getIos26ChatSounds()) || MediaController.getInstance().isRecordingAudio()) {
             return;
         }
         try {
@@ -6079,7 +6083,11 @@ public class NotificationsController extends BaseController implements Notificat
     }
 
     public void playOutChatSound() {
-        if (!inChatSoundEnabled || MediaController.getInstance().isRecordingAudio()) {
+        // R11.4: frozen MeeroX behavior - with the iOS26 chat sounds toggle ON
+        // the in-chat send/receive sounds play unconditionally (the toggle alone
+        // decides); the legacy Telegram in-chat-sound switch only gates the
+        // classic sounds.
+        if ((!inChatSoundEnabled && !CherrygramChatsConfig.INSTANCE.getIos26ChatSounds()) || MediaController.getInstance().isRecordingAudio()) {
             return;
         }
         try {

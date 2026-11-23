@@ -52,6 +52,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import uz.unnarsx.cherrygram.core.configs.CherrygramAppearanceConfig;
 import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChatActivity;
 
@@ -198,7 +199,7 @@ public class PhonebookShareAlert extends BottomSheet {
             if (!isImport) {
                 checkBox = new Switch(context);
                 checkBox.setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
-                addView(checkBox, LayoutHelper.createFrame(39, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 22, 0, 22, 0));
+                addView(checkBox, LayoutHelper.createFrame(CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle() ? 63 : 39, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 22, 0, 22, 0));
             }
         }
 

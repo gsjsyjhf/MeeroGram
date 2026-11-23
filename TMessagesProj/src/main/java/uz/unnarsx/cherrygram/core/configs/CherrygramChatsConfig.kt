@@ -94,7 +94,9 @@ object CherrygramChatsConfig: CoroutineScope by CoroutineScope(
     /** MeeroGram R11.1: iOS26 sounds for in-chat sent/received messages -
      *  an option fully separate from the notification sound above, which
      *  stays dedicated to notifications. */
-    var ios26ChatSounds by sharedPreferences.boolean("MG_Ios26ChatSounds", true)
+    // R11.4: _v2 key - ignores a stale false stored by older builds, so the
+    // frozen in-chat sounds are ON right after the update (frozen behavior).
+    var ios26ChatSounds by sharedPreferences.boolean("MG_Ios26ChatSounds_v2", true)
 
     /** Chats screen title: show "Chats" instead of the app name (R11). */
     var chatsTitleAsTabs by sharedPreferences.boolean("MG_ChatsTitleAsTabs", false)
