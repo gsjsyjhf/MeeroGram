@@ -946,9 +946,28 @@ public class Switch extends View implements Theme.Colorable {
                 if (!wasCancelled && (!wasMoved || nextChecked != isChecked)) {
                     // route through the enclosing cell's click handler so every
                     // screen keeps its exact behavior (dialogs, dependencies...)
-                    final ViewParent p = getParent();
-                    if (p instanceof View) {
-                        ((View) p).performClick();
+                    // R11.8: the direct parent can be a plain grouped-card
+                    // container without any click listener (iOS26 settings
+                    // cards) - performClick on it was a silent no-op and taps
+                    // stayed dead. Walk up to the NEAREST ancestor that really
+                    // has a click listener; never cross a scrolling parent.
+                    View clickTarget = null;
+                    for (ViewParent q = getParent(); q instanceof View; q = ((View) q).getParent()) {
+                        final View v = (View) q;
+                        if (v instanceof androidx.recyclerview.widget.RecyclerView || v instanceof android.widget.ListView) {
+                            break;
+                        }
+                        if (v.hasOnClickListener()) {
+                            clickTarget = v;
+                            break;
+                        }
+                    }
+                    if (clickTarget != null) {
+                        clickTarget.performClick();
+                    } else {
+                        // no reachable cell listener: still give the finger
+                        // feedback instead of a dead tap
+                        setChecked(!isChecked, true);
                     }
                 } else if (wasMoved) {
                     // drag released without committing: glide back to the

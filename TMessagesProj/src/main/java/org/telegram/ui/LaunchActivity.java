@@ -474,9 +474,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         flagSecureReason.attach();
 
         super.onCreate(savedInstanceState);
-        // R11.7 on-device build marker: unmissable proof of which build is
+        // R11.8 on-device build marker: unmissable proof of which build is
         // actually installed. Keep in sync with APP_VERSION_NAME_CHERRY.
-        android.widget.Toast.makeText(this, "Meerogram 1.2.6 — النسخة الجديدة مثبتة ✓", android.widget.Toast.LENGTH_LONG).show();
+        android.widget.Toast.makeText(this, "Meerogram 1.2.7 — إصلاح السويج والبار ✓", android.widget.Toast.LENGTH_LONG).show();
         if (Build.VERSION.SDK_INT >= 24) {
             AndroidUtilities.isInMultiwindow = isInMultiWindowMode();
         }

@@ -475,9 +475,17 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
         final ViewPositionWatcher viewPositionWatcher = new ViewPositionWatcher(contentView);
 
+        // R11.8: force the DETERMINISTIC color source for the tab bar.
+        // The render-node composite source (iBlur3SourceTabGlass) rendered the
+        // tabs container as a solid white rounded rect on the user's imported
+        // dark theme ("البياض") while the sibling search button - same factory,
+        // same provider - stayed dark, so the failure is in the capture source
+        // state, not in the provider fill. A color source cannot go white: it
+        // is getThemedColor(key_windowBackgroundWhite) which the theme defines
+        // dark (the pages themselves render dark on the same device).
         BlurredBackgroundDrawableViewFactory iBlur3FactoryGlass = new BlurredBackgroundDrawableViewFactory(
-            iBlur3SourceTabGlass != null ? iBlur3SourceTabGlass : iBlur3SourceColor,
-            iBlur3SourceTabFrosted != null ? iBlur3SourceTabFrosted : iBlur3SourceColor,
+            iBlur3SourceColor,
+            iBlur3SourceColor,
             iBlur3SourceColor);
         iBlur3FactoryGlass.setSourceRootView(viewPositionWatcher, contentView);
         iBlur3FactoryGlass.setLiquidGlassEffectAllowed(true);
