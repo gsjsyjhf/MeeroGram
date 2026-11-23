@@ -10255,10 +10255,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 int tl, tr, bl, br;
                 int minRad = dp(4);
                 int rad;
-                if (SharedConfig.bubbleRadius > 2) {
-                    rad = dp(SharedConfig.bubbleRadius - 2);
+                // MeeroGram R11.1: photo corners follow the bubble shape
+                // radius instead of the stock SharedConfig value.
+                int meeroBase = org.telegram.ui.ActionBar.MessageDrawable.meeroBubbleRadius();
+                if (meeroBase > 2) {
+                    rad = dp(meeroBase - 2);
                 } else {
-                    rad = dp(SharedConfig.bubbleRadius);
+                    rad = dp(meeroBase);
                 }
                 int nearRad = Math.min(dp(3), rad);
                 tl = tr = bl = br = rad;

@@ -31,6 +31,87 @@ import java.util.Arrays;
 
 public class MessageDrawable extends Drawable {
 
+    /**
+     * MeeroX: iOS 26 draws bubbles as capsules. Measuring a reference
+     * screenshot gives a corner radius of about half the bubble height,
+     * and Telegram already clamps rad to heightHalf, so asking for a large
+     * value yields the capsule while short bubbles stay correct.
+     * Off -> stock Telegram radius, unchanged.
+     */
+    /**
+     * MeeroX: also read by ChatMessageCell, which sizes the photo's
+     * corners independently and would otherwise keep using
+     * SharedConfig.bubbleRadius while the bubble around it uses this.
+     */
+    public static int meeroBubbleRadius() {
+        try {
+            // MeeroX v122: radius now follows the bubble-shape picker.
+            // generatePath clamps the value to heightHalf, which is what
+            // lets CAPSULE ask for a huge radius safely, and style 0 gets
+            // SharedConfig.bubbleRadius back - byte-for-byte stock.
+            return tw.nekomimi.nekogram.MeeroBubbleStyles.radiusDp(
+                    tw.nekomimi.nekogram.MeeroBubbleStyles.current(), SharedConfig.bubbleRadius);
+        } catch (Throwable ignore) {}
+        return SharedConfig.bubbleRadius;
+    }
+
+    /**
+     * MeeroX v122: only the stock mini-tail arc (style 0) still sizes
+     * itself from this; the custom styles draw with official dp values
+     * via MeeroBubbleStyles instead. Kept at the upstream dp(6) so style
+     * 0 is byte-for-byte stock.
+     */
+    private static int meeroTailRadius() {
+        return AndroidUtilities.dp(6);
+    }
+
+    /**
+     * MeeroX v122: the tail contours (the official iOS crescent, decoded
+     * point-for-point from Telegram-iOS's
+     * submodules/TelegramPresentationData/Sources/ChatMessageBubbleImages.swift,
+     * and the classic wedge) now live in
+     * tw.nekomimi.nekogram.MeeroBubbleStyles so the chat and the settings
+     * picker previews draw the identical outline. generatePath below only
+     * routes on the selected style:
+     *
+     *   0 = stock Telegram (mini-tail arc, untouched)
+     *   1 = official iOS  - full corner radius + crescent from behind it
+     *   2/3 = tail-less   - clean full-radius corner
+     *   4 = classic       - full corner radius + small wedge
+     */
+    private static int meeroBubbleStyle() {
+        try {
+            return tw.nekomimi.nekogram.MeeroBubbleStyles.current();
+        } catch (Throwable ignore) {
+            return 0;
+        }
+    }
+
+    // MeeroX v164 (approved pick): shared hairline paint + gate for the
+    // AMOLED bubble edge. The gate asks the stroke's own switch first,
+    // then reuses the v159 live-mode check (night theme + pure-black
+    // window background + AMOLED bubbles enabled), so the stroke can
+    // only ever appear exactly where the pure-black bubble appears.
+    private static Paint meeroStrokePaint;
+
+    private static boolean meeroAmoledStrokeOn() {
+        // MeeroGram: the AMOLED hairline gate of MeeroX relies on theme
+        // internals we do not ship; keep the stroke off entirely.
+        return false;
+    }
+
+    private Paint meeroAmoledStrokePaint() {
+        if (meeroStrokePaint == null) {
+            meeroStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            meeroStrokePaint.setStyle(Paint.Style.STROKE);
+            // One physical pixel (thin hairline) regardless of density.
+            meeroStrokePaint.setStrokeWidth(Math.max(1f, AndroidUtilities.density / 3f));
+        }
+        // 18% white - "barely there" grey; honours crossfade alpha.
+        meeroStrokePaint.setColor(Color.argb(46 * alpha / 255, 255, 255, 255));
+        return meeroStrokePaint;
+    }
+
     private Shader gradientShader;
     private int currentBackgroundHeight;
     public Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -354,7 +435,7 @@ public class MessageDrawable extends Drawable {
         } else if (overrideRounding > 0) {
             newRad = 0;
         } else {
-            newRad = dp(SharedConfig.bubbleRadius);
+            newRad = dp(meeroBubbleRadius());
         }
         int idx;
         if (isTopNear && isBottomNear) {
@@ -478,7 +559,7 @@ public class MessageDrawable extends Drawable {
         if (gradientShader == null && !isSelected && crossfadeFromDrawable == null) {
             return null;
         }
-        int newRad = dp(SharedConfig.bubbleRadius);
+        int newRad = dp(meeroBubbleRadius());
         int idx;
         if (isTopNear && isBottomNear) {
             idx = 3;
@@ -613,7 +694,7 @@ public class MessageDrawable extends Drawable {
             rad = dp(SharedConfig.bubbleRadius);
             nearRad = dp(Math.min(6, SharedConfig.bubbleRadius));
         }
-        int smallRad = dp(6);
+        int smallRad = meeroTailRadius();
 
         Paint p = paintToUse == null ? paint : paintToUse;
 
@@ -647,6 +728,14 @@ public class MessageDrawable extends Drawable {
         }
 
         canvas.drawPath(path, p);
+        // MeeroX v164 (approved pick): a faint 1px hairline around
+        // incoming AMOLED pure-black bubbles so the bubble edge survives
+        // on true-black backgrounds. Gates on BOTH the stroke switch and
+        // the live AMOLED bubble mode; when off, zero extra draw calls
+        // happen and the v163 path is byte-identical.
+        if (!isOut && meeroAmoledStrokeOn()) {
+            canvas.drawPath(path, meeroAmoledStrokePaint());
+        }
         if (gradientShader != null && isSelected && paintToUse == null) {
             int color = getColor(Theme.key_chat_outBubbleGradientSelectedOverlay);
             selectedPaint.setColor(ColorUtils.setAlphaComponent(color, (int) (Color.alpha(color) * alpha / 255f)));
@@ -676,7 +765,7 @@ public class MessageDrawable extends Drawable {
             rad = dp(SharedConfig.bubbleRadius);
             nearRad = dp(Math.min(6, SharedConfig.bubbleRadius));
         }
-        int smallRad = dp(6);
+        int smallRad = meeroTailRadius();
         int top = Math.max(bounds.top, 0);
         boolean drawFullBottom, drawFullTop;
         if (pathDrawCacheParams != null && bounds.height() < currentBackgroundHeight) {
@@ -763,9 +852,30 @@ public class MessageDrawable extends Drawable {
                 }
             } else {
                 if (drawFullBubble || currentType == TYPE_PREVIEW || customPaint || drawFullBottom) {
-                    path.lineTo(bounds.right - dp(8), bounds.bottom - padding - smallRad - dp(3));
-                    rect.set(bounds.right - dp(8), bounds.bottom - padding - smallRad * 2 - dp(9), bounds.right - dp(7) + smallRad * 2, bounds.bottom - padding - dp(1));
-                    path.arcTo(rect, 180, -83, false);
+                    final int meeroBs = meeroBubbleStyle();
+                    if (meeroBs == 1 || meeroBs == 4 || meeroBs == 7) {
+                        // Tailed custom bubble (official iOS / classic /
+                        // WhatsApp): the corner keeps the FULL radius.
+                        path.lineTo(bounds.right - dp(8), bounds.bottom - padding - rad);
+                        rect.set(bounds.right - dp(8) - rad * 2, bounds.bottom - padding - rad * 2, bounds.right - dp(8), bounds.bottom - padding);
+                        path.arcTo(rect, 0, 90, false);
+                        if (meeroBs == 1) {
+                            tw.nekomimi.nekogram.MeeroBubbleStyles.appendOfficialTail(path, bounds.right - dp(8), bounds.bottom - padding, true, AndroidUtilities.density);
+                        } else if (meeroBs == 4) {
+                            tw.nekomimi.nekogram.MeeroBubbleStyles.appendClassicTail(path, bounds.right - dp(8), bounds.bottom - padding, true, AndroidUtilities.density);
+                        } else {
+                            tw.nekomimi.nekogram.MeeroBubbleStyles.appendWhatsAppTail(path, bounds.right - dp(8), bounds.bottom - padding, true, AndroidUtilities.density);
+                        }
+                    } else if (meeroBs == 2 || meeroBs == 3 || meeroBs == 5 || meeroBs == 6) {
+                        // Tail-less modern corner: full radius, clean edge.
+                        path.lineTo(bounds.right - dp(8), bounds.bottom - padding - rad);
+                        rect.set(bounds.right - dp(8) - rad * 2, bounds.bottom - padding - rad * 2, bounds.right - dp(8), bounds.bottom - padding);
+                        path.arcTo(rect, 0, 90, false);
+                    } else {
+                        path.lineTo(bounds.right - dp(8), bounds.bottom - padding - smallRad - dp(3));
+                        rect.set(bounds.right - dp(8), bounds.bottom - padding - smallRad * 2 - dp(9), bounds.right - dp(7) + smallRad * 2, bounds.bottom - padding - dp(1));
+                        path.arcTo(rect, 180, -83, false);
+                    }
                 } else {
                     path.lineTo(bounds.right - dp(8), top - topY + currentBackgroundHeight);
                 }
@@ -820,9 +930,29 @@ public class MessageDrawable extends Drawable {
                 }
             } else {
                 if (drawFullBubble || currentType == TYPE_PREVIEW || customPaint || drawFullBottom) {
-                    path.lineTo(bounds.left + dp(8), bounds.bottom - padding - smallRad - dp(3));
-                    rect.set(bounds.left + dp(7) - smallRad * 2, bounds.bottom - padding - smallRad * 2 - dp(9), bounds.left + dp(8), bounds.bottom - padding - dp(1));
-                    path.arcTo(rect, 0, 83, false);
+                    final int meeroBs2 = meeroBubbleStyle();
+                    if (meeroBs2 == 1 || meeroBs2 == 4 || meeroBs2 == 7) {
+                        // Mirrored: full-radius corner, tail grows left.
+                        path.lineTo(bounds.left + dp(8), bounds.bottom - padding - rad);
+                        rect.set(bounds.left + dp(8), bounds.bottom - padding - rad * 2, bounds.left + dp(8) + rad * 2, bounds.bottom - padding);
+                        path.arcTo(rect, 180, -90, false);
+                        if (meeroBs2 == 1) {
+                            tw.nekomimi.nekogram.MeeroBubbleStyles.appendOfficialTail(path, bounds.left + dp(8), bounds.bottom - padding, false, AndroidUtilities.density);
+                        } else if (meeroBs2 == 4) {
+                            tw.nekomimi.nekogram.MeeroBubbleStyles.appendClassicTail(path, bounds.left + dp(8), bounds.bottom - padding, false, AndroidUtilities.density);
+                        } else {
+                            tw.nekomimi.nekogram.MeeroBubbleStyles.appendWhatsAppTail(path, bounds.left + dp(8), bounds.bottom - padding, false, AndroidUtilities.density);
+                        }
+                    } else if (meeroBs2 == 2 || meeroBs2 == 3 || meeroBs2 == 5 || meeroBs2 == 6) {
+                        // Tail-less modern corner, mirrored.
+                        path.lineTo(bounds.left + dp(8), bounds.bottom - padding - rad);
+                        rect.set(bounds.left + dp(8), bounds.bottom - padding - rad * 2, bounds.left + dp(8) + rad * 2, bounds.bottom - padding);
+                        path.arcTo(rect, 180, -90, false);
+                    } else {
+                        path.lineTo(bounds.left + dp(8), bounds.bottom - padding - smallRad - dp(3));
+                        rect.set(bounds.left + dp(7) - smallRad * 2, bounds.bottom - padding - smallRad * 2 - dp(9), bounds.left + dp(8), bounds.bottom - padding - dp(1));
+                        path.arcTo(rect, 0, 83, false);
+                    }
                 } else {
                     path.lineTo(bounds.left + dp(8), top - topY + currentBackgroundHeight);
                 }

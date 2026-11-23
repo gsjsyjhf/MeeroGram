@@ -290,7 +290,6 @@ import uz.unnarsx.cherrygram.core.configs.CherrygramCoreConfig;
 import uz.unnarsx.cherrygram.core.configs.CherrygramMessagesConfig;
 import uz.unnarsx.cherrygram.core.configs.CherrygramPrivacyConfig;
 import uz.unnarsx.cherrygram.core.firebase.crashlytics.FirebaseCrashlyticsHelper;
-import uz.unnarsx.cherrygram.core.ui.floating.MeeroFloatingActionsView;
 import uz.unnarsx.cherrygram.core.ui.folders.FoldersHelper;
 import uz.unnarsx.cherrygram.core.ui.mainTabs.MainTabsManager;
 import uz.unnarsx.cherrygram.preferences.tabs.MainTabsPreferencesEntry;
@@ -535,8 +534,17 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private boolean storyHintShown;
     public FragmentFloatingButton floatingButton3;
     private FragmentFloatingButton floatingButtonStories;
-    /** Meerogram floating glass actions */
-    private MeeroFloatingActionsView floatingActionsView;
+    /** Meerogram header glass actions start */
+    private ActionBarMenuItem meeroComposeItem;
+    private ActionBarMenuItem meeroScanItem;
+    private ActionBarMenuItem meeroEditItem;
+    private BlurredBackgroundDrawable meeroHeaderGroupGlass;
+    private final ArrayList<BlurredBackgroundDrawable> meeroHeaderGlassDrawables = new ArrayList<>();
+    private static final int MEERO_HEADER_BUTTON = 30;
+    private static final int MEERO_HEADER_GROUP = 38;
+    private static final int MEERO_ID_COMPOSE = 9711;
+    private static final int MEERO_ID_QR = 9712;
+    /** Meerogram header glass actions finish */
     private ButtonWithCounterView addChatsToCommunityButton;
     private ChatActivityFadeView communityBottomFadeView;
     private ChatAvatarContainer avatarContainer;
@@ -3445,6 +3453,26 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         fragmentSearchFieldWatcher.setDoNotCloseAfterFieldEmpty();
 
         if (initialDialogsType == DIALOGS_TYPE_DEFAULT) {
+            /** Meerogram header glass actions start */
+            if (CherrygramChatsConfig.INSTANCE.getFloatingActions()) {
+                meeroComposeItem = menu.addItem(MEERO_ID_COMPOSE, R.drawable.msg_add);
+                meeroComposeItem.setContentDescription(LocaleController.getString(R.string.NewMessageTitle));
+                meeroComposeItem.setOnClickListener(v -> {
+                    if (parentLayout != null && parentLayout.isInPreviewMode()) {
+                        finishPreviewFragment();
+                        return;
+                    }
+                    if (MessagesController.getInstance(currentAccount).isFrozen()) {
+                        AccountFrozenAlert.show(currentAccount);
+                        return;
+                    }
+                    openWriteContacts();
+                });
+                meeroScanItem = menu.addItem(MEERO_ID_QR, R.drawable.msg_qr_scan);
+                meeroScanItem.setContentDescription(LocaleController.getString(R.string.ScanQrCode));
+                meeroScanItem.setOnClickListener(v -> openQrScanner());
+            }
+            /** Meerogram header glass actions finish */
             optionsItem = menu.addItem(4, R.drawable.ic_ab_other);
             optionsItem.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
             optionsItem.setOnClickListener(v -> {
@@ -3456,6 +3484,40 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 showItemOptions();
                 return true;
             });
+            /** Meerogram header glass actions start */
+            if (CherrygramChatsConfig.INSTANCE.getFloatingActions()) {
+                meeroEditItem = new ActionBarMenuItem(context, null, getThemedColor(Theme.key_actionBarDefaultSelector), getThemedColor(Theme.key_actionBarDefaultIcon), true);
+                meeroEditItem.setText(getString(R.string.MG_HeaderEdit));
+                meeroEditItem.setContentDescription(getString(R.string.MG_HeaderEdit));
+                final FrameLayout.LayoutParams meeroEditLp = LayoutHelper.createFrame(
+                        LayoutHelper.WRAP_CONTENT, MEERO_HEADER_BUTTON,
+                        Gravity.TOP | Gravity.LEFT, 6, 0, 0, 0);
+                meeroEditLp.topMargin = AndroidUtilities.statusBarHeight
+                        + (ActionBar.getCurrentActionBarHeight() - dp(MEERO_HEADER_BUTTON)) / 2;
+                actionBar.addView(meeroEditItem, meeroEditLp);
+                actionBar.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or_, ob) -> {
+                    if (meeroEditItem == null) {
+                        return;
+                    }
+                    final int want = AndroidUtilities.statusBarHeight
+                            + (ActionBar.getCurrentActionBarHeight() - dp(MEERO_HEADER_BUTTON)) / 2;
+                    final ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) meeroEditItem.getLayoutParams();
+                    if (mlp != null && mlp.topMargin != want) {
+                        mlp.topMargin = want;
+                        meeroEditItem.setLayoutParams(mlp);
+                    }
+                });
+                meeroEditItem.setOnClickListener(v -> presentFragment(new MainTabsPreferencesEntry()));
+                if (iBlur3FactoryLiquidGlass != null) {
+                    final BlurredBackgroundDrawable editGlass = iBlur3FactoryLiquidGlass.create(meeroEditItem, BlurredBackgroundProviderImpl.mainTabs(resourceProvider));
+                    editGlass.setRadius(dp(MEERO_HEADER_BUTTON / 2f));
+                    editGlass.setPadding(dp(4));
+                    meeroEditItem.setBackground(editGlass);
+                    meeroHeaderGlassDrawables.add(editGlass);
+                }
+                meeroGlassHeaderGroup();
+            }
+            /** Meerogram header glass actions finish */
         }
 
         searchItem.setSearchFieldHint(getString(R.string.Search));
@@ -5720,31 +5782,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         glassEngine.setGlassInvalidationListener(this::invalidateBlurCaptures);
         glassEngine.setPositionsMerger(new GlassPositionsMerger(Float.POSITIVE_INFINITY, dp(48)));
-
-        /** Meerogram floating glass actions start */
-        if (CherrygramChatsConfig.INSTANCE.getFloatingActions() && initialDialogsType == DIALOGS_TYPE_DEFAULT && !onlySelect && folderId == 0 && communityId == 0) {
-            floatingActionsView = new MeeroFloatingActionsView(context, resourceProvider, iBlur3FactoryLiquidGlass);
-            floatingActionsView.setOnScanClickListener(v -> openQrScanner());
-            floatingActionsView.setOnComposeClickListener(v -> {
-                if (parentLayout != null && parentLayout.isInPreviewMode()) {
-                    finishPreviewFragment();
-                    return;
-                }
-                if (MessagesController.getInstance(currentAccount).isFrozen()) {
-                    AccountFrozenAlert.show(currentAccount);
-                    return;
-                }
-                openWriteContacts();
-            });
-            floatingActionsView.setOnEditClickListener(v -> presentFragment(new MainTabsPreferencesEntry()));
-            contentView.addView(floatingActionsView, LayoutHelper.createFrame(
-                LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT,
-                (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM,
-                12, 0, 12, 0));
-            updateFloatingActionsOffset();
-            checkFloatingActionsVisibility();
-        }
-        /** Meerogram floating glass actions finish */
 
         ViewCompat.setOnApplyWindowInsetsListener(fragmentView, this::onApplyWindowInsets);
         return fragmentView;
@@ -9013,8 +9050,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (floatingButtonStories != null) {
             floatingButtonStories.setButtonVisible(isVisible && storiesEnabled, animated);
         }
-
-        checkFloatingActionsVisibility();
     }
 
     private void updateFloatingButtonOffset() {
@@ -9036,25 +9071,65 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 storyHint.setTranslationY(baseTranslationY - dp(52) - floatingButtonsOffset);
             }
         }
-
-        updateFloatingActionsOffset();
     }
 
-    /** Meerogram floating glass actions start */
-    private void updateFloatingActionsOffset() {
-        if (floatingActionsView == null) {
+    /** Meerogram header glass actions start */
+    private void meeroGlassHeaderGroup() {
+        if (iBlur3FactoryLiquidGlass == null || actionBar == null) {
             return;
         }
-        floatingActionsView.setTranslationY(-(navigationBarHeight + additionNavigationBarHeight + dp(6)));
-    }
-
-    private void checkFloatingActionsVisibility() {
-        if (floatingActionsView == null) {
+        final ActionBarMenu menu = actionBar.createMenu();
+        if (menu == null) {
             return;
         }
-        final boolean visible = !inPreviewMode && !searching && folderId == 0 && communityId == 0 && !onlySelect && initialDialogsType == DIALOGS_TYPE_DEFAULT;
-        floatingActionsView.setVisibility(visible ? View.VISIBLE : View.GONE);
+        try {
+            for (ActionBarMenuItem it : new ActionBarMenuItem[]{meeroComposeItem, meeroScanItem, optionsItem}) {
+                if (it == null) {
+                    continue;
+                }
+                final ViewGroup.LayoutParams ilp = it.getLayoutParams();
+                if (ilp != null) {
+                    ilp.height = dp(MEERO_HEADER_BUTTON);
+                    if (ilp instanceof LinearLayout.LayoutParams) {
+                        ((LinearLayout.LayoutParams) ilp).gravity = Gravity.CENTER_VERTICAL;
+                    }
+                    it.setLayoutParams(ilp);
+                }
+            }
+            menu.setGlassMode(true);
+            menu.setGravity(Gravity.CENTER_VERTICAL);
+            final int groupSize = dp(MEERO_HEADER_GROUP);
+            final int groupPad = Math.round(MEERO_HEADER_GROUP * 0.27f);
+            menu.setPadding(dp(groupPad), 0, dp(groupPad), 0);
+            menu.setClipToPadding(false);
+            menu.setClipChildren(false);
+            final BlurredBackgroundDrawable group = iBlur3FactoryLiquidGlass.create(menu, BlurredBackgroundProviderImpl.mainTabs(resourceProvider));
+            group.setRadius(groupSize / 2f);
+            meeroHeaderGroupGlass = group;
+            meeroHeaderGlassDrawables.add(group);
+            menu.setMeeroBackgroundPainter(canvas -> {
+                if (meeroHeaderGroupGlass == null) {
+                    return;
+                }
+                final float buttonsAlpha = Math.max(
+                        Math.max(
+                                meeroComposeItem != null ? meeroComposeItem.getAlpha() : 0f,
+                                meeroScanItem != null ? meeroScanItem.getAlpha() : 0f),
+                        optionsItem != null ? optionsItem.getAlpha() : 0f);
+                if (buttonsAlpha <= 0.01f) {
+                    return;
+                }
+                final int h = menu.getHeight();
+                final int top = Math.max(0, (h - groupSize) / 2);
+                meeroHeaderGroupGlass.setBounds(0, top, menu.getWidth(), top + groupSize);
+                meeroHeaderGroupGlass.setAlpha((int) (buttonsAlpha * 255));
+                meeroHeaderGroupGlass.draw(canvas);
+                meeroHeaderGroupGlass.setAlpha(255);
+            });
+        } catch (Throwable ignore) {
+        }
     }
+    /** Meerogram header glass actions finish */
 
     private void openQrScanner() {
         final Activity activity = getParentActivity();

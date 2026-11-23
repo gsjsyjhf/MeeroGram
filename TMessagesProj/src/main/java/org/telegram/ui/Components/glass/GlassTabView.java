@@ -143,6 +143,14 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         invalidate();
     }
 
+    // Meerogram liquid pill: when the sliding pill draws the highlight,
+    // per-tab selectors stay hidden so nothing doubles up.
+    private boolean meeroHideSelector;
+
+    public void setMeeroHideSelector(boolean hideSelector) {
+        meeroHideSelector = hideSelector;
+    }
+
     public void setSkipDrawSelector(boolean skipDrawSelector) {
         if (this.skipDrawSelector != skipDrawSelector) {
             this.skipDrawSelector = skipDrawSelector;
@@ -154,7 +162,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
     protected void dispatchDraw(@NonNull Canvas canvas) {
         final float viewWidth = hasVisualWidth ? visualWidth : getWidth();
         final float selectedFactor = hasGestureSelectedOverride ? gestureSelectedOverride : isSelectedAnimator.getFloatValue();
-        if (selectedFactor > 0 && !skipDrawSelector) {
+        if (selectedFactor > 0 && !skipDrawSelector && !meeroHideSelector) {
             final float alpha = AnimatorUtils.DECELERATE_INTERPOLATOR.getInterpolation(selectedFactor);
 
             paintCounterBackground.setColor(Theme.multAlpha(colorSelected, 0.09f * alpha));

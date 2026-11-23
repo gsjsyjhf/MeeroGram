@@ -3477,12 +3477,12 @@ public class NotificationsController extends BaseController implements Notificat
                     }
                     if (soundIn == 0 && !soundInLoaded) {
                         soundInLoaded = true;
-                        // MeeroGram R11: iOS26 chat sound option (bundled sound_in_ios26).
+                        // MeeroGram R11.1: iOS26 in-chat receive sound, an
+                        // option separate from the notification sound.
                         int sound;
-                        int notifSound = CherrygramChatsConfig.INSTANCE.getNotificationSound();
-                        if (notifSound == CherrygramChatsConfig.NOTIF_SOUND_IOS26) {
-                            sound = R.raw.sound_in_ios26;
-                        } else if (notifSound == CherrygramChatsConfig.NOTIF_SOUND_IOS) {
+                        if (CherrygramChatsConfig.INSTANCE.getIos26ChatSounds()) {
+                            sound = R.raw.meerox_ios_in;
+                        } else if (CherrygramChatsConfig.INSTANCE.getNotificationSound() == CherrygramChatsConfig.NOTIF_SOUND_IOS) {
                             sound = R.raw.sound_in_ios;
                         } else {
                             sound = R.raw.sound_in;
@@ -6113,7 +6113,9 @@ public class NotificationsController extends BaseController implements Notificat
                 }
                 if (soundOut == 0 && !soundOutLoaded) {
                     soundOutLoaded = true;
-                    soundOut = soundPool.load(ApplicationLoader.applicationContext, R.raw.sound_out, 1);
+                    // MeeroGram R11.1: iOS26 in-chat send sound.
+                    soundOut = soundPool.load(ApplicationLoader.applicationContext,
+                            CherrygramChatsConfig.INSTANCE.getIos26ChatSounds() ? R.raw.meerox_ios_out : R.raw.sound_out, 1);
                 }
                 if (soundOut != 0) {
                     try {

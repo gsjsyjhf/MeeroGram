@@ -76,7 +76,7 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
     private final int chatsTitleRow = 30;
     // MeeroGram R11: floating glass pills + stacked stories.
     private final int floatingActionsRow = 31;
-    private final int stackedStoriesRow = 32;
+    private final int stackedStoriesRow = 32, ios26ChatSoundsRow = 33, bubbleStyleRow = 34, fontsRow = 35;
 
     private boolean expandedHeaderSettingsSection = false;
     private boolean expandedBottomBarSettingsSection = false;
@@ -163,6 +163,20 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
         items.add(SettingsHelper.asSwitchCG(stackedStoriesRow, getString(R.string.MG_StackedStories), getString(R.string.MG_StackedStories_Desc))
                 .setChecked(CherrygramChatsConfig.INSTANCE.getStackedStories())
                 .slug("stackedStories")
+        );
+        // MeeroGram R11.1: iOS26 sounds for in-chat sent/received messages,
+        // separate from the notification sound option.
+        items.add(SettingsHelper.asSwitchCG(ios26ChatSoundsRow, getString(R.string.MG_Ios26ChatSounds), getString(R.string.MG_Ios26ChatSounds_Desc))
+                .setChecked(CherrygramChatsConfig.INSTANCE.getIos26ChatSounds())
+                .slug("ios26ChatSounds")
+        );
+        // MeeroGram R11.1: message bubble shape (feature 8).
+        items.add(UItem.asButton(bubbleStyleRow, getString(R.string.MG_BubbleStyle), getBubbleStyleValue())
+                .slug("bubbleStyle")
+        );
+        // MeeroGram R11.1: custom font picker (feature 10).
+        items.add(UItem.asButton(fontsRow, getString(R.string.MG_Fonts), tw.nekomimi.nekogram.MeeroFonts.titleOf(tw.nekomimi.nekogram.MeeroFonts.getSelected()))
+                .slug("meeroFonts")
         );
 
         items.add(UItem.asButton(chatMenuShortcutsRow, R.drawable.msg_list, getString(R.string.CP_ChatMenuShortcuts))
@@ -373,6 +387,18 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
             SettingsHelper.updateCheckState(view, CherrygramChatsConfig.INSTANCE.getStackedStories());
 
             getParentLayout().rebuildAllFragmentViews(false, false);
+        } else if (item.id == ios26ChatSoundsRow) {
+            // MeeroGram R11.1: in-chat iOS26 sounds (send/receive).
+            CherrygramChatsConfig.INSTANCE.setIos26ChatSounds(!CherrygramChatsConfig.INSTANCE.getIos26ChatSounds());
+            SettingsHelper.updateCheckState(view, CherrygramChatsConfig.INSTANCE.getIos26ChatSounds());
+
+            showRestartBulletin();
+        } else if (item.id == bubbleStyleRow) {
+            // MeeroGram R11.1: bubble shape picker (feature 8).
+            showBubbleStyleSelector(() -> SettingsHelper.updateButtonValue(view, getBubbleStyleValue()));
+        } else if (item.id == fontsRow) {
+            // MeeroGram R11.1: custom font picker (feature 10).
+            presentFragment(new MeeroFontsPreferencesEntry());
         } else if (item.id == customBackgroundInChatsRow) {
             CherrygramChatsConfig.INSTANCE.setCustomWallpapers(!CherrygramChatsConfig.INSTANCE.getCustomWallpapers());
             SettingsHelper.updateCheckState(view, CherrygramChatsConfig.INSTANCE.getCustomWallpapers());
@@ -452,9 +478,7 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
 
                 int tone;
                 int ns = CherrygramChatsConfig.INSTANCE.getNotificationSound();
-                if (ns == CherrygramChatsConfig.NOTIF_SOUND_IOS26) {
-                    tone = R.raw.sound_in_ios26;
-                } else if (ns == CherrygramChatsConfig.NOTIF_SOUND_IOS) {
+                if (ns == CherrygramChatsConfig.NOTIF_SOUND_IOS) {
                     tone = R.raw.sound_in_ios;
                 } else {
                     tone = R.raw.sound_in;
@@ -672,11 +696,41 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
         handleMenuAlert(getString(R.string.CP_AdminActions), menuItems, fragment);
     }
 
+    private String getBubbleStyleValue() {
+        return switch (tw.nekomimi.nekogram.MeeroBubbleStyles.current()) {
+            case tw.nekomimi.nekogram.MeeroBubbleStyles.IOS_OFFICIAL -> getString(R.string.MG_Bubble_Ios);
+            case tw.nekomimi.nekogram.MeeroBubbleStyles.IOS_MODERN -> getString(R.string.MG_Bubble_Modern);
+            case tw.nekomimi.nekogram.MeeroBubbleStyles.CAPSULE -> getString(R.string.MG_Bubble_Capsule);
+            case tw.nekomimi.nekogram.MeeroBubbleStyles.CLASSIC -> getString(R.string.MG_Bubble_Classic);
+            case tw.nekomimi.nekogram.MeeroBubbleStyles.SHARP -> getString(R.string.MG_Bubble_Sharp);
+            case tw.nekomimi.nekogram.MeeroBubbleStyles.INSTAGRAM -> getString(R.string.MG_Bubble_Instagram);
+            case tw.nekomimi.nekogram.MeeroBubbleStyles.WHATSAPP -> getString(R.string.MG_Bubble_Whatsapp);
+            default -> getString(R.string.MG_Bubble_Stock);
+        };
+    }
+
+    private void showBubbleStyleSelector(Runnable runnable) {
+        ArrayList<String> names = new ArrayList<>();
+        ArrayList<Integer> values = new ArrayList<>();
+        names.add(getString(R.string.MG_Bubble_Stock));     values.add(tw.nekomimi.nekogram.MeeroBubbleStyles.STOCK);
+        names.add(getString(R.string.MG_Bubble_Ios));       values.add(tw.nekomimi.nekogram.MeeroBubbleStyles.IOS_OFFICIAL);
+        names.add(getString(R.string.MG_Bubble_Modern));    values.add(tw.nekomimi.nekogram.MeeroBubbleStyles.IOS_MODERN);
+        names.add(getString(R.string.MG_Bubble_Capsule));   values.add(tw.nekomimi.nekogram.MeeroBubbleStyles.CAPSULE);
+        names.add(getString(R.string.MG_Bubble_Classic));   values.add(tw.nekomimi.nekogram.MeeroBubbleStyles.CLASSIC);
+        names.add(getString(R.string.MG_Bubble_Sharp));     values.add(tw.nekomimi.nekogram.MeeroBubbleStyles.SHARP);
+        names.add(getString(R.string.MG_Bubble_Instagram)); values.add(tw.nekomimi.nekogram.MeeroBubbleStyles.INSTAGRAM);
+        names.add(getString(R.string.MG_Bubble_Whatsapp));  values.add(tw.nekomimi.nekogram.MeeroBubbleStyles.WHATSAPP);
+        PopupHelper.show(names, getString(R.string.MG_BubbleStyle), values.indexOf(tw.nekomimi.nekogram.MeeroBubbleStyles.current()), getContext(), i -> {
+            CherrygramChatsConfig.INSTANCE.setBubbleStyle(values.get(i));
+            getParentLayout().rebuildAllFragmentViews(false, false);
+            if (runnable != null) runnable.run();
+        });
+    }
+
     private String getNotificationSoundValue() {
         return switch (CherrygramChatsConfig.INSTANCE.getNotificationSound()) {
             case CherrygramChatsConfig.NOTIF_SOUND_DEFAULT -> getString(R.string.Default);
             case CherrygramChatsConfig.NOTIF_SOUND_IOS -> "iOS";
-            case CherrygramChatsConfig.NOTIF_SOUND_IOS26 -> "iOS26";
             default -> getString(R.string.PopupDisabled);
         };
     }
@@ -693,10 +747,6 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
 
         configStringKeys.add("iOS");
         configValues.add(CherrygramChatsConfig.NOTIF_SOUND_IOS);
-
-        // MeeroGram R11: iOS26 chat sound.
-        configStringKeys.add("iOS26");
-        configValues.add(CherrygramChatsConfig.NOTIF_SOUND_IOS26);
 
         PopupHelper.show(configStringKeys, getString(R.string.NotificationsSound), configValues.indexOf(CherrygramChatsConfig.INSTANCE.getNotificationSound()), getContext(), i -> {
             CherrygramChatsConfig.INSTANCE.setNotificationSound(configValues.get(i));

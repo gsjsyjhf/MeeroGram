@@ -89,8 +89,12 @@ object CherrygramChatsConfig: CoroutineScope by CoroutineScope(
     const val NOTIF_SOUND_DISABLE = 0
     const val NOTIF_SOUND_DEFAULT = 1
     const val NOTIF_SOUND_IOS = 2
-    const val NOTIF_SOUND_IOS26 = 3
     var notificationSound by sharedPreferences.int("CP_Notification_Sound", NOTIF_SOUND_IOS)
+
+    /** MeeroGram R11.1: iOS26 sounds for in-chat sent/received messages -
+     *  an option fully separate from the notification sound above, which
+     *  stays dedicated to notifications. */
+    var ios26ChatSounds by sharedPreferences.boolean("MG_Ios26ChatSounds", true)
 
     /** Chats screen title: show "Chats" instead of the app name (R11). */
     var chatsTitleAsTabs by sharedPreferences.boolean("MG_ChatsTitleAsTabs", false)
@@ -101,7 +105,8 @@ object CherrygramChatsConfig: CoroutineScope by CoroutineScope(
     /** MeeroGram R11: stacked (iOS26-like) story avatars on the main screen. */
     var stackedStories by sharedPreferences.boolean("MG_StackedStories", false)
 
-    /** MeeroGram R11: message bubble style - 0 stock, 1 iOS26. */
+    /** MeeroGram R11.1: bubble shape - 0 stock, 1 official iOS26, 2 modern,
+     *  3 capsule, 4 classic, 5 sharp, 6 instagram, 7 whatsapp. */
     var bubbleStyle by sharedPreferences.int("MG_BubbleStyle", 0)
     const val BUBBLE_STOCK = 0
     const val BUBBLE_IOS26 = 1

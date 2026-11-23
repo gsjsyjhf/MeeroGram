@@ -8245,6 +8245,23 @@ public class Theme {
             chat_msgTextPaint.setTextSize(dp(SharedConfig.fontSize));
             chat_msgGameTextPaint.setTextSize(dp(14));
             chat_msgBotButtonPaint.setTextSize(dp(15));
+            // MeeroGram R11.1: apply the selected custom font to the chat
+            // text paints (the ones created without an explicit typeface -
+            // the bold ones already resolve through AndroidUtilities).
+            {
+                Typeface meeroChatFont = tw.nekomimi.nekogram.MeeroFonts.appTypeface(false, false);
+                if (meeroChatFont != null) {
+                    chat_msgTextPaint.setTypeface(meeroChatFont);
+                    chat_msgGameTextPaint.setTypeface(meeroChatFont);
+                    chat_replyTextPaint.setTypeface(meeroChatFont);
+                    chat_quoteTextPaint.setTypeface(meeroChatFont);
+                    chat_explanationTextPaint.setTypeface(meeroChatFont);
+                    chat_ephemeralPaint.setTypeface(meeroChatFont);
+                    for (int i = 0; i < chat_msgTextPaintEmoji.length; ++i) {
+                        chat_msgTextPaintEmoji[i].setTypeface(meeroChatFont);
+                    }
+                }
+            }
             float smallerDp = (2 * SharedConfig.fontSize + 10) / 3f; // 6f + SharedConfig.fontSize / 2f;
             chat_namePaint.setTextSize(dp(smallerDp));
             chat_replyNamePaint.setTextSize(dp(smallerDp));

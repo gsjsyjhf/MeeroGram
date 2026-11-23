@@ -11718,10 +11718,30 @@
     <string name="MG_iOS26_Switch_Style">iOS26-Style Switches</string>
     <string name="MG_iOS26_Switch_Desc">New pill switch look - enabling it turns the OneUI style off.</string>
     <string name="MG_FloatingActions">Floating Glass Actions</string>
-    <string name="MG_FloatingActions_Desc">Show floating glass pill buttons above the chat list (scan QR and new message) with an Edit pill.</string>
+    <string name="MG_HeaderEdit">Edit</string>
+    <string name="MG_Ios26ChatSounds">In-Chat Sounds (iOS26)</string>
+    <string name="MG_Ios26ChatSounds_Desc">Play iOS26 sounds when messages are sent and received inside the chat - separate from the notification sound option.</string>
+    <string name="MG_FloatingActions_Desc">Show glass pill buttons beside the Chats title (scan QR and new message) with an Edit pill.</string>
     <string name="MG_StackedStories">Stacked Stories (iOS26)</string>
     <string name="MG_StackedStories_Desc">Show unviewed story avatars stacked like iOS 26.</string>
     <string name="MG_BubbleStyle">Message Bubble Style</string>
+    <string name="MG_BubbleStyle_Desc">Shape of the message bubbles in chats - iOS26 official tail, capsule, classic and more.</string>
+    <string name="MG_Bubble_Stock">Telegram (stock)</string>
+    <string name="MG_Bubble_Ios">iOS26 (official tail)</string>
+    <string name="MG_Bubble_Modern">iOS modern (no tail)</string>
+    <string name="MG_Bubble_Capsule">Capsule</string>
+    <string name="MG_Bubble_Classic">Classic (small tail)</string>
+    <string name="MG_Bubble_Sharp">Sharp</string>
+    <string name="MG_Bubble_Instagram">Instagram</string>
+    <string name="MG_Bubble_Whatsapp">WhatsApp</string>
+    <string name="MG_Fonts">Custom Font</string>
+    <string name="MG_Fonts_Desc">Choose the font used across the app. Imported .ttf/.otf files can be removed with a long press.</string>
+    <string name="MG_Fonts_Title">Custom Font</string>
+    <string name="MG_Fonts_Import">Import font file (.ttf / .otf)</string>
+    <string name="MG_Fonts_Selected">Selected</string>
+    <string name="MG_Fonts_Imported">Font imported</string>
+    <string name="MG_Fonts_Deleted">Font deleted</string>
+    <string name="MG_Fonts_Error">Could not load this font</string>
 
     <!-- MeeroGram: bottom navigation bar -->
     <string name="MG_BottomBar">Bottom Navigation Bar</string>

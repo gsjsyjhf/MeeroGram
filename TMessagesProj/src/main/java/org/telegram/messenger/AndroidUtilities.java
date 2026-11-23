@@ -2508,7 +2508,24 @@ public class AndroidUtilities {
         return result;
     }
 
+    public static void clearTypefaceCache() {
+        // MeeroGram R11.1: flush the caches when the custom font changes.
+        tw.nekomimi.nekogram.MeeroFonts.clearCache();
+        typefaceCache.clear();
+    }
+
     public static Typeface getTypeface(String assetPath) {
+        // MeeroGram R11.1: every text view resolves its font through this
+        // method, so a face chosen in settings replaces the stock one
+        // across the whole app. Monospace stays monospace.
+        if (assetPath == null || !assetPath.contains("rmono")) {
+            Typeface meeroFont = tw.nekomimi.nekogram.MeeroFonts.appTypeface(
+                    assetPath != null && (assetPath.contains("medium") || assetPath.contains("bold")),
+                    assetPath != null && assetPath.contains("italic"));
+            if (meeroFont != null) {
+                return meeroFont;
+            }
+        }
         synchronized (typefaceCache) {
             if (!typefaceCache.containsKey(assetPath)) {
                 try {

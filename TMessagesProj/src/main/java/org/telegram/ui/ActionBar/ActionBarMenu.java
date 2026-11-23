@@ -12,6 +12,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.find;
 
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -635,6 +636,27 @@ public class ActionBarMenu extends LinearLayout {
     public void setGlassMode(boolean glassMode) {
         this.glassMode = glassMode;
     }
+
+    /** Meerogram header glass actions start */
+    public interface MeeroBackgroundPainter {
+        void paint(Canvas canvas);
+    }
+
+    private MeeroBackgroundPainter meeroBackgroundPainter;
+
+    public void setMeeroBackgroundPainter(MeeroBackgroundPainter painter) {
+        meeroBackgroundPainter = painter;
+        setWillNotDraw(painter == null);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        if (meeroBackgroundPainter != null) {
+            meeroBackgroundPainter.paint(canvas);
+        }
+    }
+    /** Meerogram header glass actions finish */
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
