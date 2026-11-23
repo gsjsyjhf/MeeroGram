@@ -13,8 +13,7 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.Components.ChatAttachAlert;
-import org.telegram.ui.Components.ChatAttachAlertDocumentLayout;
+import org.telegram.ui.ActionBar.BulletinFactory;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 
@@ -34,7 +33,7 @@ import uz.unnarsx.cherrygram.preferences.helpers.SettingsHelper;
  * NekoX scaffolding. Logic (download/apply/delete/import + progress) ports
  * the frozen MeeroX NekoEmojiSettingsActivity.
  */
-public class MgEmojiSettingsEntry extends BaseCGPreferencesEntry implements EmojiHelper.EmojiPackLoadListener, EmojiHelper.EmojiPacksLoadedListener, ChatAttachAlertDocumentLayout.DocumentSelectActivityDelegate {
+public class MgEmojiSettingsEntry extends BaseCGPreferencesEntry implements EmojiHelper.EmojiPackLoadListener, EmojiHelper.EmojiPacksLoadedListener {
 
     private final int useSystemEmojiRow = 1;
     private final int packsHeaderRow = 2;
@@ -43,7 +42,6 @@ public class MgEmojiSettingsEntry extends BaseCGPreferencesEntry implements Emoj
 
     private final ArrayList<EmojiHelper.EmojiPackBase> packCells = new ArrayList<>();
 
-    private ChatAttachAlert chatAttachAlert;
     private AlertDialog progressDialog;
 
     @Override
