@@ -623,7 +623,7 @@ public class GlassIosSettingsTabBar extends ViewGroup {
             glassLayerBackdrop.record(tabsExportSurface2, width, height, new GlassLayerBackdrop.Recorder() { // from class: org.telegram.ui.Components.glass.controls.GlassIosSettingsTabBar$$ExternalSyntheticLambda3
                 @Override // org.telegram.ui.Components.glass.engine.GlassLayerBackdrop.Recorder
                 public final void draw(Canvas canvas2) {
-                    GlassIosSettingsTabBar.TabsExportSurface.this.draw(canvas2);
+                    TabsExportSurface.this.draw(canvas2);
                 }
             });
             return true;
