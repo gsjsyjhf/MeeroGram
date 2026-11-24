@@ -1,5 +1,6 @@
 package org.telegram.ui.Components.glass.engine;
 
+import android.graphics.Shader;
 import android.graphics.BlendMode;
 import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
