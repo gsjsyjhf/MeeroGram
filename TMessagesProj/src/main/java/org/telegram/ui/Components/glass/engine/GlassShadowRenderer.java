@@ -11,10 +11,10 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.RecordingCanvas;
 import android.graphics.RenderNode;
 import android.os.Build;
-import org.telegram.messenger.BotFullscreenButtons$;
-import org.telegram.messenger.ImageReceiver$;
+
+
 import org.telegram.messenger.camera.CameraView$;
-import org.telegram.messenger.pip.source.PipSourceSnapshot$;
+
 /* loaded from: /home/z/my-project/cg/mrtelegram/dexpick/classes5.dex */
 public final class GlassShadowRenderer {
     private final Paint clearPaint;
@@ -26,7 +26,7 @@ public final class GlassShadowRenderer {
         static void configureClear(Paint paint) {
             BlendMode blendMode;
             blendMode = BlendMode.CLEAR;
-            ImageReceiver$.ExternalSyntheticApiModelOutline1.m(paint, blendMode);
+            paint.setBlendMode(blendMode);
         }
     }
 
@@ -34,11 +34,11 @@ public final class GlassShadowRenderer {
     private static final class Api31InnerShadow {
         static Object draw(Object obj, Canvas canvas, Path path, int i, int i2, GlassInnerShadowSpec glassInnerShadowSpec, Paint paint, Paint paint2) {
             RecordingCanvas beginRecording;
-            RenderNode m = GlassShadowRenderer$Api31InnerShadow$$ExternalSyntheticApiModelOutline0.m(obj) ? BotFullscreenButtons$.ExternalSyntheticApiModelOutline2.m(obj) : BotFullscreenButtons$.ExternalSyntheticApiModelOutline9.m("MRTelegramGlassInnerShadow");
-            BotFullscreenButtons$.ExternalSyntheticApiModelOutline5.m(m, 0, 0, i, i2);
-            PipSourceSnapshot$.ExternalSyntheticApiModelOutline2.m(m, glassInnerShadowSpec.alpha);
+            RenderNode m = (obj instanceof RenderNode) ? ((RenderNode) obj) : new RenderNode("MRTelegramGlassInnerShadow");
+            m.setPosition(0, 0, i, i2);
+            m.setAlpha(glassInnerShadowSpec.alpha);
             float f = glassInnerShadowSpec.radius;
-            BotFullscreenButtons$.ExternalSyntheticApiModelOutline1.m(m, f > 0.0f ? BotFullscreenButtons$.ExternalSyntheticApiModelOutline0.m(f, f, CameraView$.ExternalSyntheticApiModelOutline1.m()) : null);
+            m.setRenderEffect(f > 0.0f ? RenderEffect.createBlurEffect(f, f, Shader.TileMode.DECAL) : null);
             beginRecording = m.beginRecording(i, i2);
             paint.setStyle(Paint.Style.FILL);
             paint.setColor(glassInnerShadowSpec.color);
@@ -49,8 +49,8 @@ public final class GlassShadowRenderer {
             beginRecording.translate(glassInnerShadowSpec.offsetX, glassInnerShadowSpec.offsetY);
             beginRecording.drawPath(path, paint2);
             beginRecording.restore();
-            BotFullscreenButtons$.ExternalSyntheticApiModelOutline8.m(m);
-            BotFullscreenButtons$.ExternalSyntheticApiModelOutline7.m(canvas, m);
+            m.endRecording();
+            canvas.drawRenderNode(m);
             return m;
         }
     }

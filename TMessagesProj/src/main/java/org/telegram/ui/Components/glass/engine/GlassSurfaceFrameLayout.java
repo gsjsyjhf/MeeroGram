@@ -13,7 +13,7 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.widget.FrameLayout;
 import java.lang.ref.WeakReference;
-import org.telegram.messenger.BotFullscreenButtons$;
+
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSource;
 import org.telegram.ui.Components.glass.engine.GlassLayerBackdrop;
 import org.telegram.ui.Components.glass.shape.GlassContinuousPathFactory;
@@ -61,7 +61,7 @@ public abstract class GlassSurfaceFrameLayout extends FrameLayout {
             final GlassRenderEffectPipeline pipeline;
 
             private State() {
-                RenderNode m = BotFullscreenButtons$.ExternalSyntheticApiModelOutline9.m("MRTelegramGlassBackdrop");
+                RenderNode m = new RenderNode("MRTelegramGlassBackdrop");
                 this.node = m;
                 this.pipeline = new GlassRenderEffectPipeline(m);
             }
@@ -80,7 +80,7 @@ public abstract class GlassSurfaceFrameLayout extends FrameLayout {
             int max = Math.max(0, (int) update);
             int i3 = max * 2;
             int i4 = -max;
-            BotFullscreenButtons$.ExternalSyntheticApiModelOutline5.m(state.node, i4, i4, i + max, max + i2);
+            state.node.setPosition(i4, i4, i + max, max + i2);
             beginRecording = state.node.beginRecording(i + i3, i3 + i2);
             float f3 = f - update;
             float f4 = f2 - update;
@@ -88,8 +88,8 @@ public abstract class GlassSurfaceFrameLayout extends FrameLayout {
             beginRecording.translate(-f3, -f4);
             GlassBackdropSources.draw(glassBackdropSource, beginRecording, f3, f4, f + i + update, f2 + i2 + update, glassLayerTransform);
             beginRecording.restoreToCount(save);
-            BotFullscreenButtons$.ExternalSyntheticApiModelOutline8.m(state.node);
-            BotFullscreenButtons$.ExternalSyntheticApiModelOutline7.m(canvas, state.node);
+            state.node.endRecording();
+            canvas.drawRenderNode(state.node);
         }
     }
 

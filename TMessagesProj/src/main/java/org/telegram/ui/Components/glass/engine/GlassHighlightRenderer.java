@@ -11,10 +11,8 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.RuntimeShader;
 import android.os.Build;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ImageReceiver$;
+
 import org.telegram.messenger.R;
-import org.telegram.ui.Components.MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline0;
-import org.telegram.ui.Components.MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline1;
 import org.telegram.ui.Components.glass.engine.GlassHighlightSpec;
 /* loaded from: /home/z/my-project/cg/mrtelegram/dexpick/classes5.dex */
 public final class GlassHighlightRenderer {
@@ -33,10 +31,8 @@ public final class GlassHighlightRenderer {
             final RuntimeShader defaultShader;
 
             private Cache() {
-                MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline1.m();
-                this.defaultShader = MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline0.m(AndroidUtilities.readRes(R.raw.mrtelegram_glass_highlight_default));
-                MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline1.m();
-                this.ambientShader = MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline0.m(AndroidUtilities.readRes(R.raw.mrtelegram_glass_highlight_ambient));
+                this.defaultShader = new RuntimeShader(AndroidUtilities.readRes(R.raw.mrtelegram_glass_highlight_default));
+                this.ambientShader = new RuntimeShader(AndroidUtilities.readRes(R.raw.mrtelegram_glass_highlight_ambient));
             }
         }
 
@@ -86,7 +82,7 @@ public final class GlassHighlightRenderer {
         }
         int i = Build.VERSION.SDK_INT;
         if (i >= 29) {
-            ImageReceiver$.ExternalSyntheticApiModelOutline1.m(this.paint, glassHighlightSpec.additive ? BlendMode.PLUS : BlendMode.SRC_OVER);
+            this.paint.setBlendMode(glassHighlightSpec.additive ? BlendMode.PLUS : BlendMode.SRC_OVER);
         } else {
             this.paint.setXfermode(glassHighlightSpec.additive ? new PorterDuffXfermode(PorterDuff.Mode.ADD) : null);
         }
@@ -105,7 +101,7 @@ public final class GlassHighlightRenderer {
         if (i >= 29) {
             Paint paint = this.paint;
             blendMode = BlendMode.SRC_OVER;
-            ImageReceiver$.ExternalSyntheticApiModelOutline1.m(paint, blendMode);
+            paint.setBlendMode(blendMode);
         }
     }
 }

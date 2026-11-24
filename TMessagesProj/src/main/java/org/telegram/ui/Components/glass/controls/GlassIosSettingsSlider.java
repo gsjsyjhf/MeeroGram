@@ -141,7 +141,7 @@ public class GlassIosSettingsSlider extends ViewGroup {
                     if (f3 != 0.0f) {
                         GlassIosSettingsSlider.this.didDrag = true;
                     }
-                    float rangeLength = GlassIosSettingsSlider.this.rangeLength() * (f3 / Math.max(1.0f, GlassIosSettingsSlider.this.trackWidth)) * (GlassControlUtils.isRtl(GlassIosSettingsSlider.this) ? -1.0f : 1.0f);
+                    float rangeLength = GlassIosSettingsSlider.this.rangeLength() * (f3 / Math.max(1.0f, GlassIosSettingsSlider.this.trackWidth)) * (GlassControlUtils.isRtl(GlassIosSettingsSlider.this instanceof RenderNode) ? -1.0f : 1.0f);
                     float f5 = GlassIosSettingsSlider.this.virtualValue;
                     GlassIosSettingsSlider glassIosSettingsSlider = GlassIosSettingsSlider.this;
                     glassIosSettingsSlider.virtualValue = glassIosSettingsSlider.clampToRange(glassIosSettingsSlider.virtualValue + rangeLength);
@@ -411,7 +411,7 @@ public class GlassIosSettingsSlider extends ViewGroup {
 
     private void setValueFromTap(float f) {
         float clamp01 = GlassControlUtils.clamp01((f - this.trackLeft) / Math.max(1.0f, this.trackWidth));
-        float snapValue = snapValue(clampToRange(GlassControlUtils.isRtl(this) ? this.rangeEnd - (rangeLength() * clamp01) : this.rangeStart + (rangeLength() * clamp01)));
+        float snapValue = snapValue(clampToRange(GlassControlUtils.isRtl(this instanceof RenderNode) ? this.rangeEnd - (rangeLength() * clamp01) : this.rangeStart + (rangeLength() * clamp01)));
         performDetentHaptic(this.value, snapValue);
         this.motion.animateToValue(snapValue);
         setInternalValue(snapValue);
@@ -446,8 +446,8 @@ public class GlassIosSettingsSlider extends ViewGroup {
         thumbSurface2.setPivotX(thumbSurface2.getWidth() * 0.5f);
         ThumbSurface thumbSurface3 = this.thumb;
         thumbSurface3.setPivotY(thumbSurface3.getHeight() * 0.5f);
-        this.thumb.setScaleX((isEnabled() ? this.motion.getScaleX() : 1.0f) / (1.0f - clamp));
-        this.thumb.setScaleY((isEnabled() ? this.motion.getScaleY() : 1.0f) * (1.0f - clamp2));
+        this.thumb.setScaleX((isEnabled( instanceof RenderNode) ? this.motion.getScaleX() : 1.0f) / (1.0f - clamp));
+        this.thumb.setScaleY((isEnabled( instanceof RenderNode) ? this.motion.getScaleY() : 1.0f) * (1.0f - clamp2));
         this.thumb.setTranslationX(getThumbPhysicalX());
         this.scaledTrack.setScale(GlassControlUtils.lerp(0.6666667f, 1.0f, pressProgress), GlassControlUtils.lerp(0.0f, 1.0f, pressProgress));
         this.thumb.updateVisuals(pressProgress, isEnabled());
@@ -498,7 +498,7 @@ public class GlassIosSettingsSlider extends ViewGroup {
             accessibilityNodeInfo.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_FORWARD);
             accessibilityNodeInfo.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_BACKWARD);
             if (i >= 24) {
-                accessibilityNodeInfo.addAction(AccessibilityNodeInfoCompat$AccessibilityActionCompat$.ExternalSyntheticApiModelOutline2.m());
+                accessibilityNodeInfo.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SET_PROGRESS);
             }
         }
     }
@@ -587,7 +587,7 @@ public class GlassIosSettingsSlider extends ViewGroup {
             } else if (i == 8192) {
                 setValueFromAccessibility(this.value - rangeLength);
                 return true;
-            } else if (Build.VERSION.SDK_INT < 24 || i != AccessibilityNodeInfoCompat$AccessibilityActionCompat$.ExternalSyntheticApiModelOutline2.m().getId() || bundle == null || !bundle.containsKey("android.view.accessibility.action.ARGUMENT_PROGRESS_VALUE")) {
+            } else if (Build.VERSION.SDK_INT < 24 || i != AccessibilityNodeInfo.AccessibilityAction.ACTION_SET_PROGRESS.getId() || bundle == null || !bundle.containsKey("android.view.accessibility.action.ARGUMENT_PROGRESS_VALUE")) {
                 return super.performAccessibilityAction(i, bundle);
             } else {
                 setValueFromAccessibility(bundle.getFloat("android.view.accessibility.action.ARGUMENT_PROGRESS_VALUE"));

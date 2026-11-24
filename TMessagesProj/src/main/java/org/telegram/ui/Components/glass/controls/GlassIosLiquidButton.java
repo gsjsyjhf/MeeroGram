@@ -18,7 +18,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-import org.telegram.messenger.ImageReceiver$;
+
 import org.telegram.ui.Components.glass.controls.GlassDragGestureDetector;
 import org.telegram.ui.Components.glass.engine.GlassBackdropSource;
 import org.telegram.ui.Components.glass.engine.GlassEffectSpec;
@@ -55,10 +55,10 @@ public abstract class GlassIosLiquidButton extends GlassSurfaceFrameLayout {
             paint.setColor(i);
             paint.setAlpha(255);
             blendMode = BlendMode.HUE;
-            ImageReceiver$.ExternalSyntheticApiModelOutline1.m(paint, blendMode);
+            paint.setBlendMode(blendMode);
             canvas.drawPath(path, paint);
             blendMode2 = BlendMode.SRC_OVER;
-            ImageReceiver$.ExternalSyntheticApiModelOutline1.m(paint, blendMode2);
+            paint.setBlendMode(blendMode2);
         }
     }
 

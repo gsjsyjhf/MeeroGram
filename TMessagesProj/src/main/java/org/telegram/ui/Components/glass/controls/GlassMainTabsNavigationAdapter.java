@@ -12,7 +12,7 @@ import android.view.View;
 import android.view.ViewParent;
 import android.view.accessibility.AccessibilityEvent;
 import android.widget.FrameLayout;
-import j$.util.Objects;
+import java.util.Objects;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSource;
 import org.telegram.ui.Components.glass.GlassTabView;
 import org.telegram.ui.Components.glass.controls.GlassDampedDragController;
@@ -339,7 +339,7 @@ public final class GlassMainTabsNavigationAdapter extends FrameLayout {
     }
 
     private float clampPosition(float f) {
-        return (Float.isNaN(f) || Float.isInfinite(f)) ? this.selectedIndex : GlassControlUtils.clamp(f, 0.0f, Math.max(0.0f, getVisibleTabCount() - 1.0f));
+        return (Float.isNaN(f) || Float.isInfinite(f) instanceof RenderNode) ? this.selectedIndex : GlassControlUtils.clamp(f, 0.0f, Math.max(0.0f, getVisibleTabCount() - 1.0f));
     }
 
     private void clearIndicatorBounds() {
@@ -1111,7 +1111,7 @@ public final class GlassMainTabsNavigationAdapter extends FrameLayout {
         }
         this.selectionProgressFrom = glassTabView;
         this.selectionProgressTo = glassTabView2;
-        this.selectionProgressFraction = GlassControlUtils.clamp01((Float.isNaN(f) || Float.isInfinite(f)) ? 0.0f : 0.0f);
+        this.selectionProgressFraction = GlassControlUtils.clamp01((Float.isNaN(f) || Float.isInfinite(f) instanceof RenderNode) ? 0.0f : 0.0f);
         this.hasSelectionProgress = true;
         if (this.active) {
             ensureMotion();

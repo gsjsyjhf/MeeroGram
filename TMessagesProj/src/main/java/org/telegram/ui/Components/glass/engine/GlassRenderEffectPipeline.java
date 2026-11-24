@@ -8,11 +8,9 @@ import android.graphics.RuntimeShader;
 import android.graphics.Shader;
 import android.os.Build;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BotFullscreenButtons$;
+
 import org.telegram.messenger.R;
 import org.telegram.messenger.utils.RenderNodeEffects$;
-import org.telegram.ui.Components.MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline0;
-import org.telegram.ui.Components.MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline1;
 /* loaded from: /home/z/my-project/cg/mrtelegram/dexpick/classes5.dex */
 public final class GlassRenderEffectPipeline {
     private float cachedBottomLeft;
@@ -37,10 +35,8 @@ public final class GlassRenderEffectPipeline {
             final RuntimeShader refraction;
 
             private Cache() {
-                MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline1.m();
-                this.refraction = MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline0.m(AndroidUtilities.readRes(R.raw.mrtelegram_glass_refraction));
-                MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline1.m();
-                this.dispersion = MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline0.m(AndroidUtilities.readRes(R.raw.mrtelegram_glass_refraction_dispersion));
+                this.refraction = new RuntimeShader(AndroidUtilities.readRes(R.raw.mrtelegram_glass_refraction));
+                this.dispersion = new RuntimeShader(AndroidUtilities.readRes(R.raw.mrtelegram_glass_refraction_dispersion));
             }
         }
 
@@ -110,7 +106,7 @@ public final class GlassRenderEffectPipeline {
         this.cachedSpec = null;
         this.cachedEffect = null;
         this.cachedPadding = 0.0f;
-        BotFullscreenButtons$.ExternalSyntheticApiModelOutline1.m(this.target, (RenderEffect) null);
+        this.target.setRenderEffect((RenderEffect) null);
     }
 
     public float update(int i, int i2, GlassRadii glassRadii, GlassEffectSpec glassEffectSpec) {
@@ -123,14 +119,14 @@ public final class GlassRenderEffectPipeline {
             clear();
             return 0.0f;
         } else if (matchesCachedInputs(i, i2, glassRadii, glassEffectSpec)) {
-            BotFullscreenButtons$.ExternalSyntheticApiModelOutline1.m(this.target, this.cachedEffect);
+            this.target.setRenderEffect(this.cachedEffect);
             return this.cachedPadding;
         } else {
-            RenderEffect m = glassEffectSpec.hasColorControls() ? RenderNodeEffects$.ExternalSyntheticApiModelOutline0.m(new ColorMatrixColorFilter(createColorControlsMatrix(glassEffectSpec.brightness, glassEffectSpec.contrast, glassEffectSpec.saturation))) : null;
+            RenderEffect m = glassEffectSpec.hasColorControls() ? RenderEffect.createColorFilterEffect(new ColorMatrixColorFilter(createColorControlsMatrix(glassEffectSpec.brightness, glassEffectSpec.contrast, glassEffectSpec.saturation))) : null;
             if (glassEffectSpec.hasBlur()) {
                 f = m != null ? Math.max(0.0f, glassEffectSpec.blurRadius) : 0.0f;
                 float f2 = glassEffectSpec.blurRadius;
-                RenderEffect m2 = BotFullscreenButtons$.ExternalSyntheticApiModelOutline0.m(f2, f2, Shader.TileMode.CLAMP);
+                RenderEffect m2 = RenderEffect.createBlurEffect(f2, f2, Shader.TileMode.CLAMP);
                 m = m == null ? m2 : RenderEffect.createChainEffect(m2, m);
             } else {
                 f = 0.0f;
@@ -156,7 +152,7 @@ public final class GlassRenderEffectPipeline {
                 m = m == null ? createLens : RenderEffect.createChainEffect(createLens, m);
                 f = f3;
             }
-            BotFullscreenButtons$.ExternalSyntheticApiModelOutline1.m(this.target, m);
+            this.target.setRenderEffect(m);
             this.cachedEffect = m;
             this.cachedWidth = i3;
             this.cachedHeight = i4;

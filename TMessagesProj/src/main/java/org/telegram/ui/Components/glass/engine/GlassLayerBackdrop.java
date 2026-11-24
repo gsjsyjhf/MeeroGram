@@ -10,9 +10,9 @@ import android.graphics.RenderNode;
 import android.os.Build;
 import android.view.View;
 import java.lang.ref.WeakReference;
-import org.telegram.messenger.BotFullscreenButtons$;
+
 import org.telegram.messenger.camera.CameraView$;
-import org.telegram.messenger.pip.source.PipSourceSnapshot$;
+
 /* loaded from: /home/z/my-project/cg/mrtelegram/dexpick/classes5.dex */
 public final class GlassLayerBackdrop implements GlassTransformAwareBackdropSource {
     private Object api29Layer;
@@ -41,12 +41,12 @@ public final class GlassLayerBackdrop implements GlassTransformAwareBackdropSour
             final RenderNode node;
 
             private State() {
-                this.node = BotFullscreenButtons$.ExternalSyntheticApiModelOutline9.m("MRTelegramGlassLayerBackdrop");
+                this.node = new RenderNode("MRTelegramGlassLayerBackdrop");
             }
         }
 
         static void clear(Object obj) {
-            PipSourceSnapshot$.ExternalSyntheticApiModelOutline3.m(((State) obj).node);
+            ((State) obj).node.discardDisplayList();
         }
 
         static Object create() {
@@ -55,19 +55,19 @@ public final class GlassLayerBackdrop implements GlassTransformAwareBackdropSour
 
         static void draw(Object obj, Canvas canvas) {
             State state = (State) obj;
-            if (CameraView$.ExternalSyntheticApiModelOutline0.m(state.node)) {
-                BotFullscreenButtons$.ExternalSyntheticApiModelOutline7.m(canvas, state.node);
+            if (state.node).hasDisplayList() {
+                canvas.drawRenderNode(state.node);
             }
         }
 
         static void record(Object obj, int i, int i2, Recorder recorder) {
             RecordingCanvas beginRecording;
             State state = (State) obj;
-            BotFullscreenButtons$.ExternalSyntheticApiModelOutline5.m(state.node, 0, 0, i, i2);
+            state.node.setPosition(0, 0, i, i2);
             state.node.setClipToBounds(true);
             beginRecording = state.node.beginRecording(i, i2);
             recorder.draw(beginRecording);
-            BotFullscreenButtons$.ExternalSyntheticApiModelOutline8.m(state.node);
+            state.node.endRecording();
         }
     }
 

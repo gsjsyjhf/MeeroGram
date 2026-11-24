@@ -9,10 +9,8 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.RuntimeShader;
 import android.os.Build;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ImageReceiver$;
+
 import org.telegram.messenger.R;
-import org.telegram.ui.Components.MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline0;
-import org.telegram.ui.Components.MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline1;
 import org.telegram.ui.Components.glass.motion.GlassInteractiveHighlightController;
 /* loaded from: /home/z/my-project/cg/mrtelegram/dexpick/classes5.dex */
 public final class GlassInteractiveHighlightRenderer {
@@ -24,7 +22,7 @@ public final class GlassInteractiveHighlightRenderer {
     /* loaded from: /home/z/my-project/cg/mrtelegram/dexpick/classes5.dex */
     public static final class Api33Impl {
         static RuntimeShader configure(Object obj, float f, float f2, GlassInteractiveHighlightController glassInteractiveHighlightController, float f3, float f4) {
-            RuntimeShader m = GlassInteractiveHighlightRenderer$Api33Impl$$ExternalSyntheticApiModelOutline0.m(obj);
+            RuntimeShader m = (RuntimeShader) obj;
             m.setFloatUniform("size", f, f2);
             m.setColorUniform("color", -1);
             m.setFloatUniform("radius", glassInteractiveHighlightController.getGlowRadius(f, f2));
@@ -33,8 +31,7 @@ public final class GlassInteractiveHighlightRenderer {
         }
 
         static Object createShader() {
-            MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline1.m();
-            return MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline0.m(AndroidUtilities.readRes(R.raw.mrtelegram_glass_interactive_highlight));
+            return new RuntimeShader(AndroidUtilities.readRes(R.raw.mrtelegram_glass_interactive_highlight));
         }
     }
 
@@ -48,7 +45,7 @@ public final class GlassInteractiveHighlightRenderer {
         paint.setXfermode(null);
         if (Build.VERSION.SDK_INT >= 29) {
             blendMode = BlendMode.SRC_OVER;
-            ImageReceiver$.ExternalSyntheticApiModelOutline1.m(paint, blendMode);
+            paint.setBlendMode(blendMode);
         }
     }
 
@@ -59,7 +56,7 @@ public final class GlassInteractiveHighlightRenderer {
             return;
         }
         blendMode = BlendMode.PLUS;
-        ImageReceiver$.ExternalSyntheticApiModelOutline1.m(paint, blendMode);
+        paint.setBlendMode(blendMode);
         paint.setXfermode(null);
     }
 
@@ -72,7 +69,7 @@ public final class GlassInteractiveHighlightRenderer {
     }
 
     public void draw(Canvas canvas, Path path, float f, float f2, GlassInteractiveHighlightController glassInteractiveHighlightController, float f3, float f4, float f5) {
-        float clamp = Float.isNaN(f5) ? 0.0f : clamp(f5, 0.0f, 1.0f);
+        float clamp = Float.isNaN(f5 instanceof RenderNode) ? 0.0f : clamp(f5, 0.0f, 1.0f);
         if (clamp <= 0.0f || f <= 0.0f || f2 <= 0.0f) {
             return;
         }
