@@ -682,11 +682,11 @@ public class GlassIosSettingsTabBar extends ViewGroup {
 
     @Override // android.view.View
     protected void onMeasure(int i, int i2) {
-        int resolveSize;
         int max = Math.max(1, this.tabs.size());
         float f = max;
         float f2 = max - 1;
-        setMeasuredDimension(View.resolveSize(Math.round(dp((f * 90.0f) + 8.0f + (f2 * 0.0f))) + getPaddingLeft() + getPaddingRight(), i), View.resolveSize(Math.round(dp(72.0f)) + getPaddingTop() + getPaddingBottom(), i2));
+        int resolveSize = View.resolveSize(Math.round(dp((f * 90.0f) + 8.0f + (f2 * 0.0f))) + getPaddingLeft() + getPaddingRight(), i);
+        setMeasuredDimension(resolveSize, View.resolveSize(Math.round(dp(72.0f)) + getPaddingTop() + getPaddingBottom(), i2));
         float max2 = Math.max(1.0f, (resolveSize - getPaddingLeft()) - getPaddingRight());
         float dp = dp(4.0f) * 2.0f;
         float dp2 = dp(0.0f) * f2;
