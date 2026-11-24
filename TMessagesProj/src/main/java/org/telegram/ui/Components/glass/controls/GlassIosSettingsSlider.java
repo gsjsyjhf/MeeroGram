@@ -226,8 +226,8 @@ public class GlassIosSettingsSlider extends ViewGroup {
 
     private void drawIndicators(Canvas canvas) {
         float[] fArr;
-        int i;
-        int i2;
+        int i = this.steps;
+        int i2 = this.steps;
         if ((!this.showStepIndicators || this.steps < 0) && (!this.showDetentIndicators || this.detentFractions.length == 0)) {
             return;
         }
