@@ -946,25 +946,26 @@ public class Switch extends View implements Theme.Colorable {
                 if (!wasCancelled && (!wasMoved || nextChecked != isChecked)) {
                     // route through the enclosing cell's click handler so every
                     // screen keeps its exact behavior (dialogs, dependencies...)
-                    // R11.8: the direct parent can be a plain grouped-card
+                    // R11.8b: the direct parent can be a plain grouped-card
                     // container without any click listener (iOS26 settings
                     // cards) - performClick on it was a silent no-op and taps
                     // stayed dead. Walk up to the NEAREST ancestor that really
-                    // has a click listener; never cross a scrolling parent.
-                    View clickTarget = null;
+                    // has a click listener, calling it there; never cross a
+                    // scrolling parent. callOnClick() is the public equivalent
+                    // of the @hide hasOnClickListener(): it fires only when a
+                    // listener exists and reports whether it ran.
+                    boolean handled = false;
                     for (ViewParent q = getParent(); q instanceof View; q = ((View) q).getParent()) {
                         final View v = (View) q;
                         if (v instanceof androidx.recyclerview.widget.RecyclerView || v instanceof android.widget.ListView) {
                             break;
                         }
-                        if (v.hasOnClickListener()) {
-                            clickTarget = v;
+                        if (v.callOnClick()) {
+                            handled = true;
                             break;
                         }
                     }
-                    if (clickTarget != null) {
-                        clickTarget.performClick();
-                    } else {
+                    if (!handled) {
                         // no reachable cell listener: still give the finger
                         // feedback instead of a dead tap
                         setChecked(!isChecked, true);
