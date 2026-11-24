@@ -34,9 +34,9 @@ public final class GlassHighlightRenderer {
 
             private Cache() {
                 MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline1.m();
-                this.defaultShader = MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline0.m(AndroidUtilities.readRes(R.raw.MRTelegram_glass_highlight_default));
+                this.defaultShader = MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline0.m(AndroidUtilities.readRes(R.raw.mrtelegram_glass_highlight_default));
                 MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline1.m();
-                this.ambientShader = MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline0.m(AndroidUtilities.readRes(R.raw.MRTelegram_glass_highlight_ambient));
+                this.ambientShader = MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline0.m(AndroidUtilities.readRes(R.raw.mrtelegram_glass_highlight_ambient));
             }
         }
 

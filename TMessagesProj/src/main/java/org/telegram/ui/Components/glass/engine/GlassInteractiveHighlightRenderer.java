@@ -34,7 +34,7 @@ public final class GlassInteractiveHighlightRenderer {
 
         static Object createShader() {
             MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline1.m();
-            return MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline0.m(AndroidUtilities.readRes(R.raw.MRTelegram_glass_interactive_highlight));
+            return MotionBackgroundPaint$AgslImpl$RuntimeShaderState$$ExternalSyntheticApiModelOutline0.m(AndroidUtilities.readRes(R.raw.mrtelegram_glass_interactive_highlight));
         }
     }
 
