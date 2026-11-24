@@ -224,7 +224,7 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
         onBoundPropsChanged();
     }
 
-    private void onBoundPropsChanged() {
+    protected void onBoundPropsChanged() {
         if (renderNodeImpl != null) {
             renderNodeImpl.onBoundPropsChanged();
         }
@@ -413,9 +413,9 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
 
     /* Bound Props */
 
-    private final Props boundProps = new Props();
+    protected final Props boundProps = new Props();
 
-    private static class Props {
+    protected static class Props {
         final Rect bounds = new Rect();
         final float[] radii = new float[8];
         final float[] shaderRadii = new float[8];
@@ -664,7 +664,7 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
     }
 
     private static Path tmpPath = new Path();
-    private static void getOutline(Outline outline, Rect rect, float[] radii) {
+    protected static void getOutline(Outline outline, Rect rect, float[] radii) {
         final boolean radiiAreSame = RadiiUtils.radiiAreSame(radii);
         if (radiiAreSame) {
             outline.setRoundRect(rect, Math.min(radii[0], Math.min(rect.width(), rect.height()) / 2f));
