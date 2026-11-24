@@ -72,7 +72,7 @@ public class BlurredBackgroundDrawableRenderNode extends BlurredBackgroundDrawab
             drawSource(canvas, this.source);
             return;
         }
-        if (!this.renderNode).hasDisplayList() {
+        if (!this.renderNode.hasDisplayList()) {
             this.source.dispatchOnDrawablesRelativePositionChange();
             updateDisplayList();
         } else if (this.renderNodeInvalidated) {
