@@ -10,8 +10,7 @@ import org.telegram.ui.Components.glass.engine.GlassLayerBackdrop;
 public class GlassBackdropCaptureFrameLayout extends FrameLayout {
     private final GlassLayerBackdrop exportedBackdrop;
 
-    public static /* synthetic */ void $r8$lambda$_wxgox3HzCgyeUXkoIPmBlKOLZk(GlassBackdropCaptureFrameLayout glassBackdropCaptureFrameLayout, Canvas canvas) {
-        glassBackdropCaptureFrameLayout.getClass();
+    private void drawSuperInternal(Canvas canvas) {
         super.draw(canvas);
     }
 
@@ -52,7 +51,7 @@ public class GlassBackdropCaptureFrameLayout extends FrameLayout {
         this.exportedBackdrop.record(this, getWidth(), getHeight(), new GlassLayerBackdrop.Recorder() { // from class: org.telegram.ui.Components.glass.engine.GlassBackdropCaptureFrameLayout$$ExternalSyntheticLambda0
             @Override // org.telegram.ui.Components.glass.engine.GlassLayerBackdrop.Recorder
             public final void draw(Canvas canvas) {
-                GlassBackdropCaptureFrameLayout.$r8$lambda$_wxgox3HzCgyeUXkoIPmBlKOLZk(GlassBackdropCaptureFrameLayout.this, canvas);
+                drawSuperInternal(canvas);
             }
         });
     }

@@ -3,7 +3,6 @@ package org.telegram.ui.Components.blur3.source;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
-import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawableSource;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSource;
 /* loaded from: /home/z/my-project/cg/mrtelegram/dexpick/classes5.dex */
 public class BlurredBackgroundSourceColor implements BlurredBackgroundSource {
@@ -11,7 +10,7 @@ public class BlurredBackgroundSourceColor implements BlurredBackgroundSource {
 
     @Override // org.telegram.ui.Components.blur3.source.BlurredBackgroundSource
     public BlurredBackgroundDrawable createDrawable() {
-        return new BlurredBackgroundDrawableSource(this);
+        throw new UnsupportedOperationException("not wired in this build");
     }
 
     @Override // org.telegram.ui.Components.blur3.source.BlurredBackgroundSource

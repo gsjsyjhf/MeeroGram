@@ -10,7 +10,6 @@ import android.os.Build;
 import org.telegram.messenger.AndroidUtilities;
 
 import org.telegram.messenger.R;
-import org.telegram.messenger.utils.RenderNodeEffects$;
 /* loaded from: /home/z/my-project/cg/mrtelegram/dexpick/classes5.dex */
 public final class GlassRenderEffectPipeline {
     private float cachedBottomLeft;
