@@ -10,8 +10,8 @@ import android.os.Build;
 import java.util.Iterator;
 import java.util.List;
 import me.vkryl.core.reference.ReferenceList;
-import org.telegram.messenger.BotFullscreenButtons$;
-import org.telegram.messenger.camera.CameraView$;
+
+
 import org.telegram.ui.Components.blur3.DownscaleScrollableNoiseSuppressor;
 import org.telegram.ui.Components.blur3.RenderNodeWithHash;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
@@ -28,7 +28,7 @@ public class BlurredBackgroundSourceRenderNode implements BlurredBackgroundSourc
     private int scrollableNoiseSuppressorIndex;
     public BlurredBackgroundSource underSource;
     private final ReferenceList drawables = new ReferenceList();
-    private final RenderNode renderNode = BotFullscreenButtons$.ExternalSyntheticApiModelOutline9.m((String) null);
+    private final RenderNode renderNode = new RenderNode((String) null);
 
     public BlurredBackgroundSourceRenderNode(BlurredBackgroundSource blurredBackgroundSource) {
         this.fallbackSource = blurredBackgroundSource;
@@ -40,7 +40,7 @@ public class BlurredBackgroundSourceRenderNode implements BlurredBackgroundSourc
             throw new IllegalStateException();
         }
         this.inRecording = true;
-        BotFullscreenButtons$.ExternalSyntheticApiModelOutline5.m(this.renderNode, 0, 0, i, i2);
+        this.renderNode.setPosition(0, 0, i, i2);
         beginRecording = this.renderNode.beginRecording(i, i2);
         this.recordingCanvas = beginRecording;
         return beginRecording;
@@ -81,7 +81,7 @@ public class BlurredBackgroundSourceRenderNode implements BlurredBackgroundSourc
                 canvas.clipRect(f, f2, f3, f4);
             }
             if (Build.VERSION.SDK_INT < 31 || (downscaleScrollableNoiseSuppressor = this.scrollableNoiseSuppressor) == null) {
-                BotFullscreenButtons$.ExternalSyntheticApiModelOutline7.m(canvas, this.renderNode);
+                canvas.drawRenderNode(this.renderNode);
             } else {
                 downscaleScrollableNoiseSuppressor.drawInline(canvas, this.scrollableNoiseSuppressorIndex);
             }
@@ -93,7 +93,7 @@ public class BlurredBackgroundSourceRenderNode implements BlurredBackgroundSourc
         if (!this.inRecording) {
             throw new IllegalStateException();
         }
-        BotFullscreenButtons$.ExternalSyntheticApiModelOutline8.m(this.renderNode);
+        this.renderNode.endRecording();
         this.inRecording = false;
         this.recordingCanvas = null;
     }
@@ -141,7 +141,7 @@ public class BlurredBackgroundSourceRenderNode implements BlurredBackgroundSourc
     }
 
     public boolean needUpdateDisplayList(int i, int i2) {
-        return (CameraView$.ExternalSyntheticApiModelOutline0.m(this.renderNode) && BotFullscreenButtons$.ExternalSyntheticApiModelOutline3.m(this.renderNode) == i && BotFullscreenButtons$.ExternalSyntheticApiModelOutline4.m(this.renderNode) == i2) ? false : true;
+        return (this.renderNode.hasDisplayList() && this.renderNode.getWidth() == i && this.renderNode.getHeight() == i2) ? false : true;
     }
 
     public void noClip() {
@@ -149,14 +149,14 @@ public class BlurredBackgroundSourceRenderNode implements BlurredBackgroundSourc
     }
 
     public void setBlur(float f) {
-        BotFullscreenButtons$.ExternalSyntheticApiModelOutline1.m(this.renderNode, f > 0.0f ? BotFullscreenButtons$.ExternalSyntheticApiModelOutline0.m(f, f, Shader.TileMode.CLAMP) : null);
+        this.renderNode.setRenderEffect(f > 0.0f ? RenderEffect.createBlurEffect(f, f, Shader.TileMode.CLAMP) : null);
     }
 
     public void setBlur(float f, RenderEffect renderEffect) {
         RenderEffect createChainEffect;
         RenderNode renderNode = this.renderNode;
-        createChainEffect = RenderEffect.createChainEffect(BotFullscreenButtons$.ExternalSyntheticApiModelOutline0.m(f, f, Shader.TileMode.CLAMP), renderEffect);
-        BotFullscreenButtons$.ExternalSyntheticApiModelOutline1.m(renderNode, createChainEffect);
+        createChainEffect = RenderEffect.createChainEffect(RenderEffect.createBlurEffect(f, f, Shader.TileMode.CLAMP), renderEffect);
+        renderNode.setRenderEffect(createChainEffect);
     }
 
     public void setOnDrawablesRelativePositionChangeListener(Runnable runnable) {
@@ -169,7 +169,7 @@ public class BlurredBackgroundSourceRenderNode implements BlurredBackgroundSourc
     }
 
     public void setSize(int i, int i2) {
-        BotFullscreenButtons$.ExternalSyntheticApiModelOutline5.m(this.renderNode, 0, 0, i, i2);
+        this.renderNode.setPosition(0, 0, i, i2);
     }
 
     public void setUnderSource(BlurredBackgroundSource blurredBackgroundSource) {

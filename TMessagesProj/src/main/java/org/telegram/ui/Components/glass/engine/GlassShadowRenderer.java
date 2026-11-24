@@ -13,7 +13,7 @@ import android.graphics.RenderNode;
 import android.os.Build;
 
 
-import org.telegram.messenger.camera.CameraView$;
+
 
 /* loaded from: /home/z/my-project/cg/mrtelegram/dexpick/classes5.dex */
 public final class GlassShadowRenderer {

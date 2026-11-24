@@ -11,7 +11,7 @@ import android.os.Build;
 import android.view.View;
 import java.lang.ref.WeakReference;
 
-import org.telegram.messenger.camera.CameraView$;
+
 
 /* loaded from: /home/z/my-project/cg/mrtelegram/dexpick/classes5.dex */
 public final class GlassLayerBackdrop implements GlassTransformAwareBackdropSource {
