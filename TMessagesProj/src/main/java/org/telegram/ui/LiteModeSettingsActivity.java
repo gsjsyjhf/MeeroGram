@@ -68,6 +68,8 @@ import org.telegram.ui.Components.IntSeekBarAccessibilityDelegate;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.glass.controls.GlassIosSettingsSwitch;
+import org.telegram.ui.Components.glass.engine.GlassBackdropCaptureFrameLayout;
 import org.telegram.ui.Components.SeekBarAccessibilityDelegate;
 import org.telegram.ui.Components.SeekBarView;
 import org.telegram.ui.Components.Switch;
@@ -93,6 +95,8 @@ public class LiteModeSettingsActivity extends BaseFragment {
     protected boolean useSimpleActionBar() {
         return true;
     }
+
+    private GlassBackdropCaptureFrameLayout glassBackdropCapture;
 
     @Override
     public View createView(Context context) {
@@ -124,7 +128,13 @@ public class LiteModeSettingsActivity extends BaseFragment {
         itemAnimator.setDelayAnimations(false);
         itemAnimator.setSupportsChangeAnimations(false);
         listView.setItemAnimator(itemAnimator);
-        contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        if (CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()) {
+            glassBackdropCapture = new GlassBackdropCaptureFrameLayout(context);
+            glassBackdropCapture.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            contentView.addView(glassBackdropCapture, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        } else {
+            contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        }
         listView.setOnItemClickListener((view, position, x, y) -> {
             if (view == null || position < 0 || position >= items.size()) {
                 return;
@@ -458,6 +468,7 @@ public class LiteModeSettingsActivity extends BaseFragment {
         private AnimatedTextView countTextView;
         private ImageView arrowView;
         private Switch switchView;
+        private GlassIosSettingsSwitch glassSwitchView;
         private CheckBox2 checkBoxView;
 
         private boolean needDivider, needLine;
@@ -521,6 +532,17 @@ public class LiteModeSettingsActivity extends BaseFragment {
             switchView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
             addView(switchView, LayoutHelper.createFrame(CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle() ? 63 : 39, 50, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 19, 0, 19, 0));
 
+            if (CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()) {
+                glassSwitchView = new GlassIosSettingsSwitch(context);
+                glassSwitchView.setVisibility(GONE);
+                glassSwitchView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
+                glassSwitchView.setDarkTheme(Theme.isCurrentThemeDark());
+                boolean glassRtl = LocaleController.isRTL;
+                addView(glassSwitchView, LayoutHelper.createFrame(68, 36, Gravity.CENTER_VERTICAL | (glassRtl ? Gravity.LEFT : Gravity.RIGHT), glassRtl ? 8.5f : 0, 0, glassRtl ? 0 : 8.5f, 0));
+                setClipChildren(false);
+                setClipToPadding(false);
+            }
+
             checkBoxView = new CheckBox2(context, 21);
             checkBoxView.setColor(Theme.key_radioBackgroundChecked, Theme.key_checkboxDisabled, Theme.key_checkboxCheck);
             checkBoxView.setDrawUnchecked(true);
@@ -575,14 +597,24 @@ public class LiteModeSettingsActivity extends BaseFragment {
                     arrowView.setVisibility(GONE);
                 }
                 textView.setTranslationX(0);
-                switchView.setVisibility(VISIBLE);
-                switchView.setChecked(LiteMode.isEnabled(item.flags), false);
+                if (glassSwitchView != null) {
+                    switchView.setVisibility(GONE);
+                    glassSwitchView.setVisibility(VISIBLE);
+                    glassSwitchView.setCheckedFromHost(LiteMode.isEnabled(item.flags), false);
+                    glassSwitchView.setBackdropSource(glassBackdropCapture != null ? glassBackdropCapture.getExportedBackdrop() : null);
+                } else {
+                    switchView.setVisibility(VISIBLE);
+                    switchView.setChecked(LiteMode.isEnabled(item.flags), false);
+                }
                 needLine = item.getFlagsCount() > 1;
             } else {
                 checkBoxView.setVisibility(VISIBLE);
                 checkBoxView.setChecked(LiteMode.isEnabled(item.flags), false);
                 imageView.setVisibility(GONE);
                 switchView.setVisibility(GONE);
+                if (glassSwitchView != null) {
+                    glassSwitchView.setVisibility(GONE);
+                }
                 countTextView.setVisibility(GONE);
                 arrowView.setVisibility(GONE);
                 textView.setText(item.text);
@@ -606,6 +638,9 @@ public class LiteModeSettingsActivity extends BaseFragment {
                     arrowView.animate().rotation(index >= 0 && expanded[index] ? 180 : 0).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).setDuration(240).start();
                 }
                 switchView.setChecked(LiteMode.isEnabled(item.flags), true);
+                if (glassSwitchView != null) {
+                    glassSwitchView.setCheckedFromHost(LiteMode.isEnabled(item.flags), true);
+                }
             } else {
                 checkBoxView.setChecked(LiteMode.isEnabled(item.flags), true);
             }
