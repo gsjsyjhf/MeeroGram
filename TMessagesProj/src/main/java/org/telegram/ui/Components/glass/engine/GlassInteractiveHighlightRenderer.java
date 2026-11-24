@@ -69,7 +69,7 @@ public final class GlassInteractiveHighlightRenderer {
     }
 
     public void draw(Canvas canvas, Path path, float f, float f2, GlassInteractiveHighlightController glassInteractiveHighlightController, float f3, float f4, float f5) {
-        float clamp = Float.isNaN(f5 instanceof RenderNode) ? 0.0f : clamp(f5, 0.0f, 1.0f);
+        float clamp = Float.isNaN(f5) ? 0.0f : clamp(f5, 0.0f, 1.0f);
         if (clamp <= 0.0f || f <= 0.0f || f2 <= 0.0f) {
             return;
         }

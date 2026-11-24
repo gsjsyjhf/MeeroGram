@@ -55,7 +55,7 @@ public final class GlassLayerBackdrop implements GlassTransformAwareBackdropSour
 
         static void draw(Object obj, Canvas canvas) {
             State state = (State) obj;
-            if (state.node).hasDisplayList() {
+            if (state.node.hasDisplayList()) {
                 canvas.drawRenderNode(state.node);
             }
         }

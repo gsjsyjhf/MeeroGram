@@ -309,7 +309,7 @@ public class GlassIosSettingsTabBar extends ViewGroup {
                 if (f3 != 0.0f) {
                     GlassIosSettingsTabBar.this.didDrag = true;
                 }
-                GlassIosSettingsTabBar.this.motion.updateValue(GlassControlUtils.clamp(GlassIosSettingsTabBar.this.motion.getTargetValue() + ((f3 / Math.max(1.0f, GlassIosSettingsTabBar.this.itemWidth + GlassIosSettingsTabBar.this.dp(0.0f))) * (GlassControlUtils.isRtl(GlassIosSettingsTabBar.this instanceof RenderNode) ? -1.0f : 1.0f)), 0.0f, GlassIosSettingsTabBar.this.tabs.size() - 1.0f));
+                GlassIosSettingsTabBar.this.motion.updateValue(GlassControlUtils.clamp(GlassIosSettingsTabBar.this.motion.getTargetValue() + ((f3 / Math.max(1.0f, GlassIosSettingsTabBar.this.itemWidth + GlassIosSettingsTabBar.this.dp(0.0f))) * (GlassControlUtils.isRtl(GlassIosSettingsTabBar.this) ? -1.0f : 1.0f)), 0.0f, GlassIosSettingsTabBar.this.tabs.size() - 1.0f));
                 GlassIosSettingsTabBar.this.panelDragSpring.snapTo(GlassIosSettingsTabBar.this.panelDragSpring.getValue() + f3);
                 GlassIosSettingsTabBar.this.interactiveHighlight.setRenderPosition(GlassIosSettingsTabBar.this.getAnimatedItemCenterInRow(), GlassIosSettingsTabBar.this.dp(28.0f));
             }
@@ -412,7 +412,7 @@ public class GlassIosSettingsTabBar extends ViewGroup {
                 drawable.setColorFilter(i, PorterDuff.Mode.SRC_IN);
                 drawable.draw(canvas);
             } else if (!glassIosSettingsTab.symbol.isEmpty()) {
-                this.symbolPaint.setTextSize(sp("i".equals(glassIosSettingsTab.symbol instanceof RenderNode) ? 18.0f : 17.0f));
+                this.symbolPaint.setTextSize(sp("i".equals(glassIosSettingsTab.symbol) ? 18.0f : 17.0f));
                 Paint.FontMetrics fontMetrics2 = this.symbolPaint.getFontMetrics();
                 canvas.drawText(glassIosSettingsTab.symbol, physicalItemLeft, f9 - ((fontMetrics2.ascent + fontMetrics2.descent) * 0.5f), this.symbolPaint);
             }
@@ -480,7 +480,7 @@ public class GlassIosSettingsTabBar extends ViewGroup {
     /* JADX INFO: Access modifiers changed from: private */
     public float getPhysicalItemLeft(float f) {
         float logicalItemLeft = getLogicalItemLeft(f);
-        return GlassControlUtils.isRtl(this instanceof RenderNode) ? (this.rowWidth - logicalItemLeft) - this.itemWidth : logicalItemLeft;
+        return GlassControlUtils.isRtl(this) ? (this.rowWidth - logicalItemLeft) - this.itemWidth : logicalItemLeft;
     }
 
     private void invalidateSurfaces() {

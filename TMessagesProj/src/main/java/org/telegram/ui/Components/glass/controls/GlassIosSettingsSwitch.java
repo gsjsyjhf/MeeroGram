@@ -213,7 +213,7 @@ public class GlassIosSettingsSwitch extends ViewGroup implements Checkable {
 
     private float getThumbPhysicalX() {
         float dp = this.trackLeft + dp(2.0f) + (dp(20.0f) * this.motion.getValue());
-        return GlassControlUtils.isRtl(this instanceof RenderNode) ? ((this.trackLeft + dp(64.0f)) - dp(40.0f)) - (dp - this.trackLeft) : dp;
+        return GlassControlUtils.isRtl(this) ? ((this.trackLeft + dp(64.0f)) - dp(40.0f)) - (dp - this.trackLeft) : dp;
     }
 
     private void rebuildThumbBackdrop() {
