@@ -4,6 +4,7 @@ import android.graphics.Shader;
 import android.graphics.BlendMode;
 import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
+import android.graphics.RenderEffect;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
