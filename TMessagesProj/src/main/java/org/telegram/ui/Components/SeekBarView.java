@@ -47,6 +47,9 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Adapters.FiltersView;
 import org.telegram.ui.DialogsActivity;
+import org.telegram.ui.Components.glass.controls.GlassIosSettingsSlider;
+
+import uz.unnarsx.cherrygram.core.configs.CherrygramAppearanceConfig;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -58,6 +61,9 @@ public class SeekBarView extends FrameLayout implements Theme.Colorable {
     @Override
     public void updateColors() {
         try {
+            if (glassSlider != null) {
+                glassSlider.setDarkTheme(Theme.isCurrentThemeDark());
+            }
             if (outerPaint1 != null && outerPaint1.getColor() == themedOuterColor) {
                 final int color = getThemedColor(Theme.key_player_progress);
                 if (color != themedOuterColor) {
@@ -186,10 +192,120 @@ public class SeekBarView extends FrameLayout implements Theme.Colorable {
                 return delegate != null ? delegate.getContentDescription() : null;
             }
         });
+        updateGlassSlider();
+    }
+
+    /* ---------------------------------------------------------------------
+     * MeeroGram R13 - iOS 26 "liquid glass" slider.
+     *
+     * Every settings slider in this build is a SeekBarView (SlideIntChooseView
+     * for the int sliders, StickerSliderCell for the alert sliders). When glass
+     * sliders are enabled we host the reference component from the MR build -
+     * GlassIosSettingsSlider - inside it: identical track/thumb geometry, same
+     * spring, same press-to-lens behaviour and haptics. The stock rendering is
+     * skipped while it is hosted, and disabling the option restores today's
+     * exactly. Only slider-style bars that report their changes (settings)
+     * are converted, so player/buffered bars stay untouched.
+     * ------------------------------------------------------------------- */
+    private GlassIosSettingsSlider glassSlider;
+    private boolean glassSyncing;
+
+    private boolean wantGlassSlider() {
+        if (!reportChanges) {
+            return false;
+        }
+        try {
+            return CherrygramAppearanceConfig.INSTANCE.getGlassSliders();
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** 0 = continuous; otherwise the number of steps between min and max. */
+    private int glassSteps() {
+        int count = 0;
+        try {
+            if (delegate != null) {
+                count = delegate.getStepsCount();
+            }
+        } catch (Throwable ignore) {
+        }
+        if (count > 1 && count <= 25) {
+            return count - 1;
+        }
+        if (separatorsCount > 1 && separatorsCount <= 26) {
+            return separatorsCount - 1;
+        }
+        return 0;
+    }
+
+    private void updateGlassSlider() {
+        final boolean want = wantGlassSlider();
+        if (want && glassSlider == null) {
+            final GlassIosSettingsSlider slider;
+            try {
+                slider = new GlassIosSettingsSlider(getContext());
+            } catch (Throwable t) {
+                FileLog.e(t);
+                return;
+            }
+            try {
+                slider.setValueRange(0f, 1f);
+                slider.setSteps(glassSteps());
+                slider.setDarkTheme(Theme.isCurrentThemeDark());
+                // keep the same 32dp selector inset the stock bar uses, so the
+                // knob travels exactly the same distance
+                final int inset = Math.max(0, Math.round(selectorWidth / 2f));
+                slider.setPadding(inset, 0, inset, 0);
+            } catch (Throwable t) {
+                FileLog.e(t);
+            }
+            slider.setOnValueChangeListener(new GlassIosSettingsSlider.OnValueChangeListener() {
+                @Override
+                public void onValueChanged(GlassIosSettingsSlider s, float value, boolean fromUser) {
+                    if (!fromUser) {
+                        return;
+                    }
+                    glassSyncing = true;
+                    SeekBarView.this.setProgress(value, false);
+                    glassSyncing = false;
+                    final SeekBarViewDelegate d = delegate;
+                    if (d != null) {
+                        d.onSeekBarDrag(false, value);
+                    }
+                    invalidate();
+                }
+
+                @Override
+                public void onValueChangeFinished(GlassIosSettingsSlider s, float value) {
+                    final SeekBarViewDelegate d = delegate;
+                    if (d != null) {
+                        d.onSeekBarDrag(true, value);
+                    }
+                }
+            });
+            glassSlider = slider;
+            addView(slider, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            glassSyncing = true;
+            slider.setValue(Math.max(0f, Math.min(1f, getProgress())), false);
+            glassSyncing = false;
+            invalidate();
+        } else if (!want && glassSlider != null) {
+            removeView(glassSlider);
+            glassSlider = null;
+            invalidate();
+        }
     }
 
     public void setSeparatorsCount(int separatorsCount) {
         this.separatorsCount = separatorsCount;
+        if (glassSlider != null) {
+            try {
+                glassSlider.setSteps(separatorsCount > 1 ? separatorsCount - 1 : 0);
+            } catch (Throwable t) {
+                FileLog.e(t);
+            }
+        }
     }
 
     public void setColors(int inner, int outer) {
@@ -221,16 +337,24 @@ public class SeekBarView extends FrameLayout implements Theme.Colorable {
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
+        if (glassSlider != null) {
+            // the hosted glass slider tracks the finger itself
+            return false;
+        }
         return onTouch(ev);
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if (glassSlider != null) {
+            return false;
+        }
         return onTouch(event);
     }
 
     public void setReportChanges(boolean value) {
         reportChanges = value;
+        updateGlassSlider();
     }
 
     public void setMinProgress(float progress) {
@@ -243,6 +367,14 @@ public class SeekBarView extends FrameLayout implements Theme.Colorable {
 
     public void setDelegate(SeekBarViewDelegate seekBarViewDelegate) {
         delegate = seekBarViewDelegate;
+        updateGlassSlider();
+        if (glassSlider != null) {
+            try {
+                glassSlider.setSteps(glassSteps());
+            } catch (Throwable t) {
+                FileLog.e(t);
+            }
+        }
     }
 
     boolean captured;
@@ -415,6 +547,11 @@ public class SeekBarView extends FrameLayout implements Theme.Colorable {
             } else if (thumbX > getMeasuredWidth() - selectorWidth) {
                 thumbX = getMeasuredWidth() - selectorWidth;
             }
+            if (glassSlider != null && !glassSyncing) {
+                glassSyncing = true;
+                glassSlider.setValue(Math.max(0f, Math.min(1f, progress)), !animated);
+                glassSyncing = false;
+            }
             invalidate();
         }
     }
@@ -442,6 +579,11 @@ public class SeekBarView extends FrameLayout implements Theme.Colorable {
         int l = (selectorWidth / 2 + (lastDuration > 1000L * 60 * 10 ? AndroidUtilities.dp(42) : 0)) + AndroidUtilities.dp(25) + AndroidUtilities.dp(8) /*+ AndroidUtilities.dp(16)*/;
 
         textViewSwitcher.layout(l, b - textViewSwitcher.getMeasuredHeight(), l + textViewSwitcher.getMeasuredWidth(), b);
+        if (glassSlider != null && !glassSyncing) {
+            glassSyncing = true;
+            glassSlider.setValue(Math.max(0f, Math.min(1f, getProgress())), false);
+            glassSyncing = false;
+        }
     }
 
     @Override
@@ -455,6 +597,10 @@ public class SeekBarView extends FrameLayout implements Theme.Colorable {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        if (glassSlider != null) {
+            // the hosted glass slider paints the whole bar
+            return;
+        }
         int thumbX = this.thumbX;
         if (!twoSided && separatorsCount > 1) {
             float step = (getMeasuredWidth() - selectorWidth) / ((float) separatorsCount - 1f);

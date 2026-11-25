@@ -1031,6 +1031,10 @@ public class Switch extends FrameLayout implements Theme.Colorable {
                 meeroMoved = false;
                 meeroStartPointerX = meeroLastPointerX = event.getX();
                 meeroThumbX = isChecked ? AndroidUtilities.dp(20) : 0f;
+                // R13.2: without this the thumb stays the flat resting pill and
+                // only flashes glass on tap - the drag must run the same press
+                // lifecycle as the reference gesture detector.
+                glassSwitch.hostDragBegin();
                 final ViewParent parent = getParent();
                 if (parent != null) {
                     parent.requestDisallowInterceptTouchEvent(true);
@@ -1066,6 +1070,7 @@ public class Switch extends FrameLayout implements Theme.Colorable {
                     return true;
                 }
                 meeroPointerActive = false;
+                glassSwitch.hostDragEnd();
                 final boolean wasMoved = meeroMoved;
                 final boolean wasCancelled = event.getActionMasked() == MotionEvent.ACTION_CANCEL;
                 meeroMoved = false;

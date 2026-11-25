@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import uz.unnarsx.cherrygram.core.CherrygramLogger;
+import uz.unnarsx.cherrygram.core.configs.CherrygramAppearanceConfig;
 import uz.unnarsx.cherrygram.core.configs.CherrygramCoreConfig;
 import uz.unnarsx.cherrygram.core.firebase.FirebaseAnalyticsHelper;
 import uz.unnarsx.cherrygram.core.helpers.DeeplinkHelper;
@@ -65,6 +66,8 @@ public class GeneralPreferencesEntry extends BaseCGPreferencesEntry {
     private final int downloadSpeedBoostRow = 17;
     private final int uploadSpeedBoostRow = 18;
     private final int slowNetworkMode = 19;
+    // MeeroGram R13: liquid-glass sliders toggle (default on, off = today's look).
+    private final int glassSlidersRow = 20;
 
     private boolean expandedArchiveStoriesSection = false;
 
@@ -207,6 +210,10 @@ public class GeneralPreferencesEntry extends BaseCGPreferencesEntry {
                 .setChecked(CherrygramCoreConfig.INSTANCE.getUploadSpeedBoost())
                 .slug("uploadSpeedBoost")
         );
+        items.add(SettingsHelper.asSwitchCG(glassSlidersRow, getString(R.string.MG_GlassSliders), getString(R.string.MG_GlassSliders_Desc))
+                .setChecked(CherrygramAppearanceConfig.INSTANCE.getGlassSliders())
+                .slug("glassSliders")
+        );
         items.add(SettingsHelper.asSwitchCG(slowNetworkMode, getString(R.string.EP_SlowNetworkMode))
                 .setChecked(CherrygramCoreConfig.INSTANCE.getSlowNetworkMode())
                 .slug("slowNetworkMode")
@@ -339,6 +346,12 @@ public class GeneralPreferencesEntry extends BaseCGPreferencesEntry {
             SettingsHelper.updateCheckState(view, CherrygramCoreConfig.INSTANCE.getUploadSpeedBoost());
 
             showRestartBulletin();
+        } else if (item.id == glassSlidersRow) {
+            CherrygramAppearanceConfig.INSTANCE.setGlassSliders(!CherrygramAppearanceConfig.INSTANCE.getGlassSliders());
+            SettingsHelper.updateCheckState(view, CherrygramAppearanceConfig.INSTANCE.getGlassSliders());
+            if (getParentLayout() != null) {
+                getParentLayout().rebuildAllFragmentViews(false, false);
+            }
         } else if (item.id == slowNetworkMode) {
             CherrygramCoreConfig.INSTANCE.setSlowNetworkMode(!CherrygramCoreConfig.INSTANCE.getSlowNetworkMode());
             SettingsHelper.updateCheckState(view, CherrygramCoreConfig.INSTANCE.getSlowNetworkMode());

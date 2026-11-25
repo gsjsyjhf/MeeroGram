@@ -198,6 +198,28 @@ public class GlassIosSettingsSwitch extends ViewGroup implements Checkable {
      * which hosts this control and runs the finger tracking itself so the knob
      * always follows the finger horizontally, in both LTR and RTL layouts.
      */
+    /**
+     * R13.2 - the owner view (org.telegram.ui.Components.Switch) drives the gesture,
+     * so it must also reproduce the press lifecycle of the reference gesture
+     * detector: press() turns the resting white thumb into the liquid-glass
+     * lens (and scales it like MR), release() lets it settle back.
+     */
+    public void hostDragBegin() {
+        this.didDrag = false;
+        this.accumulatedDragX = 0.0f;
+        this.virtualFraction = this.motion.getTargetValue();
+        this.thumb.setPressed(true);
+        this.setParentGestureCaptured(true);
+        this.motion.press();
+    }
+
+    public void hostDragEnd() {
+        this.didDrag = false;
+        this.thumb.setPressed(false);
+        this.setParentGestureCaptured(false);
+        this.motion.release();
+    }
+
     public void dragTo(float fraction) {
         final float f = GlassControlUtils.clamp01(fraction);
         if ((this.virtualFraction >= 0.5f) != (f >= 0.5f)) {
@@ -205,6 +227,8 @@ public class GlassIosSettingsSwitch extends ViewGroup implements Checkable {
         }
         this.virtualFraction = f;
         this.motion.updateValue(f);
+        updateThumbState();
+        invalidate();
     }
 
     public void finishGesture(boolean z) {
