@@ -106,10 +106,34 @@ public class Switch extends FrameLayout implements Theme.Colorable {
         return false;
     }
 
+    private boolean hostGlassSwitch = true;
+
+    /**
+     * R12.3 - some screens (LiteMode / Power saving) already place their own
+     * GlassIosSettingsSwitch next to this view. Hosting a second one there is
+     * pointless and was the source of the crash on that screen, so they opt out.
+     */
+    public void setHostGlassSwitch(boolean host) {
+        if (hostGlassSwitch == host) {
+            return;
+        }
+        hostGlassSwitch = host;
+        updateGlassMode();
+    }
+
     private void updateGlassMode() {
-        final boolean want = CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle();
+        final boolean want = hostGlassSwitch && CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle();
         if (want && glassSwitch == null) {
-            MeeroGlassSwitch hosted = new MeeroGlassSwitch(getContext());
+            final MeeroGlassSwitch hosted;
+            try {
+                hosted = new MeeroGlassSwitch(getContext());
+            } catch (Throwable t) {
+                // never let the hosted switch take the app down
+                return;
+            }
+            // R13: the layout direction is left untouched - the knob mirrors
+            // itself in RTL, and meeroGlassTouch() uses the very same direction
+            // to translate finger movement, so drag always matches the visual.
             hosted.setDarkTheme(Theme.isCurrentThemeDark());
             hosted.setEnabled(isEnabled());
             hosted.setCheckedFromHost(isChecked, false);
@@ -989,14 +1013,97 @@ public class Switch extends FrameLayout implements Theme.Colorable {
         return super.onInterceptTouchEvent(event);
     }
 
+    /*
+     * R13 - drag fix.
+     *
+     * R12.2 forwarded the raw MotionEvents into the hosted switch, which made
+     * the knob only follow the finger after a horizontal mirror that depends on
+     * the resolved layout direction (in Arabic it came out inverted: drag right,
+     * knob goes left). Switch now tracks the finger itself - same slop, same
+     * rubber band and same 50% commit threshold as the reference component -
+     * and only pushes the resulting progress into it, so the knob always travels
+     * with the finger and the glass look/spring/haptics stay 100% the reference.
+     */
+    private boolean meeroGlassTouch(MotionEvent event) {
+        switch (event.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN: {
+                meeroPointerActive = true;
+                meeroMoved = false;
+                meeroStartPointerX = meeroLastPointerX = event.getX();
+                meeroThumbX = isChecked ? AndroidUtilities.dp(20) : 0f;
+                final ViewParent parent = getParent();
+                if (parent != null) {
+                    parent.requestDisallowInterceptTouchEvent(true);
+                }
+                return true;
+            }
+            case MotionEvent.ACTION_MOVE: {
+                if (!meeroPointerActive) {
+                    return true;
+                }
+                final float travel = Math.max(1f, AndroidUtilities.dp(20));
+                final float dir = glassSwitch.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL ? -1f : 1f;
+                final float dx = (event.getX() - meeroStartPointerX) * dir;
+                if (!meeroMoved && Math.abs(dx) > AndroidUtilities.dpf2(4f)) {
+                    meeroMoved = true;
+                }
+                if (meeroMoved) {
+                    float next = (isChecked ? travel : 0f) + dx;
+                    if (next < 0f) {
+                        next *= 0.18f;
+                    }
+                    if (next > travel) {
+                        next = travel + (next - travel) * 0.18f;
+                    }
+                    meeroThumbX = next;
+                    glassSwitch.dragTo(next / travel);
+                }
+                return true;
+            }
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL: {
+                if (!meeroPointerActive) {
+                    return true;
+                }
+                meeroPointerActive = false;
+                final boolean wasMoved = meeroMoved;
+                final boolean wasCancelled = event.getActionMasked() == MotionEvent.ACTION_CANCEL;
+                meeroMoved = false;
+                final float travel = Math.max(1f, AndroidUtilities.dp(20));
+                final boolean nextChecked = wasCancelled
+                        ? isChecked
+                        : (!wasMoved ? !isChecked : meeroThumbX >= travel * 0.5f);
+                if (!wasCancelled && nextChecked != isChecked) {
+                    // route through the enclosing cell so every screen keeps its
+                    // exact behaviour (dialogs, dependent rows, persistence)
+                    boolean handled = false;
+                    for (ViewParent q = getParent(); q instanceof View; q = ((View) q).getParent()) {
+                        final View v = (View) q;
+                        if (v instanceof androidx.recyclerview.widget.RecyclerView || v instanceof android.widget.ListView) {
+                            break;
+                        }
+                        if (v.callOnClick()) {
+                            handled = true;
+                            break;
+                        }
+                    }
+                    if (!handled) {
+                        setChecked(!isChecked, true);
+                    }
+                    glassSwitch.setCheckedFromHost(nextChecked, true);
+                } else {
+                    glassSwitch.setCheckedFromHost(isChecked, true);
+                }
+                return true;
+            }
+        }
+        return true;
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (glassSwitch != null) {
-            final MotionEvent forwarded = MotionEvent.obtain(event);
-            forwarded.offsetLocation(-glassSwitch.getLeft(), -glassSwitch.getTop());
-            final boolean handled = glassSwitch.dispatchTouchEvent(forwarded);
-            forwarded.recycle();
-            return handled;
+            return meeroGlassTouch(event);
         }
         if (!CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle() || getVisibility() != VISIBLE || !isEnabled()) {
             return super.onTouchEvent(event);

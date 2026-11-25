@@ -192,6 +192,21 @@ public class GlassIosSettingsSwitch extends ViewGroup implements Checkable {
     }
 
     /* JADX INFO: Access modifiers changed from: private */
+    /**
+     * R13 - lets an owner view drive the drag progress directly (0..1) without
+     * going through the internal gesture detector. Used by org.telegram.ui.Components.Switch,
+     * which hosts this control and runs the finger tracking itself so the knob
+     * always follows the finger horizontally, in both LTR and RTL layouts.
+     */
+    public void dragTo(float fraction) {
+        final float f = GlassControlUtils.clamp01(fraction);
+        if ((this.virtualFraction >= 0.5f) != (f >= 0.5f)) {
+            GlassControlUtils.performSegmentTick(this);
+        }
+        this.virtualFraction = f;
+        this.motion.updateValue(f);
+    }
+
     public void finishGesture(boolean z) {
         this.thumb.setPressed(false);
         if (z) {

@@ -1438,7 +1438,7 @@
     <string name="MG_Ex2_PlayGif">تشغيل ملفات GIF كفيديو *</string>
     <string name="MG_Ex2_HideTimestamp">إخفاء زمن الفيديو *</string>
     <string name="MG_Ex2_HideTimestampDesc">حفظ موضع التشغيل للفيديو. تُكمل من حيث توقفت بالضبط.</string>
-    <string name="MG_Ex2_CgFeature">* ميزة من Cherrygram.</string>
+    <string name="MG_Ex2_CgFeature">* ميزة من MeeroGram.</string>
     <string name="MG_Ex2_Measured"> (مُقاس)</string>
     <string name="MG_EmojiSetsTitle">حزم الإيموجي</string>
     <string name="MG_EmojiUseSystem">استخدام إيموجي النظام</string>

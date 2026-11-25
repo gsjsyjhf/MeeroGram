@@ -79,6 +79,7 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
     private final int floatingActionsRow = 31;
     private final int stackedStoriesRow = 32, ios26ChatSoundsRow = 33, bubbleStyleRow = 34, fontsRow = 35;
     private final int glassBottomBarRow = 36, mainTabsEditorRow = 37;
+    private final int emojiPacksRow = 38; // R13: moved here from General
 
     private boolean expandedHeaderSettingsSection = false;
     private boolean expandedBottomBarSettingsSection = false;
@@ -179,6 +180,10 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
         // MeeroGram R11.1: custom font picker (feature 10).
         items.add(UItem.asButton(fontsRow, getString(R.string.MG_Fonts), tw.nekomimi.nekogram.MeeroFonts.titleOf(tw.nekomimi.nekogram.MeeroFonts.getSelected()))
                 .slug("meeroFonts")
+        );
+        // MeeroGram R13: emoji packs live in Chats now (was in General).
+        items.add(UItem.asButton(emojiPacksRow, getString(R.string.MG_EmojiSetsTitle))
+                .slug("emojiPacks")
         );
 
         items.add(UItem.asButton(chatMenuShortcutsRow, R.drawable.msg_list, getString(R.string.CP_ChatMenuShortcuts))
@@ -412,6 +417,9 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
         } else if (item.id == fontsRow) {
             // MeeroGram R11.1: custom font picker (feature 10).
             presentFragment(new MeeroFontsPreferencesEntry());
+        } else if (item.id == emojiPacksRow) {
+            // MeeroGram R13: emoji packs (moved from General).
+            presentFragment(new MgEmojiSettingsEntry());
         } else if (item.id == glassBottomBarRow) {
             CherrygramAppearanceConfig.INSTANCE.setShowMainTabs(!CherrygramAppearanceConfig.INSTANCE.getShowMainTabs());
             SettingsHelper.updateCheckState(view, CherrygramAppearanceConfig.INSTANCE.getShowMainTabs());

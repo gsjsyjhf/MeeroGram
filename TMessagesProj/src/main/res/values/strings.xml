@@ -11744,7 +11744,7 @@
     <string name="MG_Ex2_PlayGif">Play GIFs as Videos *</string>
     <string name="MG_Ex2_HideTimestamp">Hide video timestamp *</string>
     <string name="MG_Ex2_HideTimestampDesc">Saved progress for videos. Return exactly where you left off.</string>
-    <string name="MG_Ex2_CgFeature">* Cherrygram\'s feature.</string>
+    <string name="MG_Ex2_CgFeature">* MeeroGram\'s feature.</string>
     <string name="MG_Ex2_Measured"> (measured)</string>
     <string name="MG_EmojiSetsTitle">Emoji Packs</string>
     <string name="MG_EmojiUseSystem">Use system emoji</string>

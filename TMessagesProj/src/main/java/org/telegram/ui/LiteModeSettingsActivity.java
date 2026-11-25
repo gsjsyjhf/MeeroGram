@@ -128,11 +128,19 @@ public class LiteModeSettingsActivity extends BaseFragment {
         itemAnimator.setDelayAnimations(false);
         itemAnimator.setSupportsChangeAnimations(false);
         listView.setItemAnimator(itemAnimator);
+        boolean glassScreen = false;
         if (CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()) {
-            glassBackdropCapture = new GlassBackdropCaptureFrameLayout(context);
-            glassBackdropCapture.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-            contentView.addView(glassBackdropCapture, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        } else {
+            try {
+                glassBackdropCapture = new GlassBackdropCaptureFrameLayout(context);
+                glassBackdropCapture.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+                contentView.addView(glassBackdropCapture, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+                glassScreen = true;
+            } catch (Throwable t) {
+                org.telegram.messenger.FileLog.e(t);
+                glassBackdropCapture = null;
+            }
+        }
+        if (!glassScreen) {
             contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         }
         listView.setOnItemClickListener((view, position, x, y) -> {
@@ -527,21 +535,18 @@ public class LiteModeSettingsActivity extends BaseFragment {
             addView(textViewLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 64, 0, 8, 0));
 
             switchView = new Switch(context);
+            // R13: the iOS-26 switch is hosted *inside* Switch now, exactly like
+            // every other screen. The extra standalone GlassIosSettingsSwitch
+            // this cell used to build was a second copy of the same control and
+            // is what crashed the screen on open.
             switchView.setVisibility(GONE);
             switchView.setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
             switchView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
             addView(switchView, LayoutHelper.createFrame(CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle() ? 64 : 39, 50, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 19, 0, 19, 0));
 
-            if (CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()) {
-                glassSwitchView = new GlassIosSettingsSwitch(context);
-                glassSwitchView.setVisibility(GONE);
-                glassSwitchView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
-                glassSwitchView.setDarkTheme(Theme.isCurrentThemeDark());
-                boolean glassRtl = LocaleController.isRTL;
-                addView(glassSwitchView, LayoutHelper.createFrame(68, 36, Gravity.CENTER_VERTICAL | (glassRtl ? Gravity.LEFT : Gravity.RIGHT), glassRtl ? 8.5f : 0, 0, glassRtl ? 0 : 8.5f, 0));
-                setClipChildren(false);
-                setClipToPadding(false);
-            }
+            // R13: no second glass switch here - Switch hosts the iOS-26 one.
+            setClipChildren(false);
+            setClipToPadding(false);
 
             checkBoxView = new CheckBox2(context, 21);
             checkBoxView.setColor(Theme.key_radioBackgroundChecked, Theme.key_checkboxDisabled, Theme.key_checkboxCheck);
@@ -601,7 +606,11 @@ public class LiteModeSettingsActivity extends BaseFragment {
                     switchView.setVisibility(GONE);
                     glassSwitchView.setVisibility(VISIBLE);
                     glassSwitchView.setCheckedFromHost(LiteMode.isEnabled(item.flags), false);
-                    glassSwitchView.setBackdropSource(glassBackdropCapture != null ? glassBackdropCapture.getExportedBackdrop() : null);
+                    try {
+                        glassSwitchView.setBackdropSource(glassBackdropCapture != null ? glassBackdropCapture.getExportedBackdrop() : null);
+                    } catch (Throwable t) {
+                        org.telegram.messenger.FileLog.e(t);
+                    }
                 } else {
                     switchView.setVisibility(VISIBLE);
                     switchView.setChecked(LiteMode.isEnabled(item.flags), false);

@@ -888,7 +888,7 @@ public class MessagesAndProfilesPreferencesEntry extends BaseCGPreferencesEntry 
                 items.add(SettingsHelper.asCustomWithBackground(businessHoursCell));
 
                 businessLocationCell.textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, pageResourcesProvider));
-                businessLocationCell.setTextAndValue("Cherrygram, Abu-Dhabi", getString(R.string.BusinessProfileLocation), false);
+                businessLocationCell.setTextAndValue("Meerogram, Baghdad", getString(R.string.BusinessProfileLocation), false);
                 items.add(SettingsHelper.asCustomWithBackground(businessLocationCell));
             }
             items.add(UItem.asShadow(null));

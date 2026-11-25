@@ -65,7 +65,6 @@ public class GeneralPreferencesEntry extends BaseCGPreferencesEntry {
     private final int downloadSpeedBoostRow = 17;
     private final int uploadSpeedBoostRow = 18;
     private final int slowNetworkMode = 19;
-    private final int emojiPacksRow = 20;
 
     private boolean expandedArchiveStoriesSection = false;
 
@@ -208,8 +207,6 @@ public class GeneralPreferencesEntry extends BaseCGPreferencesEntry {
                 .setChecked(CherrygramCoreConfig.INSTANCE.getUploadSpeedBoost())
                 .slug("uploadSpeedBoost")
         );
-        // MeeroGram R11.2: emoji packs entry (deferred half of R11 item 10).
-        items.add(UItem.asButton(emojiPacksRow, 0, getString(R.string.MG_EmojiSetsTitle)));
         items.add(SettingsHelper.asSwitchCG(slowNetworkMode, getString(R.string.EP_SlowNetworkMode))
                 .setChecked(CherrygramCoreConfig.INSTANCE.getSlowNetworkMode())
                 .slug("slowNetworkMode")
@@ -342,8 +339,6 @@ public class GeneralPreferencesEntry extends BaseCGPreferencesEntry {
             SettingsHelper.updateCheckState(view, CherrygramCoreConfig.INSTANCE.getUploadSpeedBoost());
 
             showRestartBulletin();
-        } else if (item.id == emojiPacksRow) {
-            presentFragment(new MgEmojiSettingsEntry());
         } else if (item.id == slowNetworkMode) {
             CherrygramCoreConfig.INSTANCE.setSlowNetworkMode(!CherrygramCoreConfig.INSTANCE.getSlowNetworkMode());
             SettingsHelper.updateCheckState(view, CherrygramCoreConfig.INSTANCE.getSlowNetworkMode());
