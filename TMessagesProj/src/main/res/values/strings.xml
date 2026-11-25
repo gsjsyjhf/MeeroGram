@@ -11805,4 +11805,13 @@
     <string name="MG_GlassBarStyle_Desc">The liquid-glass pill follows your finger with damped physics. Turn off to restore the official bottom bar look.</string>
     <string name="MG_SearchInTabs">Search Button in the Tab Bar</string>
     <string name="MG_SearchInTabs_Desc">Show the glass search button next to the bottom navigation tabs.</string>
+
+    <string name="MG_Deleted_Header">Deleted Messages</string>
+    <string name="MG_Deleted_Keep">Keep Deleted Messages</string>
+    <string name="MG_Deleted_Keep_Desc">Saves messages locally right before they are deleted on the server, so you can still read them later.</string>
+    <string name="MG_Deleted_Edits">Keep Edit History</string>
+    <string name="MG_Deleted_Edits_Desc">Saves the previous text of every edited message and shows the old version next to the new one.</string>
+    <string name="MG_Deleted_View">Open the saved log</string>
+    <string name="MG_Deleted_Empty">Nothing saved yet. Messages will appear here after they are deleted or edited.</string>
+    <string name="MG_Deleted_Clear">Clear</string>
 </resources>

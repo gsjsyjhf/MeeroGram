@@ -1499,4 +1499,13 @@
     <string name="MainTabsContacts">جهات الاتصال</string>
     <string name="MainTabsProfile">الملف الشخصي</string>
     <string name="MainTabsCalls">المكالمات</string>
+
+    <string name="MG_Deleted_Header">الرسائل المحذوفة</string>
+    <string name="MG_Deleted_Keep">إظهار المحذوفة</string>
+    <string name="MG_Deleted_Keep_Desc">يحفظ الرسائل محلياً قبل حذفها من السيرفر حتى تتمكن من قراءتها لاحقاً.</string>
+    <string name="MG_Deleted_Edits">سجل التعديلات</string>
+    <string name="MG_Deleted_Edits_Desc">يحفظ النص القديم لكل رسالة معدّلة ويعرض النسخة السابقة بجانب الجديدة.</string>
+    <string name="MG_Deleted_View">عرض السجل المحفوظ</string>
+    <string name="MG_Deleted_Empty">لا يوجد شيء محفوظ بعد. ستظهر الرسائل هنا بعد حذفها أو تعديلها.</string>
+    <string name="MG_Deleted_Clear">مسح</string>
 </resources>

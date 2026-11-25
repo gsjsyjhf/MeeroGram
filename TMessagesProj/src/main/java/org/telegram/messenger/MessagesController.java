@@ -18962,6 +18962,10 @@ public class MessagesController extends BaseController implements NotificationCe
                     deletedMessages.put(0, arrayList);
                 }
                 arrayList.addAll(update.messages);
+                try {
+                    uz.unnarsx.cherrygram.core.helpers.MeeroDeletedMessages.getInstance().captureDeletedUnknownDialog(currentAccount, update.messages);
+                } catch (Throwable meeroIgnore) {
+                }
             } else if (baseUpdate instanceof TL_update.TL_updateDeleteQuickReplyMessages) {
                 TL_update.TL_updateDeleteQuickReplyMessages update = (TL_update.TL_updateDeleteQuickReplyMessages) baseUpdate;
                 if (deletedQuickReplyMessages == null) {
@@ -19492,6 +19496,10 @@ public class MessagesController extends BaseController implements NotificationCe
                     deletedMessages.put(dialogId, arrayList);
                 }
                 arrayList.addAll(update.messages);
+                try {
+                    uz.unnarsx.cherrygram.core.helpers.MeeroDeletedMessages.getInstance().captureDeleted(currentAccount, dialogId, update.messages);
+                } catch (Throwable meeroIgnore) {
+                }
             } else if (baseUpdate instanceof TL_update.TL_updateChannel) {
                 if (BuildVars.LOGS_ENABLED) {
                     TL_update.TL_updateChannel update = (TL_update.TL_updateChannel) baseUpdate;
@@ -19571,6 +19579,10 @@ public class MessagesController extends BaseController implements NotificationCe
                         message.media_unread = false;
                         message.out = true;
                     }
+                }
+                try {
+                    uz.unnarsx.cherrygram.core.helpers.MeeroDeletedMessages.getInstance().captureEdit(currentAccount, MessageObject.getDialogId(message), message);
+                } catch (Throwable meeroIgnore) {
                 }
                 if (!message.out) {
                     long from_id = DialogObject.getPeerDialogId(message.from_id);

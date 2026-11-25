@@ -23,6 +23,7 @@ import android.view.View;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -44,8 +45,10 @@ import uz.unnarsx.cherrygram.chats.helpers.ChatsHelper2;
 import uz.unnarsx.cherrygram.core.VibrateUtil;
 import uz.unnarsx.cherrygram.core.configs.CherrygramAppearanceConfig;
 import uz.unnarsx.cherrygram.core.configs.CherrygramChatsConfig;
+import uz.unnarsx.cherrygram.core.configs.MeeroDeletedConfig;
 import uz.unnarsx.cherrygram.core.firebase.FirebaseAnalyticsHelper;
 import uz.unnarsx.cherrygram.core.helpers.DeeplinkHelper;
+import uz.unnarsx.cherrygram.core.helpers.MeeroDeletedMessages;
 import uz.unnarsx.cherrygram.helpers.ui.PopupHelper;
 import uz.unnarsx.cherrygram.preferences.cells.ChatHeaderPreviewView;
 import uz.unnarsx.cherrygram.preferences.cells.ChatInputPreviewView;
@@ -80,6 +83,8 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
     private final int stackedStoriesRow = 32, ios26ChatSoundsRow = 33, bubbleStyleRow = 34, fontsRow = 35;
     private final int glassBottomBarRow = 36, mainTabsEditorRow = 37;
     private final int emojiPacksRow = 38; // R13: moved here from General
+    // MeeroGram R13.7: deleted messages / edit history.
+    private final int deletedKeepRow = 39, deletedEditsRow = 40, deletedLogRow = 41;
 
     private boolean expandedHeaderSettingsSection = false;
     private boolean expandedBottomBarSettingsSection = false;
@@ -184,6 +189,21 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
         // MeeroGram R13: emoji packs live in Chats now (was in General).
         items.add(UItem.asButton(emojiPacksRow, getString(R.string.MG_EmojiSetsTitle))
                 .slug("emojiPacks")
+        );
+
+        // MeeroGram R13.7: deleted messages & edit history.
+        items.add(UItem.asShadow(null));
+        items.add(UItem.asHeader(getString(R.string.MG_Deleted_Header)));
+        items.add(SettingsHelper.asSwitchCG(deletedKeepRow, getString(R.string.MG_Deleted_Keep), getString(R.string.MG_Deleted_Keep_Desc))
+                .setChecked(MeeroDeletedConfig.INSTANCE.getKeepDeletedMessages())
+                .slug("deletedKeep")
+        );
+        items.add(SettingsHelper.asSwitchCG(deletedEditsRow, getString(R.string.MG_Deleted_Edits), getString(R.string.MG_Deleted_Edits_Desc))
+                .setChecked(MeeroDeletedConfig.INSTANCE.getKeepEditsHistory())
+                .slug("deletedEdits")
+        );
+        items.add(UItem.asButton(deletedLogRow, getString(R.string.MG_Deleted_View))
+                .slug("deletedLog")
         );
 
         items.add(UItem.asButton(chatMenuShortcutsRow, R.drawable.msg_list, getString(R.string.CP_ChatMenuShortcuts))
@@ -387,6 +407,22 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
             updateRows(true);
         } else if (item.id == chatMenuShortcutsRow) {
             showChatMenuItemsConfigurator(this);
+        } else if (item.id == deletedKeepRow) {
+            MeeroDeletedConfig.INSTANCE.setKeepDeletedMessages(!MeeroDeletedConfig.INSTANCE.getKeepDeletedMessages());
+            SettingsHelper.updateCheckState(view, MeeroDeletedConfig.INSTANCE.getKeepDeletedMessages());
+            if (MeeroDeletedConfig.INSTANCE.getKeepDeletedMessages()) {
+                MeeroDeletedMessages.getInstance().ensureInit(org.telegram.messenger.UserConfig.selectedAccount);
+            }
+            updateRows(true);
+        } else if (item.id == deletedEditsRow) {
+            MeeroDeletedConfig.INSTANCE.setKeepEditsHistory(!MeeroDeletedConfig.INSTANCE.getKeepEditsHistory());
+            SettingsHelper.updateCheckState(view, MeeroDeletedConfig.INSTANCE.getKeepEditsHistory());
+            if (MeeroDeletedConfig.INSTANCE.getKeepEditsHistory()) {
+                MeeroDeletedMessages.getInstance().ensureInit(org.telegram.messenger.UserConfig.selectedAccount);
+            }
+            updateRows(true);
+        } else if (item.id == deletedLogRow) {
+            showDeletedMessagesLog();
         } else if (item.id == chatsTitleRow) {
             // MeeroGram R11: main screen title = "Chats".
             CherrygramChatsConfig.INSTANCE.setChatsTitleAsTabs(!CherrygramChatsConfig.INSTANCE.getChatsTitleAsTabs());
@@ -864,4 +900,53 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
         }
     }
 
+
+    /** MeeroGram R13.7: local log of deleted messages and old edit versions. */
+    private void showDeletedMessagesLog() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        final int account = org.telegram.messenger.UserConfig.selectedAccount;
+        final ArrayList<MeeroDeletedMessages.Entry> list = new ArrayList<>();
+        list.addAll(MeeroDeletedMessages.getInstance().getEntries(account, false));
+        list.addAll(MeeroDeletedMessages.getInstance().getEntries(account, true));
+        java.util.Collections.sort(list, (o1, o2) -> Long.compare(o2.date, o1.date));
+        while (list.size() > 60) {
+            list.remove(list.size() - 1);
+        }
+        if (list.isEmpty()) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            builder.setTitle(getString(R.string.MG_Deleted_Header));
+            builder.setMessage(getString(R.string.MG_Deleted_Empty));
+            builder.setPositiveButton(getString(R.string.OK), null);
+            showDialog(builder.create());
+            return;
+        }
+        final String[] items = new String[list.size()];
+        java.text.SimpleDateFormat format = new java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale.getDefault());
+        for (int a = 0; a < items.length; a++) {
+            MeeroDeletedMessages.Entry entry = list.get(a);
+            String peer;
+            try {
+                peer = org.telegram.messenger.MessagesController.getInstance(account).getPeerName(entry.dialogId, true);
+            } catch (Throwable t) {
+                peer = String.valueOf(entry.dialogId);
+            }
+            String when = format.format(new java.util.Date(entry.date));
+            String text = entry.text == null ? "" : entry.text.replace('\n', ' ');
+            if (entry.edit) {
+                String newText = entry.newText == null ? "" : entry.newText.replace('\n', ' ');
+                items[a] = "[" + when + "] " + peer + "\n" + text + "  \u2192  " + newText;
+            } else {
+                items[a] = "[" + when + "] " + peer + "\n" + text;
+            }
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(getString(R.string.MG_Deleted_Header));
+        builder.setItems(items, (dialog, which) -> {
+        });
+        builder.setNegativeButton(getString(R.string.MG_Deleted_Clear), (dialog, which) -> MeeroDeletedMessages.getInstance().clear(account));
+        builder.setPositiveButton(getString(R.string.OK), null);
+        showDialog(builder.create());
+    }
 }
