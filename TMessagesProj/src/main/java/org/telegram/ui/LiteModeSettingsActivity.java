@@ -530,7 +530,7 @@ public class LiteModeSettingsActivity extends BaseFragment {
             switchView.setVisibility(GONE);
             switchView.setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
             switchView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
-            addView(switchView, LayoutHelper.createFrame(CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle() ? 63 : 39, 50, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 19, 0, 19, 0));
+            addView(switchView, LayoutHelper.createFrame(CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle() ? 64 : 39, 50, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 19, 0, 19, 0));
 
             if (CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()) {
                 glassSwitchView = new GlassIosSettingsSwitch(context);

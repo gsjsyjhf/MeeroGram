@@ -32,25 +32,105 @@ import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewParent;
+import android.widget.FrameLayout;
+import android.widget.ListView;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.Interpolator;
+import android.view.Gravity;
+import android.view.SoundEffectConstants;
 
 import androidx.annotation.Keep;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.BaseCell;
+import org.telegram.ui.Components.glass.controls.GlassIosSettingsSwitch;
 
 import me.vkryl.android.animator.BoolAnimator;
 
 import uz.unnarsx.cherrygram.core.configs.CherrygramAppearanceConfig;
 import uz.unnarsx.cherrygram.core.configs.CherrygramChatsConfig;
 
-public class Switch extends View implements Theme.Colorable {
+public class Switch extends FrameLayout implements Theme.Colorable {
 
     @Override
     public void updateColors() {
         colorSet = 0; // the ripple color is re-read from the theme on the next press
+        if (glassSwitch != null) {
+            glassSwitch.setDarkTheme(Theme.isCurrentThemeDark());
+        }
+    }
+
+    /*
+     * Meerogram R12 - hosted iOS 26 "Liquid Glass" switch.
+     *
+     * Until now the iOS 26 style was a hand-drawn approximation inside onDraw
+     * (fixed 200ms ObjectAnimator, no inner shadow, no spring, no glass rim).
+     * The original reference component (GlassIosSettingsSwitch) was already
+     * shipped in this tree but only used by LiteModeSettingsActivity, so every
+     * other screen kept the approximation. When the iOS 26 style is enabled we
+     * now host the real component inside this view: identical geometry
+     * (64x28dp track, 40x24dp thumb), identical spring physics, identical
+     * glass rim/parallax/haptics - i.e. the exact reference switch - while
+     * taps keep being routed to the enclosing cell exactly like before.
+     */
+    private GlassIosSettingsSwitch glassSwitch;
+
+    private final class MeeroGlassSwitch extends GlassIosSettingsSwitch {
+        MeeroGlassSwitch(Context context) {
+            super(context);
+        }
+
+        @Override
+        public boolean performClick() {
+            // A tap must keep driving the enclosing cell (dialogs, dependent
+            // rows, settings persistence), never toggle the view in isolation.
+            if (routeClickToHost()) {
+                playSoundEffect(SoundEffectConstants.CLICK);
+                return true;
+            }
+            return super.performClick();
+        }
+    }
+
+    private boolean routeClickToHost() {
+        for (ViewParent parent = getParent(); parent instanceof View; parent = ((View) parent).getParent()) {
+            View view = (View) parent;
+            if (view instanceof androidx.recyclerview.widget.RecyclerView || view instanceof ListView) {
+                return false;
+            }
+            if (view.callOnClick()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void updateGlassMode() {
+        final boolean want = CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle();
+        if (want && glassSwitch == null) {
+            MeeroGlassSwitch hosted = new MeeroGlassSwitch(getContext());
+            hosted.setDarkTheme(Theme.isCurrentThemeDark());
+            hosted.setEnabled(isEnabled());
+            hosted.setCheckedFromHost(isChecked, false);
+            hosted.setOnCheckedChangeListener((view, checked) -> {
+                isChecked = checked;
+                if (onCheckedChangeListener != null) {
+                    onCheckedChangeListener.onCheckedChanged(Switch.this, checked);
+                } else if (!routeClickToHost()) {
+                    postInvalidate();
+                }
+            });
+            glassSwitch = hosted;
+            setClipChildren(false);
+            setClipToPadding(false);
+            addView(hosted, new FrameLayout.LayoutParams(AndroidUtilities.dp(64), AndroidUtilities.dp(28), Gravity.CENTER));
+            invalidate();
+        } else if (!want && glassSwitch != null) {
+            removeView(glassSwitch);
+            glassSwitch = null;
+            invalidate();
+        }
     }
     private final BoolAnimator animatorIconVisibility = new BoolAnimator(this, CubicBezierInterpolator.EASE_OUT_QUINT, 380L, true);
 
@@ -125,6 +205,8 @@ public class Switch extends View implements Theme.Colorable {
         paint2.setStrokeWidth(AndroidUtilities.dp(2));
 
         setHapticFeedbackEnabled(!CherrygramChatsConfig.INSTANCE.getDisableVibration());
+        setWillNotDraw(false);
+        updateGlassMode();
     }
 
     @Keep
@@ -288,6 +370,7 @@ public class Switch extends View implements Theme.Colorable {
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         attachedToWindow = true;
+        updateGlassMode();
     }
 
     @Override
@@ -305,6 +388,20 @@ public class Switch extends View implements Theme.Colorable {
     }
 
     public void setChecked(boolean checked, int iconType, boolean animated) {
+        if (glassSwitch != null) {
+            if (checked != isChecked) {
+                isChecked = checked;
+                glassSwitch.setCheckedFromHost(checked, animated);
+                if (attachedToWindow && animated && !CherrygramChatsConfig.INSTANCE.getDisableVibration()) {
+                    vibrateChecked();
+                }
+                if (onCheckedChangeListener != null) {
+                    onCheckedChangeListener.onCheckedChanged(this, checked);
+                }
+            }
+            setDrawIconType(iconType, animated);
+            return;
+        }
         if (checked != isChecked) {
             isChecked = checked;
             if (attachedToWindow && animated) {
@@ -357,7 +454,15 @@ public class Switch extends View implements Theme.Colorable {
     }
 
     public boolean isChecked() {
-        return isChecked;
+        return glassSwitch != null ? glassSwitch.isChecked() : isChecked;
+    }
+
+    @Override
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        if (glassSwitch != null) {
+            glassSwitch.setEnabled(enabled);
+        }
     }
 
     public void setOverrideColor(int override) {
@@ -404,6 +509,10 @@ public class Switch extends View implements Theme.Colorable {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        if (glassSwitch != null) {
+            // the hosted GlassIosSettingsSwitch paints the whole switch
+            return;
+        }
         if (getVisibility() != VISIBLE) {
             return;
         }

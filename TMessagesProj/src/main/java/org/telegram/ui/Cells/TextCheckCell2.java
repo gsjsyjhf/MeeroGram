@@ -145,7 +145,7 @@ public class TextCheckCell2 extends FrameLayout {
 
         checkBox = new Switch(context);
         checkBox.setDrawIconType(1);
-        addView(checkBox, LayoutHelper.createFrame(CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle() ? 63 : 39, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 22, 0, 22, 0));
+        addView(checkBox, LayoutHelper.createFrame(CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle() ? 64 : 39, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 22, 0, 22, 0));
     }
 
     @Override

@@ -77,7 +77,7 @@ public class PollCreateCheckCell extends FrameLayout {
 
         checkBox = new Switch(context, resourcesProvider);
         checkBox.setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
-        addView(checkBox, LayoutHelper.createFrame(CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle() ? 63 : 37, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 21, 10, 19, 0));
+        addView(checkBox, LayoutHelper.createFrame(CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle() ? 64 : 37, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 21, 10, 19, 0));
         checkBox.setFocusable(false);
     }
 
