@@ -96,6 +96,27 @@ public class MeeroFonts {
             }
         } else {
             list.add(new Option(DEFAULT, "Default", null));
+            // R13.3: the bundled faces of the reference build (extracted from its APK).
+            list.add(new Option("kg_iransans", "IranSans", "fonts/iransans.ttf"));
+            list.add(new Option("kg_iransans_bold", "IranSans Bold", "fonts/iransans_bold.ttf"));
+            list.add(new Option("kg_iransans_light", "IranSans Light", "fonts/iransans_light.ttf"));
+            list.add(new Option("kg_iransans_dn", "IranSans DN", "fonts/iransans_dn.ttf"));
+            list.add(new Option("kg_iransans_dn_bold", "IranSans DN Bold", "fonts/iransans_dn_bold.ttf"));
+            list.add(new Option("kg_iransans_dn_light", "IranSans DN Light", "fonts/iransans_dn_light.ttf"));
+            list.add(new Option("kg_iranyekan", "IranYekan", "fonts/iranyekan.ttf"));
+            list.add(new Option("kg_iranyekan_bold", "IranYekan Bold", "fonts/iranyekan_bold.ttf"));
+            list.add(new Option("kg_iranyekan_light", "IranYekan Light", "fonts/iranyekan_light.ttf"));
+            list.add(new Option("kg_vazir", "Vazir", "fonts/vazir.ttf"));
+            list.add(new Option("kg_vazir_bold", "Vazir Bold", "fonts/vazir_bold.ttf"));
+            list.add(new Option("kg_vazir_light", "Vazir Light", "fonts/vazir_light.ttf"));
+            list.add(new Option("kg_titr", "Titr", "fonts/titr.ttf"));
+            list.add(new Option("kg_koodak", "Koodak", "fonts/koodak.ttf"));
+            list.add(new Option("kg_morvarid", "Morvarid", "fonts/morvarid.ttf"));
+            list.add(new Option("kg_hama", "Hama", "fonts/hama.ttf"));
+            list.add(new Option("kg_afsaneh", "Afsaneh", "fonts/afsaneh.ttf"));
+            list.add(new Option("kg_dastnevis", "Dastnevis", "fonts/dastnevis.ttf"));
+            list.add(new Option("kg_tv", "TV", "fonts/tv.ttf"));
+            list.add(new Option("kg_riitalic", "Roboto Italic Alt", "fonts/riitalic.ttf"));
             list.add(new Option("ios15", "iOS 15", "fonts/meerox_f8.ttf"));
             list.add(new Option("arabicui", "Arabic UI Text", "fonts/meerox_f1.ttf"));
             list.add(new Option("arabicuidisplay", "Arabic UI Display", "fonts/meerox_f6.ttf"));

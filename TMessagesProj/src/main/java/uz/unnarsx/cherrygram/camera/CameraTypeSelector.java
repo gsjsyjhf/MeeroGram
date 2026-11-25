@@ -56,10 +56,13 @@ public class CameraTypeSelector extends LinearLayout {
             getString(R.string.CP_CameraTypeSystem),
     };
 
+    // R13.3: the icons were offset by one - the cherry mark showed up under the
+    // "CameraX" label (and the cherry mark itself was visible in the preview).
+    // Each label now draws its own icon and the cherry is gone.
     int[] icons = new int[]{
             R.drawable.camera_icon_telegram,
-            R.drawable.camera_icon_cherrygram,
             R.drawable.camera_icon_camerax,
+            R.drawable.camera_icon_telegram,
             R.drawable.camera_icon_system
     };
     int currentIcon = CherrygramCameraConfig.INSTANCE.getCameraType();
