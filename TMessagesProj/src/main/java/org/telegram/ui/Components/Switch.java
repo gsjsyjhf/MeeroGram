@@ -19,6 +19,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -32,105 +33,25 @@ import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewParent;
-import android.widget.FrameLayout;
-import android.widget.ListView;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.Interpolator;
-import android.view.Gravity;
-import android.view.SoundEffectConstants;
 
 import androidx.annotation.Keep;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.BaseCell;
-import org.telegram.ui.Components.glass.controls.GlassIosSettingsSwitch;
 
 import me.vkryl.android.animator.BoolAnimator;
 
 import uz.unnarsx.cherrygram.core.configs.CherrygramAppearanceConfig;
 import uz.unnarsx.cherrygram.core.configs.CherrygramChatsConfig;
 
-public class Switch extends FrameLayout implements Theme.Colorable {
+public class Switch extends View implements Theme.Colorable {
 
     @Override
     public void updateColors() {
         colorSet = 0; // the ripple color is re-read from the theme on the next press
-        if (glassSwitch != null) {
-            glassSwitch.setDarkTheme(Theme.isCurrentThemeDark());
-        }
-    }
-
-    /*
-     * Meerogram R12 - hosted iOS 26 "Liquid Glass" switch.
-     *
-     * Until now the iOS 26 style was a hand-drawn approximation inside onDraw
-     * (fixed 200ms ObjectAnimator, no inner shadow, no spring, no glass rim).
-     * The original reference component (GlassIosSettingsSwitch) was already
-     * shipped in this tree but only used by LiteModeSettingsActivity, so every
-     * other screen kept the approximation. When the iOS 26 style is enabled we
-     * now host the real component inside this view: identical geometry
-     * (64x28dp track, 40x24dp thumb), identical spring physics, identical
-     * glass rim/parallax/haptics - i.e. the exact reference switch - while
-     * taps keep being routed to the enclosing cell exactly like before.
-     */
-    private GlassIosSettingsSwitch glassSwitch;
-
-    private final class MeeroGlassSwitch extends GlassIosSettingsSwitch {
-        MeeroGlassSwitch(Context context) {
-            super(context);
-        }
-
-        @Override
-        public boolean performClick() {
-            // A tap must keep driving the enclosing cell (dialogs, dependent
-            // rows, settings persistence), never toggle the view in isolation.
-            if (routeClickToHost()) {
-                playSoundEffect(SoundEffectConstants.CLICK);
-                return true;
-            }
-            return super.performClick();
-        }
-    }
-
-    private boolean routeClickToHost() {
-        for (ViewParent parent = getParent(); parent instanceof View; parent = ((View) parent).getParent()) {
-            View view = (View) parent;
-            if (view instanceof androidx.recyclerview.widget.RecyclerView || view instanceof ListView) {
-                return false;
-            }
-            if (view.callOnClick()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private void updateGlassMode() {
-        final boolean want = CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle();
-        if (want && glassSwitch == null) {
-            MeeroGlassSwitch hosted = new MeeroGlassSwitch(getContext());
-            hosted.setDarkTheme(Theme.isCurrentThemeDark());
-            hosted.setEnabled(isEnabled());
-            hosted.setCheckedFromHost(isChecked, false);
-            hosted.setOnCheckedChangeListener((view, checked) -> {
-                isChecked = checked;
-                if (onCheckedChangeListener != null) {
-                    onCheckedChangeListener.onCheckedChanged(Switch.this, checked);
-                } else if (!routeClickToHost()) {
-                    postInvalidate();
-                }
-            });
-            glassSwitch = hosted;
-            setClipChildren(false);
-            setClipToPadding(false);
-            addView(hosted, new FrameLayout.LayoutParams(AndroidUtilities.dp(64), AndroidUtilities.dp(28), Gravity.CENTER));
-            invalidate();
-        } else if (!want && glassSwitch != null) {
-            removeView(glassSwitch);
-            glassSwitch = null;
-            invalidate();
-        }
     }
     private final BoolAnimator animatorIconVisibility = new BoolAnimator(this, CubicBezierInterpolator.EASE_OUT_QUINT, 380L, true);
 
@@ -182,6 +103,139 @@ public class Switch extends FrameLayout implements Theme.Colorable {
 
     private int overrideColorProgress;
 
+    /* ============================================================
+     * Meerogram R12.1 - iOS 26 switch, self-contained renderer.
+     *
+     * R12 hosted the reference GlassIosSettingsSwitch inside this view, but
+     * its glass pipeline (RenderEffect/AGSL surfaces) painted an empty track
+     * and swallowed touches on device. This renderer reproduces the reference
+     * switch with plain Canvas drawing and the exact reference metrics:
+     *   track 64x28dp, thumb 40x24dp, 2dp pad, 20dp travel,
+     *   off 0x547F7F7F, on #34C759 light / #30D158 dark,
+     *   outer shadow r4dp dy0.67dp 0x0D000000, white 16% inner rim,
+     *   press swell + drag squash, touch routing unchanged (R11.8b).
+     * ============================================================ */
+    private final Path meeroPath = new Path();
+    private final Path meeroThumbPath = new Path();
+    private final Paint meeroPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint meeroShadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF meeroRect = new RectF();
+
+    private static float meeroClamp01(float v) {
+        return v < 0f ? 0f : (v > 1f ? 1f : v);
+    }
+
+    private void meeroCapsule(Path path, float l, float t, float r, float b) {
+        path.reset();
+        final float rad = Math.min(r - l, b - t) * 0.5f;
+        path.addRoundRect(l, t, r, b, rad, rad, Path.Direction.CW);
+    }
+
+    private void drawIos26(Canvas canvas) {
+        final int w = getMeasuredWidth();
+        final int h = getMeasuredHeight();
+        if (w <= 0 || h <= 0) {
+            return;
+        }
+        final boolean dark = Theme.isCurrentThemeDark() || Theme.isCurrentThemeNight();
+        final boolean enabled = isEnabled();
+
+        final float trackW = Math.min(AndroidUtilities.dp(64), w);
+        final float trackH = AndroidUtilities.dp(28);
+        final float pad = AndroidUtilities.dp(2);
+        final float thumbW = AndroidUtilities.dp(40);
+        final float thumbH = AndroidUtilities.dp(24);
+        final float travel = Math.max(AndroidUtilities.dp(1), trackW - thumbW - pad * 2f);
+        final float left = (w - trackW) / 2f;
+        final float top = (h - trackH) / 2f;
+
+        final float press = meeroClamp01(meeroGlassFrac);
+        final float value = meeroPointerActive ? meeroClamp01(meeroThumbX / travel) : meeroClamp01(progress);
+
+        int trackColor = meeroBlend(0x547F7F7F, dark ? 0xFF30D158 : 0xFF34C759, value);
+        if (!enabled) {
+            trackColor = (Math.round(Color.alpha(trackColor) * 0.33f) << 24) | (trackColor & 0x00FFFFFF);
+        }
+
+        // ---- track
+        meeroCapsule(meeroPath, left, top, left + trackW, top + trackH);
+        meeroPaint.setShader(null);
+        meeroPaint.setStyle(Paint.Style.FILL);
+        meeroPaint.setColor(trackColor);
+        canvas.drawPath(meeroPath, meeroPaint);
+
+        // inner specular rim, white 16%, inset 1dp (reference rim)
+        meeroCapsule(meeroThumbPath, left + 1f, top + 1f, left + trackW - 1f, top + trackH - 1f);
+        meeroPaint.setStyle(Paint.Style.STROKE);
+        meeroPaint.setStrokeWidth(Math.max(1f, AndroidUtilities.dp(1)));
+        meeroPaint.setColor(0x29FFFFFF);
+        canvas.drawPath(meeroThumbPath, meeroPaint);
+
+        // ---- thumb
+        float offset = pad + travel * value;
+        if (meeroPointerActive) {
+            offset = pad + meeroThumbX; // meeroThumbX already carries the rubber band
+        }
+        final float thumbLeft = left + offset;
+        final float thumbTop = top + pad;
+        final float cx = thumbLeft + thumbW * 0.5f;
+        final float cy = thumbTop + thumbH * 0.5f;
+
+        final float sx = meeroStretchX * (1f + 0.10f * press);
+        final float sy = meeroStretchY * (1f + 0.06f * press);
+
+        canvas.save();
+        canvas.scale(sx, sy, cx, cy);
+        meeroCapsule(meeroThumbPath, thumbLeft, thumbTop, thumbLeft + thumbW, thumbTop + thumbH);
+
+        // soft drop shadow, always present (reference outer shadow spec)
+        if (Build.VERSION.SDK_INT >= 28) {
+            meeroShadowPaint.setStyle(Paint.Style.FILL);
+            meeroShadowPaint.setColor(0x0D000000);
+            meeroShadowPaint.setShadowLayer(AndroidUtilities.dp(4f) * (1f + 0.6f * press),
+                    0f, AndroidUtilities.dpf2(0.67f), 0x0D000000);
+            canvas.drawPath(meeroThumbPath, meeroShadowPaint);
+            meeroShadowPaint.clearShadowLayer();
+        }
+
+        // body
+        final int bodyTop = enabled ? 0xFFFFFFFF : 0xFFE9EAEC;
+        final int bodyBottom = enabled ? (dark ? 0xFFF3F4F6 : 0xFFEDEFF2) : 0xFFE2E3E5;
+        meeroPaint.setStyle(Paint.Style.FILL);
+        meeroPaint.setShader(new android.graphics.LinearGradient(0f, thumbTop, 0f, thumbTop + thumbH,
+                bodyTop, bodyBottom, android.graphics.Shader.TileMode.CLAMP));
+        canvas.drawPath(meeroThumbPath, meeroPaint);
+        meeroPaint.setShader(null);
+
+        // liquid sheen on the upper half, stronger while pressed
+        meeroRect.set(thumbLeft + AndroidUtilities.dp(1.5f), thumbTop + AndroidUtilities.dp(1f),
+                thumbLeft + thumbW - AndroidUtilities.dp(1.5f), thumbTop + thumbH * (0.52f + 0.16f * press));
+        meeroCapsule(meeroPath, meeroRect.left, meeroRect.top, meeroRect.right, meeroRect.bottom);
+        meeroPaint.setShader(new android.graphics.LinearGradient(0f, meeroRect.top, 0f, meeroRect.bottom,
+                new int[]{0x5AFFFFFF, 0x00FFFFFF}, null, android.graphics.Shader.TileMode.CLAMP));
+        canvas.drawPath(meeroPath, meeroPaint);
+        meeroPaint.setShader(null);
+
+        // inner shadow at the bottom while pressed (reference GlassInnerShadowSpec)
+        if (press > 0.01f) {
+            meeroRect.set(thumbLeft, thumbTop + thumbH * 0.58f, thumbLeft + thumbW, thumbTop + thumbH);
+            meeroCapsule(meeroPath, meeroRect.left, meeroRect.top, meeroRect.right, meeroRect.bottom);
+            final int innerAlpha = (int) (0x26 * press);
+            meeroPaint.setShader(new android.graphics.LinearGradient(0f, meeroRect.top, 0f, meeroRect.bottom,
+                    new int[]{0x00000000, innerAlpha << 24}, null, android.graphics.Shader.TileMode.CLAMP));
+            canvas.drawPath(meeroPath, meeroPaint);
+            meeroPaint.setShader(null);
+        }
+
+        // glass rim
+        meeroPaint.setStyle(Paint.Style.STROKE);
+        meeroPaint.setStrokeWidth(Math.max(1f, AndroidUtilities.dpf2(0.75f)));
+        meeroPaint.setColor(0x33FFFFFF);
+        canvas.drawPath(meeroThumbPath, meeroPaint);
+
+        canvas.restore();
+    }
+
     public interface OnCheckedChangeListener {
         void onCheckedChanged(Switch view, boolean isChecked);
     }
@@ -205,8 +259,6 @@ public class Switch extends FrameLayout implements Theme.Colorable {
         paint2.setStrokeWidth(AndroidUtilities.dp(2));
 
         setHapticFeedbackEnabled(!CherrygramChatsConfig.INSTANCE.getDisableVibration());
-        setWillNotDraw(false);
-        updateGlassMode();
     }
 
     @Keep
@@ -370,7 +422,6 @@ public class Switch extends FrameLayout implements Theme.Colorable {
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         attachedToWindow = true;
-        updateGlassMode();
     }
 
     @Override
@@ -388,20 +439,6 @@ public class Switch extends FrameLayout implements Theme.Colorable {
     }
 
     public void setChecked(boolean checked, int iconType, boolean animated) {
-        if (glassSwitch != null) {
-            if (checked != isChecked) {
-                isChecked = checked;
-                glassSwitch.setCheckedFromHost(checked, animated);
-                if (attachedToWindow && animated && !CherrygramChatsConfig.INSTANCE.getDisableVibration()) {
-                    vibrateChecked();
-                }
-                if (onCheckedChangeListener != null) {
-                    onCheckedChangeListener.onCheckedChanged(this, checked);
-                }
-            }
-            setDrawIconType(iconType, animated);
-            return;
-        }
         if (checked != isChecked) {
             isChecked = checked;
             if (attachedToWindow && animated) {
@@ -454,15 +491,7 @@ public class Switch extends FrameLayout implements Theme.Colorable {
     }
 
     public boolean isChecked() {
-        return glassSwitch != null ? glassSwitch.isChecked() : isChecked;
-    }
-
-    @Override
-    public void setEnabled(boolean enabled) {
-        super.setEnabled(enabled);
-        if (glassSwitch != null) {
-            glassSwitch.setEnabled(enabled);
-        }
+        return isChecked;
     }
 
     public void setOverrideColor(int override) {
@@ -509,11 +538,11 @@ public class Switch extends FrameLayout implements Theme.Colorable {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (glassSwitch != null) {
-            // the hosted GlassIosSettingsSwitch paints the whole switch
+        if (getVisibility() != VISIBLE) {
             return;
         }
-        if (getVisibility() != VISIBLE) {
+        if (CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()) {
+            drawIos26(canvas);
             return;
         }
 
@@ -931,8 +960,8 @@ public class Switch extends FrameLayout implements Theme.Colorable {
 
     /** 63dp track, 37dp thumb, 2dp pad each side -> 22dp travel (Ios26CapsuleSwitch). */
     private float meeroMaxTravel() {
-        final float trackW = Math.min(AndroidUtilities.dp(63), getMeasuredWidth());
-        return Math.max(AndroidUtilities.dp(1), trackW - AndroidUtilities.dp(37) - AndroidUtilities.dp(4));
+        final float trackW = Math.min(AndroidUtilities.dp(64), getMeasuredWidth());
+        return Math.max(AndroidUtilities.dp(1), trackW - AndroidUtilities.dp(40) - AndroidUtilities.dp(4));
     }
 
     private static int meeroBlend(int c1, int c2, float t) {
