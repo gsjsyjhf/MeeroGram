@@ -970,7 +970,6 @@ public class Switch extends FrameLayout implements Theme.Colorable {
         postDelayed(meeroGlassSettle, 250);
     }
 
-    @Override
     /*
      * R12.2 - drag fix.
      *
