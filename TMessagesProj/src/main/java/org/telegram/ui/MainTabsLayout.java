@@ -1184,30 +1184,9 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             return;
         }
 
-        // ---- interactive highlight glow (Plus blend) at the pill center ----
-        if (p > 0.01f) {
-            meeroGlowPaint.setStyle(Paint.Style.FILL);
-            // InteractiveHighlight: flat white 0.08*progress over the whole bar
-            meeroGlowPaint.setColor(Theme.multAlpha(0xFFFFFFFF, (int) (255f * 0.08f * p)));
-            meeroGlowPaint.setXfermode(new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.ADD));
-            final int saveFlat = canvas.save();
-            canvas.clipRect(getPaddingLeft(), getPaddingTop(), getWidth() - getPaddingRight(), getHeight() - getPaddingBottom());
-            canvas.drawPaint(meeroGlowPaint);
-            canvas.restoreToCount(saveFlat);
-            meeroGlowRect.set(meeroPillRect);
-            final float gr = meeroGlowRect.height() / 2f;
-            meeroGlowPaint.setShader(new android.graphics.RadialGradient(
-                    meeroGlowRect.centerX(), meeroGlowRect.centerY(),
-                    Math.max(1f, Math.min(meeroGlowRect.width(), meeroGlowRect.height()) * 1.5f),
-                    new int[]{Theme.multAlpha(0xFFFFFFFF, (int) (255f * 0.15f * p)), Theme.multAlpha(0xFFFFFFFF, 0)},
-                    new float[]{0f, 1f}, android.graphics.Shader.TileMode.CLAMP));
-            final int saveGlow = canvas.save();
-            canvas.clipRect(meeroPillRect.left - gr, meeroPillRect.top - gr, meeroPillRect.right + gr, meeroPillRect.bottom + gr);
-            canvas.drawRoundRect(meeroGlowRect, gr, gr, meeroGlowPaint);
-            canvas.restoreToCount(saveGlow);
-            meeroGlowPaint.setXfermode(null);
-            meeroGlowPaint.setShader(null);
-        }
+        // R13.5: the Plus white ADD glow was removed - it washed the bar and the
+        // pill out in white while scrolling/dragging. The reference pill has no
+        // white overlay, only the glass surface + rim below.
 
         canvas.save();
         // ---- pill scale: press 78/56 + velocity squish (layerBlock) ----
@@ -1233,12 +1212,16 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         canvas.clipPath(meeroPillPath);
         // frosted liquid surface: vertical white gradient (dark) / stronger
         // white frost (light)
+        // R13.5: was a white wash (white @15/7/12% on dark) which read as "البياض"
+        // against the dark theme. The reference pill is the tab-bar glass surface,
+        // only slightly brighter: dark surface 0xFF232323@0.55 -> light frost.
+        final int pillSurface = meeroDark ? 0xFF232323 : 0xFFFFFFFF;
         meeroPillPaint.setShader(new android.graphics.LinearGradient(
                 0, meeroPillRect.top, 0, meeroPillRect.bottom,
                 new int[]{
-                        Theme.multAlpha(0xFFFFFFFF, meeroDark ? 0x26 : 0x46),
-                        Theme.multAlpha(0xFFFFFFFF, meeroDark ? 0x12 : 0x2C),
-                        Theme.multAlpha(0xFFFFFFFF, meeroDark ? 0x1E : 0x3C),
+                        Theme.multAlpha(pillSurface, meeroDark ? 0x8C : 0x9E),
+                        Theme.multAlpha(pillSurface, meeroDark ? 0x70 : 0x86),
+                        Theme.multAlpha(pillSurface, meeroDark ? 0x7E : 0x92),
                 },
                 new float[]{0f, 0.48f, 1f}, android.graphics.Shader.TileMode.CLAMP));
         canvas.drawRoundRect(meeroPillRect, radius, radius, meeroPillPaint);
@@ -1273,7 +1256,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
         // 3. onDrawSurface: 12% tint fading out + black 3%p (GlassNavBar)
         meeroPillPaint.setStyle(Paint.Style.FILL);
-        meeroPillPaint.setColor(Theme.multAlpha(meeroDark ? 0xFFFFFFFF : 0xFF000000, 0.12f * (1f - p)));
+        meeroPillPaint.setColor(Theme.multAlpha(meeroDark ? 0xFFFFFFFF : 0xFF000000, 0.045f * (1f - p)));
         canvas.drawRoundRect(meeroPillRect, radius, radius, meeroPillPaint);
         meeroPillPaint.setColor(Theme.multAlpha(0xFF000000, 0.03f * p));
         canvas.drawRoundRect(meeroPillRect, radius, radius, meeroPillPaint);
