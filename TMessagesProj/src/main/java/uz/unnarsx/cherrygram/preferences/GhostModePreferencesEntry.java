@@ -26,6 +26,8 @@ public class GhostModePreferencesEntry extends BaseCGPreferencesEntry {
     private final int ghostReadRow = 3;
     private final int ghostTypingRow = 4;
     private final int ghostStoriesRow = 5;
+    private final int ghostStoryAlertRow = 6;
+    private final int deletedSectionRow = 7;
 
     @Override
     protected CharSequence getTitle() {
@@ -64,6 +66,16 @@ public class GhostModePreferencesEntry extends BaseCGPreferencesEntry {
                         .setChecked(MeeroGhostConfig.INSTANCE.getGhostHideStories())
                         .setEnabled(MeeroGhostConfig.INSTANCE.getGhostMaster())
         );
+        // MeeroGram R14: explicit alert before watching a story.
+        items.add(
+                SettingsHelper.asSwitchCG(ghostStoryAlertRow, getString(R.string.MG_Ghost_StoryAlert), getString(R.string.MG_Ghost_StoryAlert_Desc))
+                        .setChecked(MeeroGhostConfig.INSTANCE.getGhostStoryAlert())
+        );
+        items.add(UItem.asShadow(null));
+        // MeeroGram R14: dedicated deleted-messages section, opened from here.
+        items.add(
+                UItem.asButton(deletedSectionRow, getString(R.string.MG_Deleted_Header), getString(R.string.MG_Deleted_Row_Desc))
+        );
         items.add(UItem.asShadow(null));
     }
 
@@ -84,6 +96,11 @@ public class GhostModePreferencesEntry extends BaseCGPreferencesEntry {
         } else if (item.id == ghostStoriesRow) {
             MeeroGhostConfig.INSTANCE.setGhostHideStories(!MeeroGhostConfig.INSTANCE.getGhostHideStories());
             updateRows(true);
+        }  else if (item.id == ghostStoryAlertRow) {
+            MeeroGhostConfig.INSTANCE.setGhostStoryAlert(!MeeroGhostConfig.INSTANCE.getGhostStoryAlert());
+            updateRows(true);
+        } else if (item.id == deletedSectionRow) {
+            presentFragment(new MeeroDeletedPreferencesEntry());
         }
     }
 }

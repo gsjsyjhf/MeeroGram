@@ -38,6 +38,9 @@ object MeeroGhostConfig {
     /** Never report story views / read stories (watch stories invisibly). */
     var ghostHideStories by sharedPreferences.boolean("MG_Ghost_Stories", true)
 
+    /** MeeroGram R14: ask before watching a story («تنبيه عند مشاهدة القصص»). */
+    var ghostStoryAlert by sharedPreferences.boolean("MG_Ghost_StoryAlert", false)
+
     /**
      * Called from ConnectionsManager.sendRequestInternal for every outgoing
      * request; returns true when the request must be silently dropped.

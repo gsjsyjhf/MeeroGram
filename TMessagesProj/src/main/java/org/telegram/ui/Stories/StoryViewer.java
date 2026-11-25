@@ -106,14 +106,15 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
     public boolean allowScreenshots = true;
     public static ArrayList<StoryViewer> globalInstances = new ArrayList<>();
 
-    /* Meerogram R13.7: ghost-mode story alert */
-    private static boolean meeroGhostPromptShown = false;
+    /* Meerogram R14: "تنبيه عند مشاهدة القصص" - its own switch in Ghost mode */
+    private static boolean meeroGhostPromptSkip = false;
     private static boolean meeroGhostTempEnabled = false;
+    private static boolean meeroGhostPrevMaster = false;
+    private static boolean meeroGhostPrevStories = true;
 
     private static boolean meeroGhostPromptShouldShow() {
         try {
-            uz.unnarsx.cherrygram.core.configs.MeeroGhostConfig cfg = uz.unnarsx.cherrygram.core.configs.MeeroGhostConfig.INSTANCE;
-            return cfg.getGhostMaster() && !cfg.getGhostHideStories() && !meeroGhostPromptShown;
+            return uz.unnarsx.cherrygram.core.configs.MeeroGhostConfig.INSTANCE.getGhostStoryAlert();
         } catch (Throwable t) {
             return false;
         }
@@ -126,7 +127,13 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             builder.setMessage("\u0648\u0636\u0639 \u0627\u0644\u0634\u0628\u062d \u0645\u0641\u0639\u0651\u0644. \u0647\u0644 \u062a\u0631\u064a\u062f \u0625\u062e\u0641\u0627\u0621 \u0645\u0634\u0627\u0647\u062f\u062a\u0643 \u0644\u0647\u0630\u0647 \u0627\u0644\u0642\u0635\u0635 \u0639\u0646 \u0635\u0627\u062d\u0628\u0647\u0627\u061f \u0633\u064a\u064f\u0637\u0641\u0623 \u0627\u0644\u0625\u062e\u0641\u0627\u0621 \u062a\u0644\u0642\u0627\u0626\u064a\u0627\u064b \u0628\u0639\u062f \u0627\u0644\u062e\u0631\u0648\u062c.");
             builder.setPositiveButton("\u0646\u0639\u0645", (dialog, which) -> {
                 try {
-                    uz.unnarsx.cherrygram.core.configs.MeeroGhostConfig.INSTANCE.setGhostHideStories(true);
+                    uz.unnarsx.cherrygram.core.configs.MeeroGhostConfig cfg = uz.unnarsx.cherrygram.core.configs.MeeroGhostConfig.INSTANCE;
+                    if (!meeroGhostTempEnabled) {
+                        meeroGhostPrevMaster = cfg.getGhostMaster();
+                        meeroGhostPrevStories = cfg.getGhostHideStories();
+                    }
+                    cfg.setGhostMaster(true);
+                    cfg.setGhostHideStories(true);
                     meeroGhostTempEnabled = true;
                 } catch (Throwable ignore) {
                 }
@@ -148,7 +155,9 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         }
         meeroGhostTempEnabled = false;
         try {
-            uz.unnarsx.cherrygram.core.configs.MeeroGhostConfig.INSTANCE.setGhostHideStories(false);
+            uz.unnarsx.cherrygram.core.configs.MeeroGhostConfig cfg = uz.unnarsx.cherrygram.core.configs.MeeroGhostConfig.INSTANCE;
+            cfg.setGhostMaster(meeroGhostPrevMaster);
+            cfg.setGhostHideStories(meeroGhostPrevStories);
         } catch (Throwable ignore) {
         }
         AndroidUtilities.runOnUIThread(() -> {
@@ -433,8 +442,10 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             doOnAnimationReadyRunnables.clear();
             return;
         }
-        if (meeroGhostPromptShouldShow()) {
-            meeroGhostPromptShown = true;
+        if (meeroGhostPromptSkip) {
+            meeroGhostPromptSkip = false;
+        } else if (meeroGhostPromptShouldShow()) {
+            meeroGhostPromptSkip = true;
             meeroGhostShowPrompt(account, context, storyItem, peerIds, position, storiesList, userStories, placeProvider, reversed);
             return;
         }

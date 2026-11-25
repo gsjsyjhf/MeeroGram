@@ -1508,4 +1508,11 @@
     <string name="MG_Deleted_View">عرض السجل المحفوظ</string>
     <string name="MG_Deleted_Empty">لا يوجد شيء محفوظ بعد. ستظهر الرسائل هنا بعد حذفها أو تعديلها.</string>
     <string name="MG_Deleted_Clear">مسح</string>
+
+    <string name="MG_Ghost_StoryAlert">تنبيه عند مشاهدة القصص</string>
+    <string name="MG_Ghost_StoryAlert_Desc">عند تشغيله يظهر تنبيه كل مرة تفتح فيها قصة، وتقدر تختار مشاهدتها بدون أن يعرف صاحبها. إذا أطفأته لن يظهر أي تنبيه.</string>
+    <string name="MG_Deleted_Row_Desc">إظهار المحذوفة، سجل التعديلات، وسجل محلي لكل ما حُذف</string>
+    <string name="MG_Deleted_Intro">الرسائل التي تُحذف على السيرفر تبقى على هذا الجهاز، ويُحفظ النص القديم للرسائل المعدّلة.</string>
+    <string name="MG_Deleted_Count_Zero">لا يوجد شيء محفوظ بعد</string>
+    <string name="MG_Deleted_Clear_Confirm">هل تريد مسح كل الرسائل المحفوظة من السجل المحلي؟ لا يمكن الرجوع بعد ذلك.</string>
 </resources>

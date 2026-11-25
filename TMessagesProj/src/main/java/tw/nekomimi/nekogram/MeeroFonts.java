@@ -95,37 +95,37 @@ public class MeeroFonts {
                 list.add(new Option(t[i], t[i + 1], t[i + 2].isEmpty() ? null : t[i + 2]));
             }
         } else {
-            list.add(new Option(DEFAULT, "Default", null));
+            list.add(new Option(DEFAULT, "\u0627\u0644\u0627\u0641\u062a\u0631\u0627\u0636\u064a", null));
             // R13.3: the bundled faces of the reference build (extracted from its APK).
-            list.add(new Option("kg_iransans", "IranSans", "fonts/iransans.ttf"));
-            list.add(new Option("kg_iransans_bold", "IranSans Bold", "fonts/iransans_bold.ttf"));
-            list.add(new Option("kg_iransans_light", "IranSans Light", "fonts/iransans_light.ttf"));
-            list.add(new Option("kg_iransans_dn", "IranSans DN", "fonts/iransans_dn.ttf"));
-            list.add(new Option("kg_iransans_dn_bold", "IranSans DN Bold", "fonts/iransans_dn_bold.ttf"));
-            list.add(new Option("kg_iransans_dn_light", "IranSans DN Light", "fonts/iransans_dn_light.ttf"));
-            list.add(new Option("kg_iranyekan", "IranYekan", "fonts/iranyekan.ttf"));
-            list.add(new Option("kg_iranyekan_bold", "IranYekan Bold", "fonts/iranyekan_bold.ttf"));
-            list.add(new Option("kg_iranyekan_light", "IranYekan Light", "fonts/iranyekan_light.ttf"));
-            list.add(new Option("kg_vazir", "Vazir", "fonts/vazir.ttf"));
-            list.add(new Option("kg_vazir_bold", "Vazir Bold", "fonts/vazir_bold.ttf"));
-            list.add(new Option("kg_vazir_light", "Vazir Light", "fonts/vazir_light.ttf"));
-            list.add(new Option("kg_titr", "Titr", "fonts/titr.ttf"));
-            list.add(new Option("kg_koodak", "Koodak", "fonts/koodak.ttf"));
-            list.add(new Option("kg_morvarid", "Morvarid", "fonts/morvarid.ttf"));
-            list.add(new Option("kg_hama", "Hama", "fonts/hama.ttf"));
-            list.add(new Option("kg_afsaneh", "Afsaneh", "fonts/afsaneh.ttf"));
-            list.add(new Option("kg_dastnevis", "Dastnevis", "fonts/dastnevis.ttf"));
-            list.add(new Option("kg_tv", "TV", "fonts/tv.ttf"));
-            list.add(new Option("kg_riitalic", "Roboto Italic Alt", "fonts/riitalic.ttf"));
-            list.add(new Option("ios15", "iOS 15", "fonts/meerox_f8.ttf"));
-            list.add(new Option("arabicui", "Arabic UI Text", "fonts/meerox_f1.ttf"));
-            list.add(new Option("arabicuidisplay", "Arabic UI Display", "fonts/meerox_f6.ttf"));
-            list.add(new Option("arefruqaa", "Aref Ruqaa", "fonts/meerox_f3.ttf"));
-            list.add(new Option("gs45", "GS45 Arabic", "fonts/meerox_f7.ttf"));
-            list.add(new Option("cairo", "Cairo", "fonts/meero_cairo.ttf"));
-            list.add(new Option("tajawal", "Tajawal", "fonts/meero_tajawal.ttf"));
-            list.add(new Option("almarai", "Almarai", "fonts/meero_almarai.ttf"));
-            list.add(new Option("inter", "Inter", "fonts/meero_inter.ttf"));
+            list.add(new Option("kg_iransans", "\u0625\u064a\u0631\u0627\u0646 \u0633\u0627\u0646\u0633", "fonts/iransans.ttf"));
+            list.add(new Option("kg_iransans_bold", "\u0625\u064a\u0631\u0627\u0646 \u0633\u0627\u0646\u0633 \u0639\u0631\u064a\u0636", "fonts/iransans_bold.ttf"));
+            list.add(new Option("kg_iransans_light", "\u0625\u064a\u0631\u0627\u0646 \u0633\u0627\u0646\u0633 \u0631\u0641\u064a\u0639", "fonts/iransans_light.ttf"));
+            list.add(new Option("kg_iransans_dn", "\u0625\u064a\u0631\u0627\u0646 \u0633\u0627\u0646\u0633 DN", "fonts/iransans_dn.ttf"));
+            list.add(new Option("kg_iransans_dn_bold", "\u0625\u064a\u0631\u0627\u0646 \u0633\u0627\u0646\u0633 DN \u0639\u0631\u064a\u0636", "fonts/iransans_dn_bold.ttf"));
+            list.add(new Option("kg_iransans_dn_light", "\u0625\u064a\u0631\u0627\u0646 \u0633\u0627\u0646\u0633 DN \u0631\u0641\u064a\u0639", "fonts/iransans_dn_light.ttf"));
+            list.add(new Option("kg_iranyekan", "\u0625\u064a\u0631\u0627\u0646 \u064a\u0643\u0627\u0646", "fonts/iranyekan.ttf"));
+            list.add(new Option("kg_iranyekan_bold", "\u0625\u064a\u0631\u0627\u0646 \u064a\u0643\u0627\u0646 \u0639\u0631\u064a\u0636", "fonts/iranyekan_bold.ttf"));
+            list.add(new Option("kg_iranyekan_light", "\u0625\u064a\u0631\u0627\u0646 \u064a\u0643\u0627\u0646 \u0631\u0641\u064a\u0639", "fonts/iranyekan_light.ttf"));
+            list.add(new Option("kg_vazir", "\u0648\u0632\u064a\u0631", "fonts/vazir.ttf"));
+            list.add(new Option("kg_vazir_bold", "\u0648\u0632\u064a\u0631 \u0639\u0631\u064a\u0636", "fonts/vazir_bold.ttf"));
+            list.add(new Option("kg_vazir_light", "\u0648\u0632\u064a\u0631 \u0631\u0641\u064a\u0639", "fonts/vazir_light.ttf"));
+            list.add(new Option("kg_titr", "\u062a\u062a\u0631", "fonts/titr.ttf"));
+            list.add(new Option("kg_koodak", "\u0643\u0648\u062f\u0643", "fonts/koodak.ttf"));
+            list.add(new Option("kg_morvarid", "\u0645\u0631\u0648\u0627\u0631\u064a\u062f", "fonts/morvarid.ttf"));
+            list.add(new Option("kg_hama", "\u0647\u0645\u0627", "fonts/hama.ttf"));
+            list.add(new Option("kg_afsaneh", "\u0623\u0641\u0633\u0627\u0646\u0629", "fonts/afsaneh.ttf"));
+            list.add(new Option("kg_dastnevis", "\u062e\u0637 \u0627\u0644\u064a\u062f", "fonts/dastnevis.ttf"));
+            list.add(new Option("kg_tv", "\u062a\u064a \u0641\u064a", "fonts/tv.ttf"));
+            list.add(new Option("kg_riitalic", "\u0631\u0648\u0628\u0648\u062a\u0648 \u0645\u0627\u0626\u0644", "fonts/riitalic.ttf"));
+            list.add(new Option("ios15", "\u0622\u064a \u0623\u0648 \u0625\u0633 15", "fonts/meerox_f8.ttf"));
+            list.add(new Option("arabicui", "\u0639\u0631\u0628\u064a - \u0648\u0627\u062c\u0647\u0629 \u0627\u0644\u0646\u0635", "fonts/meerox_f1.ttf"));
+            list.add(new Option("arabicuidisplay", "\u0639\u0631\u0628\u064a - \u0648\u0627\u062c\u0647\u0629 \u0627\u0644\u0639\u0631\u0636", "fonts/meerox_f6.ttf"));
+            list.add(new Option("arefruqaa", "\u0639\u0627\u0631\u0641 \u0631\u0642\u0639\u0629", "fonts/meerox_f3.ttf"));
+            list.add(new Option("gs45", "\u062c\u064a \u0625\u0633 45 \u0639\u0631\u0628\u064a", "fonts/meerox_f7.ttf"));
+            list.add(new Option("cairo", "\u0627\u0644\u0642\u0627\u0647\u0631\u0629", "fonts/meero_cairo.ttf"));
+            list.add(new Option("tajawal", "\u062a\u062c\u0648\u0627\u0644", "fonts/meero_tajawal.ttf"));
+            list.add(new Option("almarai", "\u0627\u0644\u0645\u0631\u0627\u0639\u064a", "fonts/meero_almarai.ttf"));
+            list.add(new Option("inter", "\u0625\u0646\u062a\u0631", "fonts/meero_inter.ttf"));
         }
 
         File[] files = customDir().listFiles();
@@ -144,7 +144,7 @@ public class MeeroFonts {
         for (Option o : getOptions()) {
             if (o.id.equals(id)) return o.title;
         }
-        return "Default";
+        return "\u0627\u0644\u0627\u0641\u062a\u0631\u0627\u0636\u064a";
     }
 
     /** Copies a user-picked font into our directory. Returns its option id, or null. */

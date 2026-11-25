@@ -11814,4 +11814,11 @@
     <string name="MG_Deleted_View">Open the saved log</string>
     <string name="MG_Deleted_Empty">Nothing saved yet. Messages will appear here after they are deleted or edited.</string>
     <string name="MG_Deleted_Clear">Clear</string>
+
+    <string name="MG_Ghost_StoryAlert">Story View Alert</string>
+    <string name="MG_Ghost_StoryAlert_Desc">Every time you open a story while this is on, you get a warning first so you can choose to watch it invisibly.</string>
+    <string name="MG_Deleted_Row_Desc">Show deleted messages, edit history and the local log</string>
+    <string name="MG_Deleted_Intro">Messages that get deleted on the server stay on this device, and the old text of edited messages is saved.</string>
+    <string name="MG_Deleted_Count_Zero">Nothing saved yet</string>
+    <string name="MG_Deleted_Clear_Confirm">Delete every saved message from the local log? This cannot be undone.</string>
 </resources>
