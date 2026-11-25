@@ -475,18 +475,29 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
         final ViewPositionWatcher viewPositionWatcher = new ViewPositionWatcher(contentView);
 
-        // R11.8: force the DETERMINISTIC color source for the tab bar.
-        // The render-node composite source (iBlur3SourceTabGlass) rendered the
-        // tabs container as a solid white rounded rect on the user's imported
-        // dark theme ("البياض") while the sibling search button - same factory,
-        // same provider - stayed dark, so the failure is in the capture source
-        // state, not in the provider fill. A color source cannot go white: it
-        // is getThemedColor(key_windowBackgroundWhite) which the theme defines
-        // dark (the pages themselves render dark on the same device).
-        BlurredBackgroundDrawableViewFactory iBlur3FactoryGlass = new BlurredBackgroundDrawableViewFactory(
-            iBlur3SourceColor,
-            iBlur3SourceColor,
-            iBlur3SourceColor);
+        // R13.6 (MR parity): the bar is a REAL glass surface again - it blurs the
+        // pages that scroll underneath it, exactly like the reference build.
+        // R11.8 had replaced the render-node composite source with a flat colour
+        // source, which is why the bar/pill could only ever be a solid tint.
+        // The fill itself comes from BlurredBackgroundProviderImpl.mainTabs(),
+        // which tints directly (0xFF232323 dark / 0xFFFAFAFA light), so the white
+        // rectangle seen back then cannot come back through the fill.
+        BlurredBackgroundDrawableViewFactory iBlur3FactoryGlass;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                && iBlur3SourceTabGlass != null
+                && SharedConfig.chatBlurEnabled()) {
+            iBlur3FactoryGlass = new BlurredBackgroundDrawableViewFactory(
+                iBlur3SourceTabGlass,
+                iBlur3SourceTabFrosted,
+                iBlur3SourceColor);
+            iBlur3FactoryGlass.setGlassEngine(glassEngine);
+            iBlur3FactoryGlass.setLiquidGlassEffectAllowed(true);
+        } else {
+            iBlur3FactoryGlass = new BlurredBackgroundDrawableViewFactory(
+                iBlur3SourceColor,
+                iBlur3SourceColor,
+                iBlur3SourceColor);
+        }
         iBlur3FactoryGlass.setSourceRootView(viewPositionWatcher, contentView);
         iBlur3FactoryGlass.setLiquidGlassEffectAllowed(true);
 

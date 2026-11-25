@@ -1342,6 +1342,16 @@ public class StoriesController {
         if (storyItem == null || userStories == null) {
             return false;
         }
+        // R13.6: ghost mode - "hide story views" was only a switch in the UI, it never
+        // suppressed anything. Now the read receipt is not sent at all while it is on,
+        // so watching a story leaves no view from the other side.
+        try {
+            if (uz.unnarsx.cherrygram.core.configs.MeeroGhostConfig.INSTANCE.getGhostMaster()
+                    && uz.unnarsx.cherrygram.core.configs.MeeroGhostConfig.INSTANCE.getGhostHideStories()) {
+                return false;
+            }
+        } catch (Throwable ignore) {
+        }
         final long dialogId = DialogObject.getPeerDialogId(userStories.peer);
         if (storyItem.justUploaded) {
             storyItem.justUploaded = false;
