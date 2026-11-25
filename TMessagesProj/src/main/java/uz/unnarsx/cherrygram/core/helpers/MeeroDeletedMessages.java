@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import uz.unnarsx.cherrygram.core.configs.MeeroDeletedConfig;
 
-public final class MeeroDeletedMessages {
+public final class MeeroDeletedMessages implements NotificationCenter.NotificationCenterDelegate {
 
     public static final int MAX_ENTRIES = 250;
     private static final int MAX_CACHE = 4000;
