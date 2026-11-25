@@ -18530,6 +18530,15 @@ public class MessagesController extends BaseController implements NotificationCe
         return updated;
     }
 
+    /** MeeroGram R13.9: keep deleted messages visible inside the chat. */
+    private static boolean meeroKeepDeletedMessages() {
+        try {
+            return uz.unnarsx.cherrygram.core.configs.MeeroDeletedConfig.INSTANCE.getKeepDeletedMessages();
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     public boolean processUpdateArray(ArrayList<TLRPC.Update> updates, ArrayList<TLRPC.User> usersArr, ArrayList<TLRPC.Chat> chatsArr, boolean fromGetDifference, int date) {
         if (updates.isEmpty()) {
             if (usersArr != null || chatsArr != null) {
@@ -21277,7 +21286,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     getNotificationCenter().postNotificationName(NotificationCenter.messagesReadContent, key, value);
                 }
             }
-            if (deletedMessagesFinal != null) {
+            if (deletedMessagesFinal != null && !meeroKeepDeletedMessages()) {
                 for (int a = 0, size = deletedMessagesFinal.size(); a < size; a++) {
                     long dialogId = deletedMessagesFinal.keyAt(a);
                     ArrayList<Integer> arrayList = deletedMessagesFinal.valueAt(a);
@@ -21397,7 +21406,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 getMessagesStorage().markMessagesContentAsRead(key, arrayList, currentTime2, markContentAsReadMessagesDate);
             }
         }
-        if (deletedMessages != null) {
+        if (deletedMessages != null && !meeroKeepDeletedMessages()) {
             for (int a = 0, size = deletedMessages.size(); a < size; a++) {
                 long key = deletedMessages.keyAt(a);
                 ArrayList<Integer> arrayList = deletedMessages.valueAt(a);
