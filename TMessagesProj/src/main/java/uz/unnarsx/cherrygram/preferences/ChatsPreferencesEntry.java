@@ -398,19 +398,19 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
             CherrygramChatsConfig.INSTANCE.setChatsTitleAsTabs(!CherrygramChatsConfig.INSTANCE.getChatsTitleAsTabs());
             SettingsHelper.updateCheckState(view, CherrygramChatsConfig.INSTANCE.getChatsTitleAsTabs());
 
-            getParentLayout().rebuildAllFragmentViews(false, false);
+            getParentLayout().rebuildAllFragmentViews(true, true);
         } else if (item.id == floatingActionsRow) {
             // MeeroGram R11: floating glass pills above the chat list.
             CherrygramChatsConfig.INSTANCE.setFloatingActions(!CherrygramChatsConfig.INSTANCE.getFloatingActions());
             SettingsHelper.updateCheckState(view, CherrygramChatsConfig.INSTANCE.getFloatingActions());
 
-            getParentLayout().rebuildAllFragmentViews(false, false);
+            getParentLayout().rebuildAllFragmentViews(true, true);
         } else if (item.id == stackedStoriesRow) {
             // MeeroGram R11: stacked story avatars.
             CherrygramChatsConfig.INSTANCE.setStackedStories(!CherrygramChatsConfig.INSTANCE.getStackedStories());
             SettingsHelper.updateCheckState(view, CherrygramChatsConfig.INSTANCE.getStackedStories());
 
-            getParentLayout().rebuildAllFragmentViews(false, false);
+            getParentLayout().rebuildAllFragmentViews(true, true);
         } else if (item.id == ios26ChatSoundsRow) {
             // MeeroGram R11.1: in-chat iOS26 sounds (send/receive).
             CherrygramChatsConfig.INSTANCE.setIos26ChatSounds(!CherrygramChatsConfig.INSTANCE.getIos26ChatSounds());
@@ -438,7 +438,7 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
             CherrygramChatsConfig.INSTANCE.setDrawSnowInChat(!CherrygramChatsConfig.INSTANCE.getDrawSnowInChat());
             SettingsHelper.updateCheckState(view, CherrygramChatsConfig.INSTANCE.getDrawSnowInChat());
 
-            getParentLayout().rebuildAllFragmentViews(false, false);
+            getParentLayout().rebuildAllFragmentViews(true, true);
         } else if (item.id == bottomBarSettingsRow) {
             expandedBottomBarSettingsSection = !expandedBottomBarSettingsSection;
             item.collapsed = !item.collapsed;
@@ -754,7 +754,7 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
         names.add(getString(R.string.MG_Bubble_Whatsapp));  values.add(tw.nekomimi.nekogram.MeeroBubbleStyles.WHATSAPP);
         PopupHelper.show(names, getString(R.string.MG_BubbleStyle), values.indexOf(tw.nekomimi.nekogram.MeeroBubbleStyles.current()), getContext(), i -> {
             CherrygramChatsConfig.INSTANCE.setBubbleStyle(values.get(i));
-            getParentLayout().rebuildAllFragmentViews(false, false);
+            getParentLayout().rebuildAllFragmentViews(true, true);
             if (runnable != null) runnable.run();
         });
     }
