@@ -10937,11 +10937,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         updateFloatingButtonOffset();
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
     /**
-     * R14.9: re-apply the main-screen title right away, so the «عنوان شاشة
-     * المحادثات» switch (app name <-> «المحادثات») is visible without relaunching.
+     * R14.9: re-apply the main-screen title right away, so the
+     * title switch (app name <-> chats) is visible without relaunching.
      */
     public void meeroRefreshChatsTitle() {
         try {
@@ -10958,6 +10956,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
+    @SuppressWarnings("unchecked")
+    @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.dialogsNeedReload) {
             if (viewPages == null || dialogsListFrozen) {
