@@ -716,6 +716,14 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                 break;
             case VIEW_TYPE_TEXT:
                 TextCell cell = (TextCell) holder.itemView;
+                // MeeroGram R14.5: plain text rows (UItem.asButton) are TextCells, not
+                // TextSettingsCells. SimpleTextView caches its StaticLayout, so the
+                // face has to be set before the text, otherwise the row keeps
+                // rendering in the old font (font picker previews).
+                if (cell.getTextView() != null) {
+                    cell.getTextView().setTypeface(item.object instanceof android.graphics.Typeface
+                            ? (android.graphics.Typeface) item.object : null);
+                }
                 cell.setEnabled(item.enabled, null);
                 if (item.object instanceof TLRPC.Document) {
                     cell.setTextAndSticker(item.text, (TLRPC.Document) item.object, divider);
