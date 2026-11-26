@@ -326,43 +326,16 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
     @Override
     public void draw(@NonNull Canvas canvas) {
-        /** Meerogram liquid pill start */
-        if (meeroPillMode && meeroPhysics != null
-                && (meeroPhysics.pressProgress.value > 0.001f
-                    || Math.abs(meeroPhysics.panelOffset.value) > 0.5f)) {
-            final android.graphics.drawable.Drawable bg = getBackground();
-            canvas.save();
-            canvas.translate(meeroPanelOffsetPx, 0f);
-            final float s = 1f + dp(16) * meeroPhysics.pressProgress.value / Math.max(1, getWidth());
-            canvas.scale(s, s, getWidth() / 2f, getHeight() / 2f);
-            if (bg != null) {
-                bg.draw(canvas);
-            }
-            canvas.restore();
-            dispatchDraw(canvas);
-            return;
-        }
-        /** Meerogram liquid pill finish */
+        // R14.4: MR parity - no custom drawing pass while the bar is idle; the
+        // selector is painted by dispatchDraw() during a long-press drag only.
         super.draw(canvas);
     }
 
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
-        /** Meerogram liquid pill start */
-        if (meeroPillMode) {
-            meeroTickPill(canvas);
-            // YTXTube: the tab row (and the pill) shift with the panel offset.
-            if (meeroPanelOffsetPx != 0f) {
-                canvas.save();
-                canvas.translate(meeroPanelOffsetPx, 0f);
-                super.dispatchDraw(canvas);
-                canvas.restore();
-            } else {
-                super.dispatchDraw(canvas);
-            }
-            return;
-        }
-        /** Meerogram liquid pill finish */
+        // R14.4: identical to MR - the sliding capsule is drawn only while the
+        // long-press drag owns the bar; every tab draws its own 9% capsule
+        // selector the rest of the time.
         if (drawCustomSelector) {
             final float x = animatedLongSelectedViewCenterX + animatedLongSelectedViewOffsetX;
             final float sWidth = getInterpolatedWidthByX(x, this);
@@ -376,7 +349,6 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
         super.dispatchDraw(canvas);
     }
-
 
     final Paint selectorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     final SpringAnimation scaleX = new SpringAnimation(this, DynamicAnimation.SCALE_X, 1f);
@@ -506,7 +478,12 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
         @Override
         public boolean needLongPress(float x, float y) {
-            return true;
+            // R14.4: the long-press drag belongs to the glass (MR) bar style.
+            try {
+                return uz.unnarsx.cherrygram.core.configs.CherrygramAppearanceConfig.INSTANCE.getGlassBarStyle();
+            } catch (Throwable t) {
+                return true;
+            }
         }
 
         @Override
@@ -1210,9 +1187,8 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     public void setForMainTabsCG(boolean cherrygramMainTabs) {
         if (isForMainTabsCG != cherrygramMainTabs) {
             isForMainTabsCG = cherrygramMainTabs;
-            if (cherrygramMainTabs && tabDragHelper == null) {
-                tabDragHelper = new MeeroTabDragHelper(this, tabDragDelegate);
-            }
+            // R14.4: the extra instant-drag helper is gone - it stole the gesture
+            // from MR's long-press drag, so the indicator never followed the finger.
             requestLayout();
         }
     }
