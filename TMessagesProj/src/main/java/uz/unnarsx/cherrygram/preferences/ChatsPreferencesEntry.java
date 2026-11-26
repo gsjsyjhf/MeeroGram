@@ -61,7 +61,23 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
      * R14.8b: make a chats-list appearance switch visible immediately. DialogsActivity
      * rebuilds every visible chat row when dialogsNeedReload arrives, so stacked
      * stories / centred title / floating buttons apply without reopening the app.
+     * R14.9: push the new main-screen title into an already open DialogsActivity.
      */
+    private void meeroRefreshChatsTitle() {
+        try {
+            final org.telegram.ui.ActionBar.INavigationLayout layout = getParentLayout();
+            if (layout == null) {
+                return;
+            }
+            for (org.telegram.ui.ActionBar.BaseFragment fragment : layout.getFragmentStack()) {
+                if (fragment instanceof DialogsActivity) {
+                    ((DialogsActivity) fragment).meeroRefreshChatsTitle();
+                }
+            }
+        } catch (Throwable ignore) {
+        }
+    }
+
     private static void meeroReloadDialogsList() {
         try {
             final int account = org.telegram.messenger.UserConfig.selectedAccount;
@@ -415,6 +431,7 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
 
             getParentLayout().rebuildAllFragmentViews(true, true);
             meeroReloadDialogsList();
+            meeroRefreshChatsTitle();
         } else if (item.id == floatingActionsRow) {
             // MeeroGram R11: floating glass pills above the chat list.
             CherrygramChatsConfig.INSTANCE.setFloatingActions(!CherrygramChatsConfig.INSTANCE.getFloatingActions());

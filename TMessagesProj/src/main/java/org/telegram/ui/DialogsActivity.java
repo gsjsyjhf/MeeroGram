@@ -10939,6 +10939,25 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     @SuppressWarnings("unchecked")
     @Override
+    /**
+     * R14.9: re-apply the main-screen title right away, so the «عنوان شاشة
+     * المحادثات» switch (app name <-> «المحادثات») is visible without relaunching.
+     */
+    public void meeroRefreshChatsTitle() {
+        try {
+            if (actionBar == null) {
+                return;
+            }
+            actionBar.setTitle(actionBarDefaultTitle = getString(
+                    CherrygramChatsConfig.INSTANCE.getChatsTitleAsTabs() ? R.string.MG_Tab_Chats : R.string.CG_AppName
+            ), null, true);
+            if (dialogStoriesCell != null && filterTabsView != null) {
+                dialogStoriesCell.setTitleOverlayText(filterTabsView.currentTabIsDefault() ? actionBarDefaultTitle : filterTabsView.getSelectedTabTitle(), filterTabsView.currentTabIsDefault() && statusDrawable != null);
+            }
+        } catch (Throwable ignore) {
+        }
+    }
+
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.dialogsNeedReload) {
             if (viewPages == null || dialogsListFrozen) {
