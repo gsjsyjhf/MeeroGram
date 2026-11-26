@@ -40,6 +40,20 @@ import uz.unnarsx.cherrygram.preferences.helpers.SettingsHelper;
 
 public class MainTabsPreferencesEntry extends BaseCGPreferencesEntry {
 
+    /* R14.8: liquid glass bar strings (Arabic escapes - CI safe). */
+    private static final String LIQUID_BAR_TITLE = "\u0627\u0644\u0628\u0627\u0631 \u0627\u0644\u0632\u062c\u0627\u062c\u064a \u0627\u0644\u0633\u0627\u0626\u0644 (iOS 26)";
+    private static final String LIQUID_BAR_DESC = "\u0634\u0631\u064a\u0637 \u0633\u0641\u0644\u064a \u0628\u0642\u0639\u0629 \u0632\u062c\u0627\u062c\u064a\u0629 \u062a\u0646\u0633\u062d\u0628 \u0645\u0639 \u0627\u0644\u0625\u0635\u0628\u0639 \u0641\u0648\u0631 \u0627\u0644\u0644\u0645\u0633. \u0639\u0646\u062f \u0627\u0644\u0625\u0637\u0641\u0627\u0621 \u064a\u0639\u0648\u062f \u0627\u0644\u0634\u0631\u064a\u0637 \u0627\u0644\u0633\u0627\u0628\u0642.";
+    private static final String LIQUID_BLUR_TITLE = "\u0632\u064a\u0627\u062f\u0629 \u0627\u0644\u062a\u0645\u0648\u064a\u0647";
+
+    private static String blurLevelTitle(int level) {
+        switch (level) {
+            case 0: return "\u062e\u0641\u064a\u0641";
+            case 1: return "\u0645\u062a\u0648\u0633\u0637";
+            case 2: return "\u0642\u0648\u064a";
+            default: return "\u0623\u0642\u0635\u0649";
+        }
+    }
+
     private final int enableTabsRow = 1;
     private final int tabsPreviewRow = 2;
     private final int openSettingsBySwipeRow = 3;
@@ -48,6 +62,8 @@ public class MainTabsPreferencesEntry extends BaseCGPreferencesEntry {
     private final int searchInTabsRow = 6;
     // R11.3: glass (YTXTube) pill style; off restores the official bar look.
     private final int glassStyleRow = 7;
+    private final int liquidBarRow = 8;
+    private final int liquidBlurRow = 9;
 
     private MainTabsPreviewCell tabsView;
     private ArrayList<MainTabsManager.Tab> tabs;
@@ -124,10 +140,15 @@ public class MainTabsPreferencesEntry extends BaseCGPreferencesEntry {
             items.add(SettingsHelper.asSwitchCG(searchInTabsRow, getString(R.string.MG_SearchInTabs), getString(R.string.MG_SearchInTabs_Desc))
                     .setChecked(CherrygramAppearanceConfig.INSTANCE.getShowSearchInTabs())
             );
-            // R11.3: glass (YTXTube) bar style switch - off = official look.
-            items.add(SettingsHelper.asSwitchCG(glassStyleRow, getString(R.string.MG_GlassBarStyle), getString(R.string.MG_GlassBarStyle_Desc))
-                    .setChecked(CherrygramAppearanceConfig.INSTANCE.getGlassBarStyle())
-                    .slug("glassBarStyle")
+            // R14.8: the liquid glass bar (GlassNavBar.kt from the iOS26 keyboard
+            // source). Off = the previous bar, untouched.
+            items.add(SettingsHelper.asSwitchCG(liquidBarRow, LIQUID_BAR_TITLE, LIQUID_BAR_DESC)
+                    .setChecked(CherrygramAppearanceConfig.INSTANCE.getLiquidBottomBar())
+                    .slug("liquidBottomBar")
+            );
+            items.add(UItem.asButton(liquidBlurRow, LIQUID_BLUR_TITLE, blurLevelTitle(CherrygramAppearanceConfig.INSTANCE.getLiquidBottomBarBlur()))
+                    .setEnabled(CherrygramAppearanceConfig.INSTANCE.getLiquidBottomBar())
+                    .slug("liquidBottomBarBlur")
             );
             items.add(UItem.asShadow(getString(R.string.CP_MainTabs_Layout_Desc)));
 
@@ -208,10 +229,18 @@ public class MainTabsPreferencesEntry extends BaseCGPreferencesEntry {
         } else if (item.id == searchInTabsRow) {
             CherrygramAppearanceConfig.INSTANCE.setShowSearchInTabs(!CherrygramAppearanceConfig.INSTANCE.getShowSearchInTabs());
             SettingsHelper.updateCheckState(view, CherrygramAppearanceConfig.INSTANCE.getShowSearchInTabs());
-        } else if (item.id == glassStyleRow) {
-            CherrygramAppearanceConfig.INSTANCE.setGlassBarStyle(!CherrygramAppearanceConfig.INSTANCE.getGlassBarStyle());
-            SettingsHelper.updateCheckState(view, CherrygramAppearanceConfig.INSTANCE.getGlassBarStyle());
+        } else if (item.id == liquidBarRow) {
+            CherrygramAppearanceConfig.INSTANCE.setLiquidBottomBar(!CherrygramAppearanceConfig.INSTANCE.getLiquidBottomBar());
+            SettingsHelper.updateCheckState(view, CherrygramAppearanceConfig.INSTANCE.getLiquidBottomBar());
+            updateRows(true);
             onTabsChanged();
+        } else if (item.id == liquidBlurRow) {
+            if (CherrygramAppearanceConfig.INSTANCE.getLiquidBottomBar()) {
+                int next = (CherrygramAppearanceConfig.INSTANCE.getLiquidBottomBarBlur() + 1) % 4;
+                CherrygramAppearanceConfig.INSTANCE.setLiquidBottomBarBlur(next);
+                SettingsHelper.updateButtonValue(view, blurLevelTitle(next));
+                onTabsChanged();
+            }
         }
     }
 
@@ -231,7 +260,9 @@ public class MainTabsPreferencesEntry extends BaseCGPreferencesEntry {
         MainTabsManager.INSTANCE.saveTabs(tabs);
         tabsChanged = true;
         if (getParentLayout() != null) {
-            getParentLayout().rebuildAllFragmentViews(false, false);
+            // R14.8: rebuild the visible screen too, so a bar/appearance change is
+            // applied immediately instead of after a relaunch.
+            getParentLayout().rebuildAllFragmentViews(true, true);
         }
     }
 

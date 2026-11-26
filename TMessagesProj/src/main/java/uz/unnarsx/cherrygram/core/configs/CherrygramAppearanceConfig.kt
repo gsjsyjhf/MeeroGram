@@ -96,6 +96,15 @@ object CherrygramAppearanceConfig {
 
     /** R11.3: glass (YTXTube) pill style for the bottom bar; off = official bar look. */
     var glassBarStyle by sharedPreferences.boolean("MG_GlassBarStyle", true)
+
+    /**
+     * R14.8: the liquid glass bottom bar from the iOS26 keyboard source
+     * (glass/GlassNavBar.kt - LiquidBottomBar). Off = the previous MR-style bar.
+     */
+    var liquidBottomBar by sharedPreferences.boolean("MG_LiquidBottomBar", false)
+
+    /** R14.8: extra blur for the liquid bar. 0 = light, 1 = medium, 2 = strong, 3 = max. */
+    var liquidBottomBarBlur by sharedPreferences.int("MG_LiquidBottomBarBlur", 1)
     var mainTabsForceOpenChats by sharedPreferences.boolean("AP_MainTabsForceOpenChats", false)
     /** Main tabs finish */
 
