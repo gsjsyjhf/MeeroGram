@@ -3637,6 +3637,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 final CharSequence meeroChatsTitle = CherrygramChatsConfig.INSTANCE.getChatsTitleAsTabs()
                         ? getString(R.string.MG_Tab_Chats) : org.telegram.ui.ActionBar.BaseFragment.MEERO_APP_NAME;
                 actionBar.setTitle(actionBarDefaultTitle = meeroChatsTitle, statusDrawable, true);
+                // MeeroGram R14.11: honour the "توسيط العنوان" (center title) switch on the
+                // chats screen itself - it used to affect only inner screens, which is why
+                // the chats title always rendered left-aligned. With centring on, the title
+                // and the stories capsule sit together in the middle of the bar.
+                if (CherrygramAppearanceConfig.INSTANCE.getCenterTitle()) {
+                    actionBar.setCenterTitleAndGlass(true);
+                }
                 updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);
             }
             if (folderId == 0) {
