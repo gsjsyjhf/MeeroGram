@@ -1342,7 +1342,10 @@ public class MainTabsLayout extends AnimatedLinearLayout {
                 if (meeroLiquidWasDrag) {
                     final int count = Math.max(1, meeroVisibleTabCount());
                     final float tabWidth = Math.max(1f, (getWidth() - getPaddingLeft() - getPaddingRight() - dp(8)) / (float) count);
-                    final float dir = org.telegram.messenger.LocaleController.isRTL ? -1f : 1f;
+                    // R14.8b: take the direction from the real tab geometry. The
+                    // locale flag was inverted on RTL devices, so the capsule ran
+                    // away from the finger.
+                    final float dir = meeroLiquidDragDirection(count);
                     final int before = Math.round(meeroPhysics.value.target);
                     meeroPhysics.updateValue(meeroPhysics.value.target + dx / tabWidth * dir);
                     if (Math.round(meeroPhysics.value.target) != before) {
@@ -1361,6 +1364,14 @@ public class MainTabsLayout extends AnimatedLinearLayout {
                 meeroLiquidPointer = false;
                 final boolean dragged = meeroLiquidWasDrag;
                 meeroLiquidWasDrag = false;
+                if (!dragged) {
+                    // a plain tap: the capsule must jump onto the tapped tab
+                    final View under = findChildUnder(this, ev.getX(), ev.getY());
+                    final int index = under == null ? -1 : meeroIndexOf(under);
+                    if (index >= 0) {
+                        meeroPhysics.animateToValue(index);
+                    }
+                }
                 meeroPhysics.release();
                 if (dragged) {
                     final int count = Math.max(1, meeroVisibleTabCount());
@@ -1378,6 +1389,16 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             }
         }
         return false;
+    }
+
+    /** +1 when index N+1 lies to the right of index N, -1 when it lies to the left. */
+    private float meeroLiquidDragDirection(int count) {
+        final View first = meeroTabAt(0);
+        final View second = meeroTabAt(count > 1 ? 1 : 0);
+        if (first == null || second == null || first == second) {
+            return 1f;
+        }
+        return second.getLeft() > first.getLeft() ? 1f : -1f;
     }
 
     private void meeroLiquidDraw(Canvas canvas) {

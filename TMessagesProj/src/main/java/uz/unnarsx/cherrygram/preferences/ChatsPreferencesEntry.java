@@ -57,6 +57,21 @@ import uz.unnarsx.cherrygram.preferences.helpers.SettingsHelper;
 
 public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
 
+    /**
+     * R14.8b: make a chats-list appearance switch visible immediately. DialogsActivity
+     * rebuilds every visible chat row when dialogsNeedReload arrives, so stacked
+     * stories / centred title / floating buttons apply without reopening the app.
+     */
+    private static void meeroReloadDialogsList() {
+        try {
+            final int account = org.telegram.messenger.UserConfig.selectedAccount;
+            org.telegram.messenger.NotificationCenter.getInstance(account)
+                    .postNotificationName(org.telegram.messenger.NotificationCenter.dialogsNeedReload);
+        } catch (Throwable ignore) {
+        }
+    }
+
+
     private final int headerSettingsRow = 1, centerTitleRow = 2, centerTitleAdaptiveWidthRow = 3, unreadBadgeRow = 4, iOSUnreadBadgeRow = 5, chatMenuShortcutsRow = 6;
 
     private final int customBackgroundInChatsRow = 7, snowflakesRow = 8;
@@ -399,18 +414,21 @@ public class ChatsPreferencesEntry extends BaseCGPreferencesEntry {
             SettingsHelper.updateCheckState(view, CherrygramChatsConfig.INSTANCE.getChatsTitleAsTabs());
 
             getParentLayout().rebuildAllFragmentViews(true, true);
+            meeroReloadDialogsList();
         } else if (item.id == floatingActionsRow) {
             // MeeroGram R11: floating glass pills above the chat list.
             CherrygramChatsConfig.INSTANCE.setFloatingActions(!CherrygramChatsConfig.INSTANCE.getFloatingActions());
             SettingsHelper.updateCheckState(view, CherrygramChatsConfig.INSTANCE.getFloatingActions());
 
             getParentLayout().rebuildAllFragmentViews(true, true);
+            meeroReloadDialogsList();
         } else if (item.id == stackedStoriesRow) {
             // MeeroGram R11: stacked story avatars.
             CherrygramChatsConfig.INSTANCE.setStackedStories(!CherrygramChatsConfig.INSTANCE.getStackedStories());
             SettingsHelper.updateCheckState(view, CherrygramChatsConfig.INSTANCE.getStackedStories());
 
             getParentLayout().rebuildAllFragmentViews(true, true);
+            meeroReloadDialogsList();
         } else if (item.id == ios26ChatSoundsRow) {
             // MeeroGram R11.1: in-chat iOS26 sounds (send/receive).
             CherrygramChatsConfig.INSTANCE.setIos26ChatSounds(!CherrygramChatsConfig.INSTANCE.getIos26ChatSounds());
