@@ -7288,9 +7288,12 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         } catch (Exception e) {
             FileLog.e(e);
         }
-        instance = null;
-        staticInstanceForAlerts = null;
-        //clearFragments();
+        if (instance == this) {
+            instance = null;
+        }
+        if (staticInstanceForAlerts == this) {
+            staticInstanceForAlerts = null;
+        }
         NotificationCenter.getGlobalInstance().clearViewObservers(this);
         for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; i++) {
             if (UserConfig.getInstance(i).isClientActivated()) {
@@ -7377,6 +7380,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     @Override
     protected void onResume() {
         super.onResume();
+        instance = this;
         WidgetMedia.onAppPaused(false);
         isResumed = true;
         PipCoordinator.getInstance().onActivityResume(this);
