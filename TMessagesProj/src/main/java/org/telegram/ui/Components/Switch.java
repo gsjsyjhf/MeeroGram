@@ -106,6 +106,48 @@ public class Switch extends FrameLayout implements Theme.Colorable {
         return false;
     }
 
+    /**
+     * R14.6 - the reason every switch in the settings screens was cosmetic only.
+     *
+     * Row clicks are dispatched by RecyclerListView itself (it owns an
+     * OnItemClickListener and calls it from its own touch handling); the cells
+     * have no OnClickListener at all. The old code walked the parents calling
+     * callOnClick(), which always returned false on these screens, and then fell
+     * back to flipping the view locally - so the switch moved, the preference was
+     * never written, the feature kept running and the value came back on relaunch.
+     *
+     * Here we ask the enclosing list to run the real row click for our position,
+     * exactly as if the row (not the switch) had been tapped.
+     */
+    private boolean meeroClickRow() {
+        try {
+            for (ViewParent p = getParent(); p instanceof View; p = ((View) p).getParent()) {
+                final View v = (View) p;
+                if (v instanceof ListView && !(v instanceof RecyclerListView)) {
+                    return false;
+                }
+                if (v instanceof RecyclerListView) {
+                    final RecyclerListView list = (RecyclerListView) v;
+                    View child = this;
+                    while (child.getParent() != list && child.getParent() instanceof View) {
+                        child = (View) child.getParent();
+                    }
+                    if (child.getParent() != list) {
+                        return false;
+                    }
+                    final int position = list.getChildAdapterPosition(child);
+                    if (position == androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
+                        return false;
+                    }
+                    list.clickItem(child, position);
+                    return true;
+                }
+            }
+        } catch (Throwable ignore) {
+        }
+        return false;
+    }
+
     private boolean hostGlassSwitch = true;
 
     /**
@@ -1079,6 +1121,13 @@ public class Switch extends FrameLayout implements Theme.Colorable {
                         ? isChecked
                         : (!wasMoved ? !isChecked : meeroThumbX >= travel * 0.5f);
                 if (!wasCancelled && nextChecked != isChecked) {
+                    // R14.6: let the list run the real row click (this is what
+                    // actually stores the preference); only if that is impossible
+                    // fall back to the old ancestor walk.
+                    if (meeroClickRow()) {
+                        glassSwitch.setCheckedFromHost(isChecked, true);
+                        return true;
+                    }
                     // route through the enclosing cell so every screen keeps its
                     // exact behaviour (dialogs, dependent rows, persistence)
                     boolean handled = false;
@@ -1190,7 +1239,11 @@ public class Switch extends FrameLayout implements Theme.Colorable {
                     }
                 };
                 postDelayed(meeroGlassSettle, wasMoved ? 130 : 250);
-                if (!wasCancelled && (!wasMoved || nextChecked != isChecked)) {
+                if (!wasCancelled && (!wasMoved || nextChecked != isChecked) && meeroClickRow()) {
+                    // R14.6: the list handled the real row click itself.
+                    invalidate();
+                    return true;
+                } else if (!wasCancelled && (!wasMoved || nextChecked != isChecked)) {
                     // route through the enclosing cell's click handler so every
                     // screen keeps its exact behavior (dialogs, dependencies...)
                     // R11.8b: the direct parent can be a plain grouped-card

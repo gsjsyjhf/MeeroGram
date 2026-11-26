@@ -83,7 +83,7 @@ public class CGPreferencesEntry extends BaseCGPreferencesEntry {
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         // MeeroGram: visible build stamp - tells at a glance which build is installed.
-        items.add(UItem.asShadow("MeeroGram R14.5 \u00b7 26/11/2026 \u00b7 build 7315"));
+        items.add(UItem.asShadow("MeeroGram R14.6 \u00b7 26/11/2026 \u00b7 build 7316"));
         items.add(UItem.asHeader(getString(R.string.Settings)));
         items.add(
                 SettingsActivity.SettingCell.Factory.of(

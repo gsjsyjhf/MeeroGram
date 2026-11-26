@@ -398,6 +398,8 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     private float animatedLongSelectedViewOffsetX;
 
     private boolean isInLongPress;
+    private View pendingLongClickTab;
+    private boolean longPressMoved;
     private float lastLongSelectedViewCenterX;
     private float lastLongSelectedViewWidth;
     private View lastLongSelectedView;
@@ -468,8 +470,12 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         @Override
         public boolean needClickAt(View view, float x, float y) {
             lastLongSelectedView = null;
+            // R14.6: the glass blob has to react to the finger on EVERY tab.
+            // MR only armed the gesture on tabs that had no own long-press
+            // action, so nothing happened when the finger started on Chats /
+            // Contacts / Calls / Profile - which is the tab everyone touches.
             final View found = findChildUnder(MainTabsLayout.this, x, y);
-            return found != null && !tabsWithIgnoreClick.contains(found);
+            return found != null;
         }
 
         @Override
@@ -478,12 +484,10 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
         @Override
         public boolean needLongPress(float x, float y) {
-            // R14.4: the long-press drag belongs to the glass (MR) bar style.
-            try {
-                return uz.unnarsx.cherrygram.core.configs.CherrygramAppearanceConfig.INSTANCE.getGlassBarStyle();
-            } catch (Throwable t) {
-                return true;
-            }
+            // R14.6: never gate the drag behind the glass-bar switch. When that
+            // preference had not been stored (see Switch.meeroClickRow) the bar
+            // still rendered as glass while the blob stayed dead under the finger.
+            return true;
         }
 
         @Override
@@ -494,6 +498,13 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
         @Override
         public boolean onLongPressRequestedAt(View view, float x, float y) {
+            // R14.6: a tab that owns a long-press action (folders / contacts /
+            // calls / account selectors) keeps it, but only when the finger is
+            // released without dragging - so the glass blob can still be taken
+            // from every single tab, exactly like MR.
+            final View under = findChildUnder(MainTabsLayout.this, x, y);
+            pendingLongClickTab = under != null && tabsWithIgnoreClick.contains(under) ? under : null;
+            longPressMoved = false;
             checkPivot(view, x, y);
             isInLongPress = true;
             AndroidUtilities.cancelRunOnUIThread(restoreDrawSelector);
@@ -506,6 +517,10 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
         @Override
         public void onLongPressMove(View view, MotionEvent e, float x, float y, float startX, float startY) {
+            if (!longPressMoved && Math.max(Math.abs(x - startX), Math.abs(y - startY)) > AndroidUtilities.dp(6)) {
+                longPressMoved = true;
+                pendingLongClickTab = null;
+            }
             checkPivot(view, x, y);
             checkLongMove(x, y, false, false);
             invalidate();
@@ -519,9 +534,22 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         @Override
         public void onLongPressFinish(View view, float x, float y) {
             checkPivot(view, x, y);
+            final View longClickTab = pendingLongClickTab;
+            final boolean moved = longPressMoved;
+            pendingLongClickTab = null;
+            longPressMoved = false;
             checkLongMove(x, y, false, true);
             isInLongPress = false;
             AndroidUtilities.runOnUIThread(restoreDrawSelector, 450);
+            if (longClickTab != null && !moved) {
+                // held on a tab with its own shortcut and never dragged: run it
+                lastLongSelectedView = null;
+                invalidate();
+                longTouchEnd();
+                final View target = longClickTab;
+                AndroidUtilities.runOnUIThread(() -> target.performLongClick(), 60);
+                return;
+            }
             if (lastLongSelectedView != null) {
                 lastLongSelectedView.performClick();
             }
@@ -532,6 +560,8 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
         @Override
         public void onLongPressCancelled(View view, float x, float y) {
+            pendingLongClickTab = null;
+            longPressMoved = false;
             checkPivot(view, x, y);
             checkLongMove(x, y, false, true);
             isInLongPress = false;

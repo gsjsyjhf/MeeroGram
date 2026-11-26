@@ -36,6 +36,9 @@ public class MeeroFontsPreferencesEntry extends BaseCGPreferencesEntry {
 
     private static final int PICK_FONT = 4711;
 
+    /** \u0647\u064a\u062c \u064a\u0635\u064a\u0631 \u0627\u0644\u062e\u0637 - the same sample on every row. */
+    private static final String FONT_SAMPLE = "\u0647\u064a\u062c \u064a\u0635\u064a\u0631 \u0627\u0644\u062e\u0637";
+
     private final int fontsHeaderRow = 1;
     private int fontsStartRow = 2;
     private int fontsEndRow = 2;
@@ -63,12 +66,15 @@ public class MeeroFontsPreferencesEntry extends BaseCGPreferencesEntry {
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         rebuildOptions();
-        items.add(UItem.asShadow("MeeroGram R14.5 \u00b7 build 7315\n" + getString(R.string.MG_Fonts_Desc)));
+        items.add(UItem.asShadow("MeeroGram R14.6 \u00b7 build 7316\n" + getString(R.string.MG_Fonts_Desc)));
         for (int i = 0; i < options.size(); i++) {
             MeeroFonts.Option o = options.get(i);
             boolean selected = o.id.equals(MeeroFonts.getSelected());
-            UItem row = UItem.asButton(fontsStartRow + i, o.title,
-                    selected ? getString(R.string.MG_Fonts_Selected) : "")
+            // R14.6: every row shows the same sentence, drawn in that row's own
+            // face, so the faces can be compared at a glance; the name of the
+            // face stays on the value side.
+            UItem row = UItem.asButton(fontsStartRow + i, FONT_SAMPLE,
+                    selected ? getString(R.string.MG_Fonts_Selected) + " \u00b7 " + o.title : o.title)
                     .slug("meeroFontRow");
             // show the name rendered in the font itself
             try {
