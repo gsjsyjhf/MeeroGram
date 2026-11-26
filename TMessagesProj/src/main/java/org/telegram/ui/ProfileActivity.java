@@ -17970,7 +17970,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             return ColorUtils.blendARGB(card, Color.BLACK, getCardDarkenAmount());
         }
 
-        static float getCardDarkenAmount() {
+        public static float getCardDarkenAmount() {
             return CARD_DARKEN;
         }
 
