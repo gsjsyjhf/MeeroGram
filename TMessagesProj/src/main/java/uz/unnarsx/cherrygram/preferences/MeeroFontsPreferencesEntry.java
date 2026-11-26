@@ -67,9 +67,15 @@ public class MeeroFontsPreferencesEntry extends BaseCGPreferencesEntry {
         for (int i = 0; i < options.size(); i++) {
             MeeroFonts.Option o = options.get(i);
             boolean selected = o.id.equals(MeeroFonts.getSelected());
-            items.add(UItem.asButton(fontsStartRow + i, o.title,
+            UItem row = UItem.asButton(fontsStartRow + i, o.title,
                     selected ? getString(R.string.MG_Fonts_Selected) : "")
-                    .slug("meeroFontRow"));
+                    .slug("meeroFontRow");
+            // show the name rendered in the font itself
+            try {
+                row.object = MeeroFonts.previewOf(o.id);
+            } catch (Throwable ignore) {
+            }
+            items.add(row);
         }
         items.add(UItem.asButton(importRow, getString(R.string.MG_Fonts_Import))
                 .slug("meeroFontImport"));

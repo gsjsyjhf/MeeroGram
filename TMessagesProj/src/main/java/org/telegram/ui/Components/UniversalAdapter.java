@@ -689,6 +689,10 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                     }
                 }
                 settingsCell.setIcon(item.iconResId);
+                // MeeroGram R14.1: per-row typeface (font picker shows every name in its own face).
+                if (settingsCell.getTextView() != null) {
+                    settingsCell.getTextView().setTypeface(item.object instanceof android.graphics.Typeface ? (android.graphics.Typeface) item.object : null);
+                }
                 break;
             case VIEW_TYPE_TOPVIEW:
                 TopViewCell topCell = (TopViewCell) holder.itemView;
