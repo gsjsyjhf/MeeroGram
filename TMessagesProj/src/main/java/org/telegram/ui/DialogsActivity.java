@@ -3630,10 +3630,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 actionBar.setTitle(actionBarDefaultTitle = ssb, statusDrawable);
                 updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);*/
 
-                // MeeroGram R11: optional "Chats" title instead of the app name.
-                actionBar.setTitle(actionBarDefaultTitle = getString(
-                        CherrygramChatsConfig.INSTANCE.getChatsTitleAsTabs() ? R.string.MG_Tab_Chats : R.string.CG_AppName
-                ), statusDrawable, true);
+                // MeeroGram R14.10: the title must always be OUR name. It used to come
+                // from R.string.CG_AppName, which let an inherited Cherrygram string (or
+                // an imported localization) render "Cherrygram" here - the name is now a
+                // literal constant of this fork.
+                final CharSequence meeroChatsTitle = CherrygramChatsConfig.INSTANCE.getChatsTitleAsTabs()
+                        ? getString(R.string.MG_Tab_Chats) : org.telegram.ui.ActionBar.BaseFragment.MEERO_APP_NAME;
+                actionBar.setTitle(actionBarDefaultTitle = meeroChatsTitle, statusDrawable, true);
                 updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);
             }
             if (folderId == 0) {
@@ -10946,9 +10949,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (actionBar == null) {
                 return;
             }
-            actionBar.setTitle(actionBarDefaultTitle = getString(
-                    CherrygramChatsConfig.INSTANCE.getChatsTitleAsTabs() ? R.string.MG_Tab_Chats : R.string.CG_AppName
-            ), null, true);
+            final CharSequence meeroTitle = CherrygramChatsConfig.INSTANCE.getChatsTitleAsTabs()
+                    ? getString(R.string.MG_Tab_Chats) : org.telegram.ui.ActionBar.BaseFragment.MEERO_APP_NAME;
+            actionBar.setTitle(actionBarDefaultTitle = meeroTitle, null, true);
             if (dialogStoriesCell != null && filterTabsView != null) {
                 dialogStoriesCell.setTitleOverlayText(filterTabsView.currentTabIsDefault() ? actionBarDefaultTitle : filterTabsView.getSelectedTabTitle(), filterTabsView.currentTabIsDefault() && statusDrawable != null);
             }

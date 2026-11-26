@@ -93,6 +93,9 @@ import uz.unnarsx.cherrygram.helpers.ProfileActivityHelper;
 
 public abstract class BaseFragment {
 
+    /** R14.10: the fork's own name - never taken from an inherited Cherrygram string. */
+    public static final String MEERO_APP_NAME = "Meerogram";
+
     public boolean isFinished;
     protected boolean finishing;
     public Dialog visibleDialog;
