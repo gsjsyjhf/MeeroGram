@@ -66,15 +66,14 @@ public class MeeroFontsPreferencesEntry extends BaseCGPreferencesEntry {
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         rebuildOptions();
-        items.add(UItem.asShadow("MeeroGram R14.6 \u00b7 build 7316\n" + getString(R.string.MG_Fonts_Desc)));
+        items.add(UItem.asShadow("MeeroGram R14.7 \u00b7 build 7317\n" + getString(R.string.MG_Fonts_Desc)));
         for (int i = 0; i < options.size(); i++) {
             MeeroFonts.Option o = options.get(i);
             boolean selected = o.id.equals(MeeroFonts.getSelected());
-            // R14.6: every row shows the same sentence, drawn in that row's own
-            // face, so the faces can be compared at a glance; the name of the
-            // face stays on the value side.
+            // R14.7: every row shows ONLY the sample sentence, in that row's own
+            // face - the old font names are gone on request.
             UItem row = UItem.asButton(fontsStartRow + i, FONT_SAMPLE,
-                    selected ? getString(R.string.MG_Fonts_Selected) + " \u00b7 " + o.title : o.title)
+                    selected ? getString(R.string.MG_Fonts_Selected) : "")
                     .slug("meeroFontRow");
             // show the name rendered in the font itself
             try {
