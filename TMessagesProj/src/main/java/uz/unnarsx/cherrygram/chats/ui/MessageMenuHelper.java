@@ -48,6 +48,19 @@ public class MessageMenuHelper {
         return false;
     }
 
+    /**
+     * Upstream 11.6.0 asks the helper about touches that land on the chat list while the
+     * message menu is open. The reconstruction keeps the stock behaviour: never consume.
+     */
+    public boolean onChatListTouchEvent(android.view.MotionEvent ev) {
+        return false;
+    }
+
+    /** Whether the touch consumed by {@link #onChatListTouchEvent} must also cancel the list gesture. */
+    public boolean takeChatListCancel() {
+        return false;
+    }
+
     public boolean allowNewMessageMenu(MessageObject messageObject) {
         return false;
     }

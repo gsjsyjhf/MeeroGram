@@ -16,6 +16,11 @@ import uz.unnarsx.cherrygram.camera.CameraXController;
  */
 public class VideoMessagesHelper {
 
+    /* Upstream 11.6.0 round-video layout constants (kept in sync with InstantCameraView). */
+    public static final int CIRCLE_MIN_TOP_MARGIN_DP = 56;
+    public static final float CIRCLE_MIN_FIT_SCALE = 0.62f;
+    public static final int ZOOM_SLIDER_MIN_GAP_DP = 24;
+
     public CameraXController cameraXController;
 
     public void createSingleCameraX(InstantCameraView view, SurfaceTexture surfaceTexture) {
