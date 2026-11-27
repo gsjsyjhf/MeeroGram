@@ -161,7 +161,7 @@ public class ArchiveSettingsActivity extends BaseFragment implements Notificatio
         items.add(new ItemInner(VIEW_TYPE_CHECK, 7, LocaleController.getString("NewChatsFromNonContactsCheck")));
         items.add(new ItemInner(VIEW_TYPE_SHADOW, 8, LocaleController.getString("ArchiveAndMuteInfo")));
 
-        items.add(new ItemInner(VIEW_TYPE_HEADER, 9, LocaleController.getString(R.string.CG_AppName)));
+        items.add(new ItemInner(VIEW_TYPE_HEADER, 9, "Meerogram"));
         items.add(new ItemInner(VIEW_TYPE_CHECK, 10, LocaleController.getString(R.string.CG_SwipeToUnarchive)));
 
         if (adapter == null) {

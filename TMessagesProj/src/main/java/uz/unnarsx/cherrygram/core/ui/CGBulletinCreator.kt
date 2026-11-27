@@ -46,7 +46,7 @@ object CGBulletinCreator {
     fun createAppUpdateRestartDialog(context: Context, runnable: Runnable) {
         AndroidUtilities.runOnUIThread {
             AlertDialog.Builder(context)
-                .setTitle(getString(R.string.AppUpdate).replace("Telegram", getString(R.string.CG_AppName)))
+                .setTitle(getString(R.string.AppUpdate).replace("Telegram", "Meerogram"))
                 .setMessage(getString(R.string.CG_RestartToApply))
                 .setPositiveButton(
                     getString(R.string.AppUpdateNow)

@@ -2292,7 +2292,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 nameString = titleOverride;
             } else if (currentDialogFolderId != 0) {
                 if (CherrygramPrivacyConfig.INSTANCE.getHideArchiveFromChatsList()) {
-                    nameString = getString(R.string.CG_AppName) + " \uD83C\uDF52";
+                    nameString = "Meerogram" + " \uD83C\uDF52";
                 } else {
                     nameString = getString(R.string.ArchivedChats);
                 }
@@ -2872,7 +2872,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
             if ((useForceThreeLines || SharedConfig.useThreeLinesLayout) && !hasTags() && currentDialogFolderId != 0 && currentDialogFolderDialogsCount > 1) {
                 if (CherrygramPrivacyConfig.INSTANCE.getHideArchiveFromChatsList()) {
-                    messageStringFinal = getString(R.string.CG_AppName) + " \uD83C\uDF52";
+                    messageStringFinal = "Meerogram" + " \uD83C\uDF52";
                 } else {
                     messageStringFinal = messageNameString;
                 }

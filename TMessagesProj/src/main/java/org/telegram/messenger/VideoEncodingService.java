@@ -142,7 +142,7 @@ public class VideoEncodingService extends Service implements NotificationCenter.
             builder.setSmallIcon(android.R.drawable.stat_sys_upload);
             builder.setWhen(System.currentTimeMillis());
             builder.setChannelId(NotificationsController.OTHER_NOTIFICATIONS_CHANNEL);
-            builder.setContentTitle(LocaleController.getString(R.string.CG_AppName));
+            builder.setContentTitle("Meerogram");
         }
         setCurrentMessage(videoConvertMessage);
         try {

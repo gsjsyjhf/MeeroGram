@@ -43,7 +43,7 @@ object CGResourcesHelper {
         } else if (CherrygramCoreConfig.isDevBuild()) {
             return "Meerogram Dev"
         }
-        return getString(R.string.CG_AppName)
+        return "Meerogram"
     }
 
     @JvmStatic

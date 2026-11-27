@@ -38,7 +38,7 @@ public class CGBiometricPrompt {
 
     private static BiometricPrompt.PromptInfo createPromptInfo() {
         BiometricPrompt.PromptInfo.Builder builder = new BiometricPrompt.PromptInfo.Builder();
-        builder.setTitle(getString(R.string.CG_AppName));
+        builder.setTitle("Meerogram");
         if (!CherrygramPrivacyConfig.INSTANCE.getAllowSystemPasscode()) {
             builder.setNegativeButtonText(getString(R.string.Cancel));
         }

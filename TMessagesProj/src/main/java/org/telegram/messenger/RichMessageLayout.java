@@ -4871,7 +4871,7 @@ public class RichMessageLayout {
             unsupportedBlockDrawable = new UnsupportedBlockDrawable(root.resourcesProvider);
             unsupportedBlockDrawable.setCallback(this);
             unsupportedBlockDrawable.setTitle(LocaleController.getString(R.string.UnsupportedBlockTitle));
-            unsupportedBlockDrawable.setSubtitle(LocaleController.getString(R.string.UnsupportedBlockMessage).replace("Telegram", LocaleController.getString(R.string.CG_AppName)));
+            unsupportedBlockDrawable.setSubtitle(LocaleController.getString(R.string.UnsupportedBlockMessage).replace("Telegram", "Meerogram"));
             unsupportedBlockDrawable.setButtonText(LocaleController.getString(R.string.UnsupportedUpdate));
             unsupportedBlockDrawable.setOnClickListener(() -> {
                 if (root.delegate != null) {

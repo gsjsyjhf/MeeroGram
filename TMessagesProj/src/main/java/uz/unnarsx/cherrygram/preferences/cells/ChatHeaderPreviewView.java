@@ -223,7 +223,7 @@ public class ChatHeaderPreviewView extends FrameLayout {
         if (user != null && (!TextUtils.isEmpty(user.first_name) || !TextUtils.isEmpty(user.last_name))) {
             title = ContactsController.formatName(user.first_name, user.last_name);
         } else {
-            title = getString(R.string.CG_AppName);
+            title = "Meerogram";
         }
 
         return title;

@@ -117,7 +117,7 @@ public class AboutHeaderView extends LinearLayout {
         titleView = new TextView(context);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 28);
         titleView.setTypeface(gilroy);
-        titleView.setText(getString(R.string.CG_AppName));
+        titleView.setText("Meerogram");
         addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 4, 0, 0));
 
         ChipsLayout chipsLayout = new ChipsLayout(context);

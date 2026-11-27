@@ -415,7 +415,7 @@ public class NotificationsController extends BaseController implements Notificat
                         currentAccount, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
                 NotificationCompat.Builder builder = new NotificationCompat.Builder(ApplicationLoader.applicationContext, channelId)
                         .setSmallIcon(R.drawable.notification)
-                        .setContentTitle(LocaleController.getString(R.string.AppName))
+                        .setContentTitle("Meerogram")
                         .setContentText(message)
                         .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
                         .setCategory(NotificationCompat.CATEGORY_EVENT)
@@ -4193,7 +4193,7 @@ public class NotificationsController extends BaseController implements Notificat
             } else {
                 channelId = currentAccount + "channel_" + dialogId + "_" + Utilities.random.nextLong();
             }
-            NotificationChannel notificationChannel = new NotificationChannel(channelId, secretChat ? LocaleController.getString(R.string.CG_AppName) : name, importance);
+            NotificationChannel notificationChannel = new NotificationChannel(channelId, secretChat ? "Meerogram" : name, importance);
             notificationChannel.setGroup(groupId);
             if (ledColor != 0) {
                 notificationChannel.enableLights(true);
@@ -4386,12 +4386,12 @@ public class NotificationsController extends BaseController implements Notificat
             if (DialogObject.isEncryptedDialog(dialog_id) || allowSummary && pushDialogs.size() > 1 || passcode) {
                 if (passcode) {
                     if (chatId != 0) {
-                        name = LocaleController.getString(R.string.CG_AppName);
+                        name = "Meerogram";
                     } else {
-                        name = LocaleController.getString(R.string.CG_AppName);
+                        name = "Meerogram";
                     }
                 } else {
-                    name = LocaleController.getString(R.string.CG_AppName);
+                    name = "Meerogram";
                 }
                 replace = false;
             } else {
@@ -5243,7 +5243,7 @@ public class NotificationsController extends BaseController implements Notificat
                         continue;
                     }
                 }
-                name = LocaleController.getString(R.string.CG_AppName);
+                name = "Meerogram";
                 photoPath = null;
             }
             if (lastMessageObject != null && lastMessageObject.isStoryReactionPush && !preferences.getBoolean("EnableReactionsPreview", true)) {
@@ -5254,9 +5254,9 @@ public class NotificationsController extends BaseController implements Notificat
 
             if (waitingForPasscode) {
                 if (DialogObject.isChatDialog(dialogId)) {
-                    name = LocaleController.getString(R.string.CG_AppName);
+                    name = "Meerogram";
                 } else {
-                    name = LocaleController.getString(R.string.CG_AppName);
+                    name = "Meerogram";
                 }
                 photoPath = null;
                 canReply = false;
@@ -5476,13 +5476,13 @@ public class NotificationsController extends BaseController implements Notificat
                             if (DialogObject.isChatDialog(dialogId)) {
                                 if (isChannel) {
                                     if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O_MR1) {
-                                        personName = LocaleController.getString(R.string.CG_AppName);
+                                        personName = "Meerogram";
                                     }
                                 } else {
                                     personName = LocaleController.getString(R.string.NotificationHiddenChatUserName);
                                 }
                             } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O_MR1) {
-                                personName = LocaleController.getString(R.string.CG_AppName);
+                                personName = "Meerogram";
                             }
                         }
                     } else {

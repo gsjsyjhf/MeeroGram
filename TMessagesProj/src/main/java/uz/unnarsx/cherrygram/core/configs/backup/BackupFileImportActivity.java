@@ -717,7 +717,7 @@ public class BackupFileImportActivity extends BaseFragment {
             return;
         }
         new AlertDialog.Builder(getParentActivity(), getResourceProvider())
-                .setTitle(getString(R.string.CG_AppName))
+                .setTitle("Meerogram")
                 .setMessage(error)
                 .setPositiveButton(getString(R.string.OK), null)
                 .show();

@@ -224,7 +224,7 @@ object BackupHelper {
 
     private fun showRestartDialog(context: Context) {
         val dialog = AlertDialog(context, 0)
-        dialog.setTitle(getString(R.string.CG_AppName))
+        dialog.setTitle("Meerogram")
         dialog.setMessage(getString(R.string.CG_RestartToApply))
         dialog.setPositiveButton(getString(R.string.BotUnblock)) { _, _ ->
             AppRestartHelper.restartApp(context)

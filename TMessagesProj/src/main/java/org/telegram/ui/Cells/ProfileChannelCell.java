@@ -451,7 +451,7 @@ public class ProfileChannelCell extends FrameLayout implements Theme.Colorable {
         ArrayList<DialogCell.CustomDialog> dialogs = new ArrayList<>();
 
         DialogCell.CustomDialog customDialog = new DialogCell.CustomDialog();
-        customDialog.name = LocaleController.getString(R.string.CG_AppName) + " \uD83C\uDF52";
+        customDialog.name = "Meerogram" + " \uD83C\uDF52";
         customDialog.message = LocaleController.getString(R.string.CG_FollowChannelInfo);
         customDialog.id = 1390;
         customDialog.unread_count = 0;

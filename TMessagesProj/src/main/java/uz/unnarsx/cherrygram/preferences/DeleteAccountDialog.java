@@ -80,7 +80,7 @@ public class DeleteAccountDialog extends BaseFragment {
                             errorText += "\n" + error.text;
                         }
                         AlertDialog.Builder builder1 = new AlertDialog.Builder(fragment.getParentActivity());
-                        builder1.setTitle(getString(R.string.CG_AppName));
+                        builder1.setTitle("Meerogram");
                         builder1.setMessage(errorText);
                         builder1.setPositiveButton(getString(R.string.OK), null);
                         builder1.show();

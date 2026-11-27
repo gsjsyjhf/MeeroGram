@@ -2389,7 +2389,11 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         if (titleOverlayText != null) {
             hasOverlayText = true;
 
-            if (TextUtils.isEmpty(titleOverlayText)) titleOverlayText = getString(R.string.CG_AppName);
+            // MeeroGram R14.15: NEVER resolve the app name through getString() - Telegram
+            // looks the key up in the installed language pack first, and Cherrygram's packs
+            // still map "CG_AppName" to "Cherrygram", which is what kept re-appearing in the
+            // chats header even though our own resource says Meerogram.
+            if (TextUtils.isEmpty(titleOverlayText)) titleOverlayText = org.telegram.ui.ActionBar.BaseFragment.MEERO_APP_NAME;
 
             titleView.setText(titleOverlayText, !LocaleController.isRTL);
             ellipsizeSpanAnimator.addView(titleView);

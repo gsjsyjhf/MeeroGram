@@ -66,7 +66,10 @@ public class AppearancePreferencesEntry extends BaseCGPreferencesEntry {
     private boolean expandedGlareEffectsSectionRow = false;
 
     // MeeroGram R11: iOS26-style switches.
-    private final int ios26SwitchesRow = 13;
+    // R14.15: this used to be 13 as well, i.e. the same id as appIconRow - tapping
+    // "أيقونة التطبيق" hit the iOS26 branch instead (icon screen never opened and the
+    // iOS26 switch flipped off). Give every row a unique id.
+    private final int ios26SwitchesRow = 14;
 
     private static final Set<String> GLARE_EFFECTS_SECTION_SLUG = Set.of(
             "glareEffectsType"

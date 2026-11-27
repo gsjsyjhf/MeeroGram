@@ -4714,7 +4714,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             dialogs.add(customDialog);
 
             customDialog = new DialogCell.CustomDialog();
-            customDialog.name = LocaleController.getString(R.string.CG_AppName) + " \uD83C\uDF52";
+            customDialog.name = "Meerogram" + " \uD83C\uDF52";
             customDialog.message = LocaleController.getString(R.string.ThemePreviewDialogMessage2);
             customDialog.id = 1390;
             customDialog.unread_count = 2;
