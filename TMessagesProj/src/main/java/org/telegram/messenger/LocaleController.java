@@ -1504,6 +1504,14 @@ public class LocaleController {
         if (value == null) {
             return "LOC_ERR:" + key;
         }
+        // MeeroGram R14.23: single choke point for every localised string in the app.
+        // Every lookup funnels through here, so the old fork name can never be drawn
+        // again - not even from a language pack cached in the app's data directory by
+        // an earlier build (that cache survives upgrades, which is why fixing the
+        // shipped resources alone never removed the word from the chats header).
+        if (value.contains("Cherrygram")) {
+            return value.replace("Cherrygram", "Meerogram");
+        }
         return value;
     }
 
