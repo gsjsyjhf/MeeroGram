@@ -13,6 +13,7 @@ import android.app.Activity
 import android.content.SharedPreferences
 import org.telegram.messenger.ApplicationLoader
 import uz.unnarsx.cherrygram.preferences.boolean
+import uz.unnarsx.cherrygram.preferences.int
 
 object MeeroDeletedConfig {
 
