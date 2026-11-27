@@ -113,6 +113,32 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     public final static int TYPE_DIALOGS = 0;
     public final static int TYPE_ARCHIVE= 1;
     private static final float COLLAPSED_DIS = 16;
+    /**
+     * MeeroGram R14.22 - ported verbatim from MeeroX (the owner's own fork, whose
+     * iOS header is the reference): the collapsed circles are 23.6dp wide with a
+     * 13.5dp step instead of the stock 26.33dp / 16dp, which is what makes the
+     * row read as the same pile as the reference.
+     */
+    private static final float MEERO_COLLAPSED_SIZE = 23.6f;
+    private static final float MEERO_COLLAPSED_DIS = 13.5f;
+
+    /** iOS-26 header = MR "Interface style: iOS" + stacked stories. */
+    public static boolean meeroIosStories() {
+        try {
+            return CherrygramAppearanceConfig.INSTANCE.getInterfaceStyle() == 1
+                    && CherrygramChatsConfig.INSTANCE.getStackedStories();
+        } catch (Throwable ignore) {
+            return false;
+        }
+    }
+
+    private static float collapsedSizeDp() {
+        return meeroIosStories() ? MEERO_COLLAPSED_SIZE : COLLAPSED_SIZE;
+    }
+
+    private static float collapsedDisDp() {
+        return meeroIosStories() ? MEERO_COLLAPSED_DIS : COLLAPSED_DIS;
+    }
     private static final float ITEM_WIDTH = 70;
     private static final int FAKE_TOP_PADDING = 4;
 
@@ -441,9 +467,9 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                 int p = parent.getChildLayoutPosition(view);
                 outRect.setEmpty();
                 if (p == 1) {
-                    outRect.left = -dp(85) + dp(29 + COLLAPSED_DIS - 14);
+                    outRect.left = -dp(85) + dp(29 + collapsedDisDp() - 14);
                 } else if (p == 2) {
-                    outRect.left = -dp(85) + dp(29 + COLLAPSED_DIS - 14);
+                    outRect.left = -dp(85) + dp(29 + collapsedDisDp() - 14);
                 }
             }
         });
@@ -708,31 +734,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         float bottomY = AndroidUtilities.lerp(0, maxY, collapsedProgress1);
         recyclerListView.setTranslationY(bottomY);
         listViewMini.setTranslationY(bottomY);
-        // MeeroGram R14.21: with the iOS interface style the whole header group - the stacked
-        // story pile plus the title text - is centred; otherwise the stock left-anchored look
-        // is kept. (Cherrygram's old "centre title" only changed the ActionBar gravity, which
-        // never moved this title because the chats title is drawn HERE, not by ActionBar.)
-        float meeroCenterShift = 0f;
-        if (CherrygramAppearanceConfig.INSTANCE.getInterfaceStyle() == 1 /* iOS */) {
-            try {
-                float titleWidth = 0;
-                if (titleView != null && titleView.getDrawable() != null) {
-                    titleWidth = titleView.getDrawable().getCurrentWidth();
-                }
-                float pileRight = 0;
-                for (int i = 0; i < listViewMini.getChildCount(); i++) {
-                    View child = listViewMini.getChildAt(i);
-                    if (child.getVisibility() != View.VISIBLE) continue;
-                    float right = child.getX() + child.getMeasuredWidth();
-                    if (right > pileRight) pileRight = right;
-                }
-                if (pileRight <= 0) pileRight = dp(24);
-                float contentWidth = pileRight + dp(12) + titleWidth;
-                meeroCenterShift = Math.max(0f, (getMeasuredWidth() - contentWidth) / 2f);
-            } catch (Throwable ignore) {
-            }
-        }
-        listViewMini.setTranslationX(menuItemsOffset + meeroCenterShift);
+        listViewMini.setTranslationX(meeroMiniListX());
 
         for (int i = 0; i < viewsDrawInParent.size(); i++) {
             viewsDrawInParent.get(i).drawInParent = false;
@@ -814,7 +816,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                     StoryCell previousCell = (StoryCell) recyclerListView.getChildAt(i - 1);
                     if (previousCell != null && !(stackedNow && collapsedProgress == 0 && (previousCell.stackRole >= 1 || cell.stackRole >= 1))) {
                         float size = dp(48);
-                        float collapsedSize = dp(COLLAPSED_SIZE);
+                        float collapsedSize = dp(collapsedSizeDp());
                         float previousSize = AndroidUtilities.lerp(size, collapsedSize, previousCell.progressToCollapsed) + dp(8);
                         float currentSize = AndroidUtilities.lerp(size, collapsedSize, cell.progressToCollapsed) + dp(8);
                         float radiusPrev = previousSize / 2f;
@@ -864,11 +866,11 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                 if (adapterPosition <= animateFromPosition) {
                     toX = 0;
                 } else if (adapterPosition == animateFromPosition + 1) {
-                    toX = dp(COLLAPSED_DIS) * cellCollapsedProgress - AndroidUtilities.dpf2(0.5f) + AndroidUtilities.lerp(dp(COLLAPSED_DIS), 0f, collapsedProgress);
+                    toX = dp(collapsedDisDp()) * cellCollapsedProgress - AndroidUtilities.dpf2(0.5f) + AndroidUtilities.lerp(dp(collapsedDisDp()), 0f, collapsedProgress);
                 } else {
-                    toX = dp(COLLAPSED_DIS) + dp(COLLAPSED_DIS) * cellCollapsedProgress - AndroidUtilities.dpf2(0.5f) + AndroidUtilities.lerp(dp(COLLAPSED_DIS + COLLAPSED_DIS), 0f, collapsedProgress);
+                    toX = dp(collapsedDisDp()) + dp(collapsedDisDp()) * cellCollapsedProgress - AndroidUtilities.dpf2(0.5f) + AndroidUtilities.lerp(dp(collapsedDisDp() + collapsedDisDp()), 0f, collapsedProgress);
                 }
-                toX += menuItemsOffset;
+                toX += AndroidUtilities.lerp(menuItemsOffset, meeroMiniListX(), Utilities.clamp(collapsedProgress, 1f, 0f));
                 if (!collapsed) {
                     float dstCellX = 0;
                     if (overscrollProgress > 0) {
@@ -1537,6 +1539,69 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         return text;
     }
 
+    /* ---- MeeroGram R14.22: iOS-26 centred header (ported from MeeroX) ----- */
+
+    /**
+     * How far the mini list's boxes reach, from its own left edge.
+     *
+     * The circles live in ITEM_WIDTH boxes that the decoration steps by one
+     * overlap each; the header word is placed off this box extent, so both
+     * numbers are needed.
+     */
+    private float meeroRowBoxRight() {
+        float right = 0;
+        for (int i = 0; i < listViewMini.getChildCount(); i++) {
+            final View cell = listViewMini.getChildAt(i);
+            final float r = cell.getLeft() + cell.getMeasuredWidth();
+            if (r > right) {
+                right = r;
+            }
+        }
+        if (right <= 0) {
+            final int count = Math.max(1, miniItems.size());
+            right = dp(ITEM_WIDTH) + dp(collapsedDisDp()) * (count - 1);
+        }
+        return right;
+    }
+
+    /**
+     * The header word's own width. Both title views are added MATCH_PARENT, so
+     * their measured width is the whole bar - the word has to be read from the
+     * text drawable, which is why every earlier attempt centred against a box
+     * the width of the screen and never moved anything.
+     */
+    private float meeroHeaderTextWidth() {
+        try {
+            if (titleView != null && titleView.getDrawable() != null) {
+                return titleView.getDrawable().getCurrentWidth();
+            }
+        } catch (Throwable ignore) {
+        }
+        return 0;
+    }
+
+    /** Width of the collapsed row plus the word that follows it. */
+    private float meeroGroupWidth() {
+        final int cellWidth = dp(72);
+        return meeroRowBoxRight() - cellWidth + getAvatarRight(cellWidth, 1f) + dp(12)
+                + meeroHeaderTextWidth();
+    }
+
+    /**
+     * Where the collapsed row parks: half of whatever is left over on each side
+     * of the group, never sliding under the leading control.
+     */
+    private float meeroMiniListX() {
+        if (!meeroIosStories() || getMeasuredWidth() <= 0) {
+            return menuItemsOffset;
+        }
+        try {
+            return Math.max(menuItemsOffset, (getMeasuredWidth() - meeroGroupWidth()) / 2f);
+        } catch (Throwable ignore) {
+            return menuItemsOffset;
+        }
+    }
+
     /** MeeroGram start: stacked (iOS 26 style) unviewed story avatars */
 
     private void updateStackedMapping() {
@@ -1830,7 +1895,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
         float getCy() {
             float size = dp(48);
-            float collapsedSize = dp(COLLAPSED_SIZE);
+            float collapsedSize = dp(collapsedSizeDp());
 
             float finalSize = AndroidUtilities.lerp(size, collapsedSize, progressToCollapsed);
             float radius = finalSize / 2f;
@@ -1842,7 +1907,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         @Override
         protected void dispatchDraw(Canvas canvas) {
             float size = dp(48);
-            float collapsedSize = dp(COLLAPSED_SIZE);
+            float collapsedSize = dp(collapsedSizeDp());
             float overscrollSize = dp(8) *  Utilities.clamp(DialogStoriesCell.this.overscrollProgress / 0.5f, 1f, 0);
             if (selectedForOverscroll) {
                 overscrollSize += dp(16) * Utilities.clamp((DialogStoriesCell.this.overscrollProgress - 0.5f) / 0.5f, 1f, 0f);
@@ -2044,7 +2109,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                 return 0;
             }
             float p = CubicBezierInterpolator.EASE_OUT.getInterpolation(progressToCollapsed);
-            float distance = AndroidUtilities.lerp(getMeasuredWidth(), dp(COLLAPSED_DIS), p);
+            float distance = AndroidUtilities.lerp(getMeasuredWidth(), dp(collapsedDisDp()), p);
             radius += AndroidUtilities.dpf2(3.5f);
             if (distance < radius * 2) {
                 //double cosA = (distance / 2f) / radius;
@@ -2270,7 +2335,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
     static float getAvatarRight(int width, float progressToCollapsed) {
         float size = dp(48);
-        float collapsedSize = dp(COLLAPSED_SIZE);
+        float collapsedSize = dp(collapsedSizeDp());
         float finalSize = AndroidUtilities.lerp(size, collapsedSize, progressToCollapsed);
         float radius = finalSize / 2f;
 
@@ -2344,7 +2409,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     public boolean onTouchEvent(MotionEvent event) {
         if (currentState == COLLAPSED_STATE) {
             int k = miniItems.size();
-            int width = dp(COLLAPSED_SIZE * k - COLLAPSED_DIS * Math.max(0,  k - 1));
+            int width = dp(collapsedSizeDp() * k - collapsedDisDp() * Math.max(0, k - 1));
             miniItemsClickArea.setRect((int) listViewMini.getX(), (int) listViewMini.getY(), (int) (listViewMini.getX() + width), (int) (listViewMini.getY() + listViewMini.getHeight()));
             if (miniItemsClickArea.checkTouchEvent(event)) {
                 return true;
