@@ -68,6 +68,8 @@ public class GeneralPreferencesEntry extends BaseCGPreferencesEntry {
     private final int slowNetworkMode = 19;
     // MeeroGram R13: liquid-glass sliders toggle (default on, off = today's look).
     private final int glassSlidersRow = 20;
+    // MeeroGram R14.19: MR-style "Interface style" (Telegram default / iOS).
+    private final int interfaceStyleRow = 21;
 
     private boolean expandedArchiveStoriesSection = false;
 
@@ -86,9 +88,54 @@ public class GeneralPreferencesEntry extends BaseCGPreferencesEntry {
         return DeeplinkHelper.DeepLinksRepo.CG_General;
     }
 
+    private CharSequence interfaceStyleValue() {
+        return getString(CherrygramAppearanceConfig.INSTANCE.getInterfaceStyle() == 1 /* iOS */
+                ? R.string.MG_InterfaceStyle_iOS : R.string.MG_InterfaceStyle_Telegram);
+    }
+
+    /** MR puts this in General settings: Telegram (default) / iOS. */
+    private void showInterfaceStylePicker() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        final CharSequence[] options = new CharSequence[]{
+                getString(R.string.MG_InterfaceStyle_Telegram),
+                getString(R.string.MG_InterfaceStyle_iOS)
+        };
+        org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity());
+        builder.setTitle(getString(R.string.MG_InterfaceStyle));
+        builder.setItems(options, (dialog, which) -> {
+            CherrygramAppearanceConfig.INSTANCE.setInterfaceStyle(which);
+            applyInterfaceStyle(which);
+            updateRows(true);
+        });
+        builder.setNegativeButton(getString(R.string.Cancel), null);
+        showDialog(builder.create());
+    }
+
+    /**
+     * iOS style = MR's iOS 26 header: centred title plus the stacked stories capsule
+     * sitting next to it. Telegram style restores the stock header.
+     */
+    private void applyInterfaceStyle(int style) {
+        final boolean ios = style == 1 /* iOS */;
+        CherrygramAppearanceConfig.INSTANCE.setCenterTitle(ios);
+        uz.unnarsx.cherrygram.core.configs.CherrygramChatsConfig.INSTANCE.setStackedStories(ios);
+        try {
+            if (getParentLayout() != null) {
+                getParentLayout().rebuildAllFragmentViews(false, false);
+            }
+        } catch (Throwable ignore) {
+        }
+    }
+
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         items.add(UItem.asHeader(getString(R.string.LiteMode)));
+        items.add(UItem.asButton(interfaceStyleRow, getString(R.string.MG_InterfaceStyle), interfaceStyleValue())
+                .slug("interfaceStyle")
+        );
+        items.add(UItem.asShadow(getString(R.string.MG_InterfaceStyle_Desc)));
         items.add(UItem.asButton(animationsRow, applyNewSpan(getString(R.string.EP_NavigationAnimation)), getAnimationValue())
                 .slug("navigation")
         );
@@ -225,6 +272,10 @@ public class GeneralPreferencesEntry extends BaseCGPreferencesEntry {
 
     @Override
     protected void onClick(UItem item, View view, int position, float x, float y) {
+        if (item.id == interfaceStyleRow) {
+            showInterfaceStylePicker();
+            return;
+        }
         if (item.id == animationsRow) {
             ArrayList<CharSequence> configStringKeys = new ArrayList<>();
             ArrayList<Integer> configValues = new ArrayList<>();

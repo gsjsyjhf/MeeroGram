@@ -56,6 +56,14 @@ object CherrygramAppearanceConfig {
 
     /** MeeroGram R11: iOS26-style settings switches - enabling it turns the OneUI style off. */
     var ios26_SwitchStyle by sharedPreferences.boolean("AP_iOS26_SwitchStyle", false)
+
+    /**
+     * MeeroGram R14.19: MR's "Interface style" switch (General settings).
+     * 0 = Telegram (default), 1 = iOS 26 look: centred header title + stacked stories capsule.
+     */
+    var interfaceStyle by sharedPreferences.int("MG_InterfaceStyle", 0)
+    val INTERFACE_STYLE_TELEGRAM = 0
+    val INTERFACE_STYLE_IOS = 1
     /** MeeroGram R13: iOS-26 liquid-glass sliders (reference GlassIosSettingsSlider). */
     var glassSliders by sharedPreferences.boolean("AP_GlassSliders", true)
     var disableDividers by sharedPreferences.boolean("AP_DisableDividers", true)
