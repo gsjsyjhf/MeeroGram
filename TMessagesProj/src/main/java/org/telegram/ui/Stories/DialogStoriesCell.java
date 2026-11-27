@@ -132,12 +132,19 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         }
     }
 
+    /**
+     * MeeroGram R14.24: the iOS metrics (23.6/13.5dp) were reverted. They were
+     * correct for the finished collapsed row, but the same numbers feed the
+     * collapse interpolation, so during the drag the circles were being lerped
+     * to a size their 70dp boxes never reserved and the row piled up on itself.
+     * The stock sizes are kept; only the centring and the word are ours.
+     */
     private static float collapsedSizeDp() {
-        return meeroIosStories() ? MEERO_COLLAPSED_SIZE : COLLAPSED_SIZE;
+        return COLLAPSED_SIZE;
     }
 
     private static float collapsedDisDp() {
-        return meeroIosStories() ? MEERO_COLLAPSED_DIS : COLLAPSED_DIS;
+        return COLLAPSED_DIS;
     }
     private static final float ITEM_WIDTH = 70;
     private static final int FAKE_TOP_PADDING = 4;
@@ -679,16 +686,15 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                 LocaleController.formatPluralString("Stories", totalCount);
         }
 
-        if (meeroIosStories()) {
-            // MeeroGram R14.23: in the iOS style the header word stays "المحادثات"
-            // through every refresh and never fades with the collapse progress.
-            currentTitle = meeroIosHeaderWord();
+        if (meeroIosHeaderPinned()) {
+            // MeeroGram R14.23/24: our word survives every refresh in both styles.
+            currentTitle = meeroHeaderWord();
             titleView.setText(currentTitle, animated && !LocaleController.isRTL);
         } else if (!hasOverlayText) {
             titleView.setText(meeroBrand(currentTitle), animated && !LocaleController.isRTL);
         }
 
-        animatorHasTitleText.setValue(meeroIosStories() || !TextUtils.isEmpty(currentTitle) || hasOverlayText, animated);
+        animatorHasTitleText.setValue(true, animated);
 
         miniItems.clear();
         for (int i = 0; i < items.size(); i++) {
@@ -1356,11 +1362,11 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     EllipsizeSpanAnimator ellipsizeSpanAnimator = new EllipsizeSpanAnimator(this);
 
     public void setTitleOverlayText(String titleOverlayText, int textId) {
-        if (meeroIosStories()) {
+        if (meeroIosHeaderPinned()) {
             // iOS header: the word is ours, never the pushed overlay title.
             hasOverlayText = false;
             overlayTextId = 0;
-            currentTitle = meeroIosHeaderWord();
+            currentTitle = meeroHeaderWord();
             titleView.setText(currentTitle, !LocaleController.isRTL);
             animatorHasTitleText.setValue(true, true);
             titleView.setAlpha(1f);
@@ -1570,11 +1576,18 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
      * DialogsActivity pushes here - that one carried the app name, which is what
      * kept putting the old fork name in the middle of the bar).
      */
-    private CharSequence meeroIosHeaderWord() {
-        CharSequence word = null;
+    private CharSequence meeroHeaderWord() {
+        boolean chatsWord = false;
         try {
-            word = LocaleController.getString(R.string.MG_Tab_Chats);
+            chatsWord = meeroIosStories() || CherrygramChatsConfig.INSTANCE.getChatsTitleAsTabs();
         } catch (Throwable ignore) {
+        }
+        CharSequence word = null;
+        if (chatsWord) {
+            try {
+                word = LocaleController.getString(R.string.MG_Tab_Chats);
+            } catch (Throwable ignore) {
+            }
         }
         if (TextUtils.isEmpty(word)) {
             word = org.telegram.ui.ActionBar.BaseFragment.MEERO_APP_NAME;
@@ -1582,9 +1595,15 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         return meeroBrand(word);
     }
 
-    /** True when the word must stay pinned regardless of the collapse progress. */
+    /**
+     * MeeroGram R14.24: the word is pinned in BOTH interface styles. The chats
+     * header no longer takes its text from what DialogsActivity pushes down
+     * (that overlay carried the app name, and on this device it was still
+     * resolving to the old fork name), so nothing outside this cell can put
+     * a foreign word in the middle of the bar.
+     */
     public boolean meeroIosHeaderPinned() {
-        return meeroIosStories();
+        return true;
     }
 
     /* ---- MeeroGram R14.22: iOS-26 centred header (ported from MeeroX) ----- */
@@ -1644,7 +1663,12 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             return menuItemsOffset;
         }
         try {
-            return Math.max(menuItemsOffset, (getMeasuredWidth() - meeroGroupWidth()) / 2f);
+            final float centred = Math.max(menuItemsOffset, (getMeasuredWidth() - meeroGroupWidth()) / 2f);
+            // MeeroGram R14.24: only park in the middle once the row has finished
+            // collapsing - sliding towards it mid-drag is what made the tiles look
+            // scrambled while the owner pulled the list open.
+            final float p = Utilities.clamp((collapsedProgress - 0.9f) / 0.1f, 1f, 0f);
+            return AndroidUtilities.lerp(menuItemsOffset, centred, p);
         } catch (Throwable ignore) {
             return menuItemsOffset;
         }
@@ -2520,7 +2544,11 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         final float progress = MathUtils.clamp(Math.min(collapsedProgress, collapsedProgress2), 0, 1);
         final float titleVisibility = animatorHasTitleText.getFloatValue();
         final float logoVisibility = 1f - titleVisibility;
-        final float titleAlpha = titleVisibility * progress;
+        // MeeroGram R14.24: the word belongs to the collapsed header only. While the
+        // row expands (or is being dragged) it used to stay visible underneath the
+        // tiles, which is the word the owner saw behind the stories.
+        final float meeroGate = MathUtils.clamp((progress - 0.85f) / 0.15f, 0, 1);
+        final float titleAlpha = titleVisibility * progress * meeroGate;
         final float logoAlpha = logoVisibility * progress;
 
         if (titleView != null) {
@@ -2543,10 +2571,10 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
     /** Cherrygram start */
     public void setTitleOverlayText(CharSequence titleOverlayText, boolean showEmojiStatus) {
-        if (meeroIosStories()) {
+        if (meeroIosHeaderPinned()) {
             hasOverlayText = false;
             overlayTextId = 0;
-            currentTitle = meeroIosHeaderWord();
+            currentTitle = meeroHeaderWord();
             titleView.setText(currentTitle, !LocaleController.isRTL);
             ellipsizeSpanAnimator.removeView(titleView);
             animatorHasTitleText.setValue(true, true);
