@@ -66,7 +66,7 @@ public class MeeroFontsPreferencesEntry extends BaseCGPreferencesEntry {
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         rebuildOptions();
-        items.add(UItem.asShadow("MeeroGram R14.19 \u00b7 build 7335\n" + getString(R.string.MG_Fonts_Desc)));
+        items.add(UItem.asShadow("MeeroGram R14.19 \u00b7 build 7336\n" + getString(R.string.MG_Fonts_Desc)));
         for (int i = 0; i < options.size(); i++) {
             MeeroFonts.Option o = options.get(i);
             boolean selected = o.id.equals(MeeroFonts.getSelected());

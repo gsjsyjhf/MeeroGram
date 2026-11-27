@@ -142,8 +142,47 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         return COLLAPSED_SIZE;
     }
 
+    /**
+     * MeeroGram R14.26: only the *step* changes in the iOS style - the circles keep
+     * the stock diameter, so the collapse interpolation never has to lerp to a size
+     * its 70dp box did not reserve (that mismatch is what piled the row up).
+     * 13.5dp is MeeroX's step, which is what gives their tight, overlapping pile.
+     */
     private static float collapsedDisDp() {
-        return COLLAPSED_DIS;
+        return meeroIosStories() ? 13.5f : COLLAPSED_DIS;
+    }
+
+    /** Left edge of the collapsed row's children, in the mini list's own coordinates. */
+    private float meeroMiniRowChildLeft() {
+        float left = Float.MAX_VALUE;
+        for (int i = 0; i < listViewMini.getChildCount(); i++) {
+            final View child = listViewMini.getChildAt(i);
+            if (child.getVisibility() != View.VISIBLE) continue;
+            if (child.getX() < left) left = child.getX();
+        }
+        return left == Float.MAX_VALUE ? 0 : left;
+    }
+
+    /** Right edge of the collapsed row's children, in the mini list's own coordinates. */
+    private float meeroMiniRowChildRight() {
+        float right = 0;
+        for (int i = 0; i < listViewMini.getChildCount(); i++) {
+            final View child = listViewMini.getChildAt(i);
+            if (child.getVisibility() != View.VISIBLE) continue;
+            final float r = child.getX() + child.getWidth();
+            if (r > right) right = r;
+        }
+        return right;
+    }
+
+    private float meeroHeaderTextWidth() {
+        try {
+            if (titleView != null && titleView.getDrawable() != null) {
+                return titleView.getDrawable().getCurrentWidth();
+            }
+        } catch (Throwable ignore) {
+        }
+        return 0;
     }
     private static final float ITEM_WIDTH = 70;
     private static final int FAKE_TOP_PADDING = 4;
@@ -730,7 +769,23 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         float bottomY = AndroidUtilities.lerp(0, maxY, collapsedProgress1);
         recyclerListView.setTranslationY(bottomY);
         listViewMini.setTranslationY(bottomY);
-        listViewMini.setTranslationX(menuItemsOffset);
+        // MeeroGram R14.26: park the [pile + word] group in the middle once the row has
+        // finished collapsing; during the drag everything stays exactly where stock
+        // Telegram puts it, so the animation keeps its own smooth path.
+        float meeroCenterShift = 0f;
+        if (meeroIosStories() && collapsedProgress >= 0.9f && getMeasuredWidth() > 0) {
+            try {
+                // measured against where the row *would* sit without centring, so the
+                // shift cannot feed back into its own measurement on the next frame
+                final float base = listViewMini.getLeft() + menuItemsOffset;
+                final float groupLeft = base + meeroMiniRowChildLeft();
+                final float groupRight = base + meeroMiniRowChildRight() + dp(12) + meeroHeaderTextWidth();
+                final float blend = Utilities.clamp((collapsedProgress - 0.9f) / 0.1f, 1f, 0f);
+                meeroCenterShift = Math.max(0f, getMeasuredWidth() / 2f - (groupLeft + groupRight) / 2f) * blend;
+            } catch (Throwable ignore) {
+            }
+        }
+        listViewMini.setTranslationX(menuItemsOffset + meeroCenterShift);
 
         for (int i = 0; i < viewsDrawInParent.size(); i++) {
             viewsDrawInParent.get(i).drawInParent = false;
@@ -981,6 +1036,12 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             titleView.setTranslationY(bottomY - barOffset + dp(14) - offset + dp(FAKE_TOP_PADDING) - dp(6) * subtitleOverlayContainer.getTotalVisibility());
             int cellWidth = dp(72);
             lastViewRight += -cellWidth + getAvatarRight(cellWidth, collapsedProgress) + dp(12);
+            if (meeroIosStories()) {
+                // the word must start after the last *circle*, otherwise the pile's own
+                // last avatar is drawn over it (the "text behind the circle" bug)
+                final float rowRight = listViewMini.getLeft() + menuItemsOffset + meeroCenterShift + meeroMiniRowChildRight();
+                lastViewRight = Math.max(lastViewRight, rowRight + dp(8));
+            }
             titleView.setTranslationX(lastViewRight);
             titleView.getDrawable().setRightPadding(lastViewRight - dp(12) + actionBar.menu.getVisibleItemsMeasuredWidthWithAlpha() * progress);
 
