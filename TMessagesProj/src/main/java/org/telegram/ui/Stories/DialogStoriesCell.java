@@ -155,6 +155,12 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     private static float collapsedDisDp() {
         return meeroIosStories() ? MEERO_COLLAPSED_DIS : COLLAPSED_DIS;
     }
+    /**
+     * MeeroGram R14.29: how far the header word is lifted, in dp. The owner's
+     * screenshot shows its optical centre sitting a couple of dp below the
+     * circles' centre; the circles stay put, only the word moves up.
+     */
+    private static final float MEERO_WORD_LIFT = 2f;
     private static final float ITEM_WIDTH = 70;
     private static final int FAKE_TOP_PADDING = 4;
 
@@ -1020,7 +1026,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             titleView.setPivotX(0);
             titleView.setScaleX(lerp(1f, 0.95f, subtitleOverlayContainer.getTotalVisibility()));
             titleView.setScaleY(lerp(1f, 0.95f, subtitleOverlayContainer.getTotalVisibility()));
-            titleView.setTranslationY(bottomY - barOffset + dp(14) - offset + dp(FAKE_TOP_PADDING) - dp(6) * subtitleOverlayContainer.getTotalVisibility());
+            titleView.setTranslationY(bottomY - barOffset + dp(14) - offset + dp(FAKE_TOP_PADDING) - dp(MEERO_WORD_LIFT) - dp(6) * subtitleOverlayContainer.getTotalVisibility());
             int cellWidth = dp(72);
             lastViewRight += -cellWidth + getAvatarRight(cellWidth, collapsedProgress) + dp(12);
             titleView.setTranslationX(lastViewRight);
@@ -1037,13 +1043,28 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                             + actionBar.menu.getVisibleItemsMeasuredWidthWithAlpha() * progress));
             telegramLogoView.setTranslationX(titleView.getTranslationX() + dp(1));
             telegramLogoView.setTranslationY(bottomY + dp(14) - offset + AndroidUtilities.dp(FAKE_TOP_PADDING) + translationOffset /*titleView.getTranslationY() + dpf2(37.33f)*/);
-            telegramLogoView.setTranslationY(bottomY - barOffset + dp(14 + FAKE_TOP_PADDING + 4.333f) + translationOffset /*titleView.getTranslationY() + dpf2(37.33f)*/);
+            telegramLogoView.setTranslationY(bottomY - barOffset + dp(14 + FAKE_TOP_PADDING + 4.333f - MEERO_WORD_LIFT) + translationOffset /*titleView.getTranslationY() + dpf2(37.33f)*/);
 
             emojiStatusView.setTranslationX(titleView.getTranslationX() - dpf2(3.33f) + telegramLogoView.getMeasuredWidth());
             emojiStatusView.setTranslationY(bottomY - barOffset + dp(14 - 11 + FAKE_TOP_PADDING + 4.333f) + translationOffset);
 
             subtitleOverlayContainer.setTranslationX(titleView.getTranslationX());
             subtitleOverlayContainer.setTranslationY(bottomY - barOffset + dp(15 + FAKE_TOP_PADDING + 4.333f + 8));
+
+            // MeeroGram R14.29: outside the iOS style the row parks at the menu edge
+            // rather than as a centred group, so the word was being dragged off the
+            // leading edge (in RTL it came out clipped to "المحـ"). In the Telegram
+            // interface style the word is centred on the bar on its own.
+            if (!meeroIosStories()) {
+                final float wordWidth = meeroHeaderTextWidth();
+                if (wordWidth > 0 && getMeasuredWidth() > 0) {
+                    final float wordX = (getMeasuredWidth() - wordWidth) / 2f;
+                    titleView.setTranslationX(wordX);
+                    telegramLogoView.setTranslationX(wordX);
+                    emojiStatusView.setTranslationX(wordX + wordWidth - dpf2(3.33f));
+                    subtitleOverlayContainer.setTranslationX(wordX);
+                }
+            }
         }
 
         super.dispatchDraw(canvas);
