@@ -3634,7 +3634,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 // from R.string.CG_AppName, which let an inherited Cherrygram string (or
                 // an imported localization) render "Cherrygram" here - the name is now a
                 // literal constant of this fork.
-                final CharSequence meeroChatsTitle = CherrygramChatsConfig.INSTANCE.getChatsTitleAsTabs()
+                // MeeroGram R14.28: in the iOS interface style the chats header is the word
+                // "المحادثات" beside the stories row (MR reference), not the fork name.
+                final CharSequence meeroChatsTitle = CherrygramAppearanceConfig.INSTANCE.getInterfaceStyle() == 1
+                        || CherrygramChatsConfig.INSTANCE.getChatsTitleAsTabs()
                         ? getString(R.string.MG_Tab_Chats) : org.telegram.ui.ActionBar.BaseFragment.MEERO_APP_NAME;
                 actionBar.setTitle(actionBarDefaultTitle = meeroChatsTitle, statusDrawable, true);
                 // MeeroGram R14.11: honour the "توسيط العنوان" (center title) switch on the

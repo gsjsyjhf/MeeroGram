@@ -102,8 +102,8 @@ import java.util.Objects;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.animator.ReplaceAnimator;
+import tw.nekomimi.nekogram.ui.components.AnimatedTitleView;
 import uz.unnarsx.cherrygram.core.configs.CherrygramAppearanceConfig;
-import uz.unnarsx.cherrygram.core.configs.CherrygramChatsConfig;
 import uz.unnarsx.cherrygram.core.configs.CherrygramCoreConfig;
 import uz.unnarsx.cherrygram.helpers.ui.FontHelper;
 
@@ -113,6 +113,48 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     public final static int TYPE_DIALOGS = 0;
     public final static int TYPE_ARCHIVE= 1;
     private static final float COLLAPSED_DIS = 16;
+    /**
+     * MeeroX: the collapsed row's dimensions, measured off the reference.
+     *
+     * iOS stacks its three circles into 11.7% of the screen width; this fork's
+     * came out at 29.3% of the same shot, which is why the group read as
+     * something other than the reference even once it sat in the right place.
+     * Scaling both figures by that ratio keeps the overlap looking the same
+     * while bringing the whole row down to size.
+     */
+    /*
+     * Sized against the reference photograph rather than a round number.
+     *
+     * What the eye measures is not this constant but the ink: the avatar box
+     * plus the unread ring, which StoriesUtilities draws at an inset of
+     * -dp(4) pulled back by dpf2(1.33) of additionalInset, so 2.67dp beyond
+     * the box on each side.
+     *
+     * In the reference the circles stand 44px against 22px of title text -
+     * exactly twice the cap height. The previous figures drew 80px against
+     * 50px, a ratio of 1.60, which is why the row read as undersized next to
+     * the word even after it was centred correctly. Growing the ink by the
+     * missing 1.25x gives 28.93dp of ink, so the box is 28.93 - 2*2.67.
+     *
+     * The overlap is scaled by the ink rather than by the box. Those are not
+     * the same thing and they disagree by 0.8dp here: measured against the
+     * reference the step is 20.5px per 44px circle, a ratio of 0.4659, and
+     * the old pair already sat at 0.4667. Scaling with the ink holds that;
+     * scaling with the box would have drifted it to 0.4947 and spread the
+     * circles apart while making them bigger.
+     */
+    private static final float MEERO_COLLAPSED_SIZE = 23.6f;
+    private static final float MEERO_COLLAPSED_DIS = 13.5f;
+
+    /** Diameter of one collapsed circle, in dp. */
+    private static float collapsedSizeDp() {
+        return meeroIosStories() ? MEERO_COLLAPSED_SIZE : COLLAPSED_SIZE;
+    }
+
+    /** How far each circle overlaps the one before it, in dp. */
+    private static float collapsedDisDp() {
+        return meeroIosStories() ? MEERO_COLLAPSED_DIS : COLLAPSED_DIS;
+    }
     private static final float ITEM_WIDTH = 70;
     private static final int FAKE_TOP_PADDING = 4;
 
@@ -121,6 +163,20 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
     private final int type;
     public final static int HEIGHT_IN_DP = 81;
+
+    /**
+     * MeeroX: whether the iOS chats header is on.
+     *
+     * Shares meeroDialogsStyle with DialogsActivity, since this row draws the
+     * same header while stories are showing and the two must not disagree.
+     */
+    public static boolean meeroIosHeader() {
+        try {
+            return CherrygramAppearanceConfig.INSTANCE.getInterfaceStyle() == 1;
+        } catch (Throwable ignore) {
+            return false;
+        }
+    }
     private final Drawable addNewStoryDrawable;
     private final DefaultItemAnimator miniItemAnimator;
     private int addNewStoryLastColor;
@@ -163,7 +219,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     LinearLayoutManager layoutManager;
     AnimatedTextView titleView;
     ActionBarAnimatedSubtitleOverlayContainer subtitleOverlayContainer;
-    ImageView telegramLogoView;
+    AnimatedTitleView telegramLogoView;
     ImageView emojiStatusView;
     AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable statusDrawable;
     boolean drawCircleForce;
@@ -330,21 +386,24 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         titleView = new AnimatedTextView(getContext(), true, true, false);
         titleView.setGravity(Gravity.LEFT);
         titleView.setTextColor(getTextLogoColor());
-        titleView.setTypeface(FontHelper.createTypeface2(FontHelper.TYPEFACE_GILROY_EXTRABOLD)); // AndroidUtilities.bold()
+        titleView.setTypeface(AndroidUtilities.bold());
         titleView.setPadding(0, dp(8), 0, dp(8));
         titleView.setTextSize(dp(!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ? 18 : 20));
         titleView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
         titleView.setFocusableInTouchMode(true);
         addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        telegramLogoView = new ImageView(context);
-        telegramLogoView.setContentDescription(getString(R.string.AppName));
-        telegramLogoView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        telegramLogoView.setImageResource(R.drawable.telegram_logo_2);
-        telegramLogoView.setColorFilter(getTextLogoColor(), PorterDuff.Mode.MULTIPLY);
-        telegramLogoView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
-        telegramLogoView.setFocusableInTouchMode(true);
-        addView(telegramLogoView, LayoutHelper.createFrame(110, 25));
+        // MeeroX: the stories row carries its own header, and it falls back to
+        // the app name whenever there is no story count to show. iOS keeps
+        // the screen titled "Chats" throughout, so the same string is used
+        // here when the iOS header style is on (ported onto upstream's new
+        // AnimatedTitleView during the 12.10 merge).
+        telegramLogoView = new AnimatedTitleView(context,
+                meeroBrand(meeroIosHeader()
+                        ? getString(R.string.MG_Tab_Chats)
+                        : org.telegram.ui.ActionBar.BaseFragment.MEERO_APP_NAME),
+                getTextLogoColor());
+        addView(telegramLogoView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         statusDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(null, dp(26));
         statusDrawable.center = true;
@@ -427,9 +486,9 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                 int p = parent.getChildLayoutPosition(view);
                 outRect.setEmpty();
                 if (p == 1) {
-                    outRect.left = -dp(85) + dp(29 + COLLAPSED_DIS - 14);
+                    outRect.left = -dp(85) + dp(29 + collapsedDisDp() - 14);
                 } else if (p == 2) {
-                    outRect.left = -dp(85) + dp(29 + COLLAPSED_DIS - 14);
+                    outRect.left = -dp(85) + dp(29 + collapsedDisDp() - 14);
                 }
             }
         });
@@ -579,9 +638,20 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     private float overScrollCoef = 1f;
     private float collapsedSpringCoef = 0.95f;
     private float expandedSpringCoef = 0.9f;
+    private float rightSlidingProgress;
+    private boolean showLogoStatus = true;
 
     public float getOverScrollCoef() {
         return overScrollCoef;
+    }
+
+    public void setRightSlidingProgress(float progress) {
+        progress = MathUtils.clamp(progress, 0f, 1f);
+        if (rightSlidingProgress == progress) {
+            return;
+        }
+        rightSlidingProgress = progress;
+        checkUi_titleVisibility();
     }
 
     public void updateItems(boolean animated, boolean force) {
@@ -693,7 +763,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         float bottomY = AndroidUtilities.lerp(0, maxY, collapsedProgress1);
         recyclerListView.setTranslationY(bottomY);
         listViewMini.setTranslationY(bottomY);
-        listViewMini.setTranslationX(menuItemsOffset);
+        listViewMini.setTranslationX(meeroMiniListX());
 
         for (int i = 0; i < viewsDrawInParent.size(); i++) {
             viewsDrawInParent.get(i).drawInParent = false;
@@ -769,7 +839,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                     StoryCell previousCell = (StoryCell) recyclerListView.getChildAt(i - 1);
                     if (previousCell != null) {
                         float size = dp(48);
-                        float collapsedSize = dp(COLLAPSED_SIZE);
+                        float collapsedSize = dp(collapsedSizeDp());
                         float previousSize = AndroidUtilities.lerp(size, collapsedSize, previousCell.progressToCollapsed) + dp(8);
                         float currentSize = AndroidUtilities.lerp(size, collapsedSize, cell.progressToCollapsed) + dp(8);
                         float radiusPrev = previousSize / 2f;
@@ -819,11 +889,20 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                 if (adapterPosition <= animateFromPosition) {
                     toX = 0;
                 } else if (adapterPosition == animateFromPosition + 1) {
-                    toX = dp(COLLAPSED_DIS) * cellCollapsedProgress - AndroidUtilities.dpf2(0.5f) + AndroidUtilities.lerp(dp(COLLAPSED_DIS), 0f, collapsedProgress);
+                    toX = dp(collapsedDisDp()) * cellCollapsedProgress - AndroidUtilities.dpf2(0.5f) + AndroidUtilities.lerp(dp(collapsedDisDp()), 0f, collapsedProgress);
                 } else {
-                    toX = dp(COLLAPSED_DIS) + dp(COLLAPSED_DIS) * cellCollapsedProgress - AndroidUtilities.dpf2(0.5f) + AndroidUtilities.lerp(dp(COLLAPSED_DIS + COLLAPSED_DIS), 0f, collapsedProgress);
+                    toX = dp(collapsedDisDp()) + dp(collapsedDisDp()) * cellCollapsedProgress - AndroidUtilities.dpf2(0.5f) + AndroidUtilities.lerp(dp(collapsedDisDp() + collapsedDisDp()), 0f, collapsedProgress);
                 }
-                toX += menuItemsOffset;
+                // MeeroX: the wave above is expressed from the row's parking
+                // spot, and upstream parks at a fixed menuItemsOffset near the
+                // left edge. Once the collapsed row moved to the centre, these
+                // cells still flew to that old spot for the whole animation and
+                // only the finished row appeared centred - which is the sideways
+                // slide, and the jump at the end of it. Aim them where the row
+                // actually parks, easing in with the collapse so the expanded
+                // list is left exactly where upstream puts it.
+                toX += AndroidUtilities.lerp(menuItemsOffset, meeroMiniListX(),
+                        Utilities.clamp(collapsedProgress, 1f, 0f));
                 if (!collapsed) {
                     float dstCellX = 0;
                     if (overscrollProgress > 0) {
@@ -947,7 +1026,17 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             titleView.setTranslationX(lastViewRight);
             titleView.getDrawable().setRightPadding(lastViewRight - dp(12) + actionBar.menu.getVisibleItemsMeasuredWidthWithAlpha() * progress);
 
+            offset = (telegramLogoView.getMeasuredHeight() - telegramLogoView.getTextHeight()) / 2f;
+            // MeeroX v216: the right-padding fix dropped at the 12.10 merge
+            // returns, re-expressed on upstream's AnimatedTitleView (the v216
+            // wrapper forwards to SimpleTextView.setRightPadding, which feeds
+            // the same fit/clip math the old drawable API did). The word
+            // gradient-ellipsizes before the action buttons again.
+            telegramLogoView.setRightPadding((int) (
+                    titleView.getTranslationX() - dp(12)
+                            + actionBar.menu.getVisibleItemsMeasuredWidthWithAlpha() * progress));
             telegramLogoView.setTranslationX(titleView.getTranslationX() + dp(1));
+            telegramLogoView.setTranslationY(bottomY + dp(14) - offset + AndroidUtilities.dp(FAKE_TOP_PADDING) + translationOffset /*titleView.getTranslationY() + dpf2(37.33f)*/);
             telegramLogoView.setTranslationY(bottomY - barOffset + dp(14 + FAKE_TOP_PADDING + 4.333f) + translationOffset /*titleView.getTranslationY() + dpf2(37.33f)*/);
 
             emojiStatusView.setTranslationX(titleView.getTranslationX() - dpf2(3.33f) + telegramLogoView.getMeasuredWidth());
@@ -1162,7 +1251,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         if (subtitleOverlayContainer != null) {
             subtitleOverlayContainer.updateColors();
         }
-        telegramLogoView.setColorFilter(getTextLogoColor(), PorterDuff.Mode.MULTIPLY);
+        telegramLogoView.setTextColor(getTextLogoColor());
         AndroidUtilities.forEachViews(recyclerListView, view -> {
             StoryCell cell = (StoryCell) view;
             cell.invalidate();
@@ -1291,7 +1380,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
     public void setTitleOverlayText(String titleOverlayText, int textId) {
         final CharSequence subtitleToSet;
-        if (textId == R.string.ConnectingToProxyWithDots && !CherrygramCoreConfig.INSTANCE.getCheckContent()) {
+        if (textId == R.string.ConnectingToProxyWithDots) {
             subtitleToSet = AndroidUtilities.replaceArrows(getString(R.string.TitleSetupProxy), true, dp(8f / 3f), dp(2));
         } else {
             subtitleToSet = null;
@@ -1378,8 +1467,168 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         return true;
     }
 
+    /**
+     * MeeroX: whether the collapsed row is grouped with the title.
+     *
+     * Its own switch, like every other piece of the iOS styling. It used to
+     * ride on meeroDialogsStyle, which meant the stories layout could not be
+     * turned off without giving up the whole header.
+     *
+     * Still gated on meeroDialogsStyle as well: the grouping centres the row
+     * against a centred title, and that centring is what meeroDialogsStyle
+     * turns on. With the stock left-aligned header there is nothing to group
+     * against, so the upstream layout is the correct one.
+     */
+    private static boolean meeroIosStories() {
+        try {
+            return CherrygramAppearanceConfig.INSTANCE.getInterfaceStyle() == 1;
+        } catch (Throwable ignore) {
+            return false;
+        }
+    }
+
+    /**
+     * MeeroX: where the collapsed circles sit horizontally.
+     *
+     * Upstream parks them at a fixed menuItemsOffset, which knows nothing
+     * about the title. That is fine while the title is left-aligned and starts
+     * at a predictable place, but this fork centres it - so the circles stayed
+     * at the far edge while the words moved to the middle, and on the way they
+     * covered the Edit button sitting at that edge.
+     *
+     * iOS treats the two as one group: measuring the reference shot, its
+     * circles span 185..253 and its title 187..401, and the pair together is
+     * centred on the bar (their midpoint 293 against a 295 screen centre).
+     * Reading the title's own left edge reproduces that at any title length
+     * and in either alignment, instead of guessing a second constant that
+     * would only be right for one of them.
+     *
+     * Falls back to menuItemsOffset whenever the title cannot be measured yet -
+     * during the first layout pass, or when the bar has no title view at all.
+     */
+    /**
+     * MeeroX: how far the mini list's boxes reach, from its own left edge.
+     *
+     * The circles are drawn inside ITEM_WIDTH boxes that the decoration steps
+     * by one overlap each, so the boxes reach further right than the ink does.
+     * The header text is placed off this box extent, not off the ink, which is
+     * why both numbers are needed and why measuring only one of them - as v82
+     * did - put the two halves of the group in different places.
+     */
+    private float meeroRowBoxRight() {
+        float right = 0;
+        for (int i = 0; i < listViewMini.getChildCount(); i++) {
+            final View cell = listViewMini.getChildAt(i);
+            final float r = cell.getLeft() + cell.getMeasuredWidth();
+            if (r > right) {
+                right = r;
+            }
+        }
+        if (right <= 0) {
+            // Before the list has laid out: the decoration parks item n at
+            // n * collapsedDis, each one ITEM_WIDTH wide.
+            final int count = Math.max(1, miniItems.size());
+            right = dp(ITEM_WIDTH) + dp(collapsedDisDp()) * (count - 1);
+        }
+        return right;
+    }
+
+    /**
+     * MeeroX: the header word's own width, in pixels.
+     *
+     * Read from the text drawable rather than the view: both title views are
+     * laid out MATCH_PARENT, so their measured width is the whole bar and says
+     * nothing about the word. That is the mistake behind every attempt so far -
+     * the group was centred using a box the width of the screen.
+     *
+     * Which of the two carries the word is decided the same way
+     * checkUi_titleVisibility decides which one to show, but from the text
+     * itself instead of the fading alpha, so the figure does not swing while
+     * the two cross-fade.
+     */
+    private float meeroHeaderTextWidth() {
+        // MeeroX v214: post-12.10 the two header views no longer share a type
+        // (titleView is still AnimatedTextView; telegramLogoView became the
+        // upstream AnimatedTitleView FrameLayout), so each uses its own
+        // width source. AnimatedTitleView now exposes the painted word width
+        // (getCurrentTextWidth), so the logo branch measures the text again -
+        // the v213 measured-width fallback returned the whole MATCH_PARENT bar
+        // and pinned the collapsed stories row to the menu edge.
+        if (hasOverlayText || !TextUtils.isEmpty(currentTitle)) {
+            return titleView != null && titleView.getDrawable() != null
+                    ? titleView.getDrawable().getCurrentWidth() : 0;
+        }
+        return telegramLogoView == null ? 0 : telegramLogoView.getCurrentTextWidth();
+    }
+
+    /**
+     * MeeroX: width of the circles-plus-word group, in pixels.
+     *
+     * The word is placed at boxRight - 72dp + avatarRight + 12dp from the row's
+     * left edge - the same arithmetic dispatchDraw uses below - so the group
+     * runs from the row's left edge to the end of the word.
+     *
+     * avatarRight is taken at a collapse progress of 1 rather than the live
+     * value: the live one shrinks as the avatars shrink, which would drag the
+     * parking spot sideways for the whole length of the collapse and land it
+     * somewhere different each time.
+     */
+    private float meeroGroupWidth() {
+        final int cellWidth = dp(72);
+        return meeroRowBoxRight() - cellWidth + getAvatarRight(cellWidth, 1f) + dp(12)
+                + meeroHeaderTextWidth();
+    }
+
+    /**
+     * MeeroX: where the collapsed row parks, so the group lands centred.
+     *
+     * Every earlier attempt read the action bar's title view and placed the
+     * circles beside it. That could not work, for two reasons found by reading
+     * the code rather than guessing at the pixels:
+     *
+     * 1. Both title views are added MATCH_PARENT, and nothing in this app calls
+     *    setWidthWrapContent, so getMeasuredWidth() returns the whole bar and
+     *    getLeft() is the bar's edge - not the word's. The circles were being
+     *    lined up against a box as wide as the screen.
+     * 2. The word visible beside the collapsed circles is not the action bar's
+     *    title at all. DialogsActivity fades that one out as the row collapses
+     *    and this cell draws its own titleView/telegramLogoView instead, both
+     *    positioned off the circles a few lines below. So the circles chased a
+     *    hidden view while the visible word chased the circles.
+     *
+     * Everything is therefore measured here, from this cell's own children: the
+     * group spans from the row's left edge to the end of the word, and half of
+     * whatever is left over sits on each side.
+     */
+    private float meeroMiniListX() {
+        if (!meeroIosStories()) {
+            return menuItemsOffset;
+        }
+        try {
+            final float x = (getMeasuredWidth() - meeroGroupWidth()) / 2f;
+            if (getMeasuredWidth() <= 0) {
+                return menuItemsOffset;
+            }
+            // Never slide under the leading control - the Edit pill lives out
+            // there, and v81 hid it by letting the circles run to the edge.
+            return Math.max(menuItemsOffset, x);
+        } catch (Throwable ignore) {
+            return menuItemsOffset;
+        }
+    }
+
     public void setActionBar(ActionBar actionBar) {
         this.actionBar = actionBar;
+    }
+
+    public void setLogoTitle(CharSequence title, boolean showStatus, boolean animated, boolean forward) {
+        showLogoStatus = showStatus;
+        Drawable rightDrawable = showStatus ? statusDrawable : null;
+        if (animated && isAttachedToWindow() && telegramLogoView.getAlpha() > 0) {
+            telegramLogoView.setTitleAnimatedX(title, rightDrawable, forward, 250);
+        } else {
+            telegramLogoView.setTitle(title, rightDrawable);
+        }
     }
 
     public float overscrollProgress() {
@@ -1469,6 +1718,9 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         return null;
     }
 
+
+
+
     /**
      * MeeroGram R14.21: last line of defence for the app name. Whatever the resource, the
      * language pack or a cached pack returns, the chats header can never read "Cherrygram".
@@ -1484,9 +1736,34 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         return text;
     }
 
-    /** MeeroGram finish */
+    /** Cherrygram start: overload DialogsActivity already calls, routed to the logo title. */
+    public void setTitleOverlayText(CharSequence titleOverlayText, boolean showEmojiStatus) {
+        if (titleOverlayText != null) {
+            hasOverlayText = true;
 
+            if (TextUtils.isEmpty(titleOverlayText)) titleOverlayText = org.telegram.ui.ActionBar.BaseFragment.MEERO_APP_NAME;
 
+            titleView.setText(meeroBrand(titleOverlayText), !LocaleController.isRTL);
+            ellipsizeSpanAnimator.addView(titleView);
+            ellipsizeSpanAnimator.addView(telegramLogoView);
+            setLogoTitle(meeroBrand(titleOverlayText), showEmojiStatus, false, false);
+
+            if (emojiStatusView != null) {
+                emojiStatusView.setAlpha(showEmojiStatus && collapsed ? 1f : 0f);
+                emojiStatusView.setVisibility(showEmojiStatus && collapsed ? VISIBLE : GONE);
+            }
+        } else {
+            hasOverlayText = false;
+            overlayTextId = 0;
+
+            titleView.setText(meeroBrand(currentTitle), !LocaleController.isRTL);
+            setLogoTitle(meeroBrand(currentTitle), showEmojiStatus, false, false);
+            ellipsizeSpanAnimator.removeView(titleView);
+        }
+
+        animatorHasTitleText.setValue(hasOverlayText, true);
+    }
+    /** Cherrygram finish */
 
     public class StoryCell extends FrameLayout {
         public boolean drawInParent;
@@ -1525,7 +1802,6 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         private float overscrollProgress;
         private boolean selectedForOverscroll;
         boolean progressWasDrawn;
-
 
         private final AnimatedFloat failT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
 
@@ -1685,7 +1961,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
         float getCy() {
             float size = dp(48);
-            float collapsedSize = dp(COLLAPSED_SIZE);
+            float collapsedSize = dp(collapsedSizeDp());
 
             float finalSize = AndroidUtilities.lerp(size, collapsedSize, progressToCollapsed);
             float radius = finalSize / 2f;
@@ -1697,7 +1973,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         @Override
         protected void dispatchDraw(Canvas canvas) {
             float size = dp(48);
-            float collapsedSize = dp(COLLAPSED_SIZE);
+            float collapsedSize = dp(collapsedSizeDp());
             float overscrollSize = dp(8) *  Utilities.clamp(DialogStoriesCell.this.overscrollProgress / 0.5f, 1f, 0);
             if (selectedForOverscroll) {
                 overscrollSize += dp(16) * Utilities.clamp((DialogStoriesCell.this.overscrollProgress - 0.5f) / 0.5f, 1f, 0f);
@@ -1888,7 +2164,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                 return 0;
             }
             float p = CubicBezierInterpolator.EASE_OUT.getInterpolation(progressToCollapsed);
-            float distance = AndroidUtilities.lerp(getMeasuredWidth(), dp(COLLAPSED_DIS), p);
+            float distance = AndroidUtilities.lerp(getMeasuredWidth(), dp(collapsedDisDp()), p);
             radius += AndroidUtilities.dpf2(3.5f);
             if (distance < radius * 2) {
                 //double cosA = (distance / 2f) / radius;
@@ -2114,7 +2390,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
     static float getAvatarRight(int width, float progressToCollapsed) {
         float size = dp(48);
-        float collapsedSize = dp(COLLAPSED_SIZE);
+        float collapsedSize = dp(collapsedSizeDp());
         float finalSize = AndroidUtilities.lerp(size, collapsedSize, progressToCollapsed);
         float radius = finalSize / 2f;
 
@@ -2188,7 +2464,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     public boolean onTouchEvent(MotionEvent event) {
         if (currentState == COLLAPSED_STATE) {
             int k = miniItems.size();
-            int width = dp(COLLAPSED_SIZE * k - COLLAPSED_DIS * Math.max(0, k - 1));
+            int width = dp(collapsedSizeDp() * k - collapsedDisDp() * Math.max(0,  k - 1));
             miniItemsClickArea.setRect((int) listViewMini.getX(), (int) listViewMini.getY(), (int) (listViewMini.getX() + width), (int) (listViewMini.getY() + listViewMini.getHeight()));
             if (miniItemsClickArea.checkTouchEvent(event)) {
                 return true;
@@ -2249,13 +2525,11 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
     private void checkUi_titleVisibility() {
         final float progress = MathUtils.clamp(Math.min(collapsedProgress, collapsedProgress2), 0, 1);
+        final float rightSlidingFactor = 1f - rightSlidingProgress;
         final float titleVisibility = animatorHasTitleText.getFloatValue();
         final float logoVisibility = 1f - titleVisibility;
-        // MeeroGram R14.24: the word belongs to the collapsed header only. While the
-        // row expands (or is being dragged) it used to stay visible underneath the
-        // tiles, which is the word the owner saw behind the stories.
-        final float titleAlpha = titleVisibility * progress;
-        final float logoAlpha = logoVisibility * progress;
+        final float titleAlpha = titleVisibility * progress * rightSlidingFactor;
+        final float logoAlpha = logoVisibility * progress * rightSlidingFactor;
 
         if (titleView != null) {
             titleView.setAlpha(titleAlpha);
@@ -2270,40 +2544,9 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             emojiStatusView.setVisibility(logoAlpha > 0 ? VISIBLE : GONE);
         }
         if (subtitleOverlayContainer != null) {
-            subtitleOverlayContainer.setAlpha(progress);
-            subtitleOverlayContainer.setVisibility(progress > 0 ? VISIBLE : GONE);
+            final float subtitleAlpha = progress * rightSlidingFactor;
+            subtitleOverlayContainer.setAlpha(subtitleAlpha);
+            subtitleOverlayContainer.setVisibility(subtitleAlpha > 0 ? VISIBLE : GONE);
         }
     }
-
-    /** Cherrygram start */
-    public void setTitleOverlayText(CharSequence titleOverlayText, boolean showEmojiStatus) {
-        if (titleOverlayText != null) {
-            hasOverlayText = true;
-
-            // MeeroGram R14.15: NEVER resolve the app name through getString() - Telegram
-            // looks the key up in the installed language pack first, and Cherrygram's packs
-            // still map "CG_AppName" to "Cherrygram", which is what kept re-appearing in the
-            // chats header even though our own resource says Meerogram.
-            if (TextUtils.isEmpty(titleOverlayText)) titleOverlayText = org.telegram.ui.ActionBar.BaseFragment.MEERO_APP_NAME;
-
-            titleView.setText(meeroBrand(titleOverlayText), !LocaleController.isRTL);
-            ellipsizeSpanAnimator.addView(titleView);
-            ellipsizeSpanAnimator.addView(telegramLogoView);
-
-            if (emojiStatusView != null) {
-                emojiStatusView.setAlpha(showEmojiStatus && collapsed ? 1f : 0f);
-                emojiStatusView.setVisibility(showEmojiStatus && collapsed ? VISIBLE : GONE);
-            }
-        } else {
-            hasOverlayText = false;
-            overlayTextId = 0;
-
-            titleView.setText(meeroBrand(currentTitle), !LocaleController.isRTL);
-            ellipsizeSpanAnimator.removeView(titleView);
-        }
-
-        animatorHasTitleText.setValue(hasOverlayText, true);
-    }
-    /** Cherrygram finish */
-
 }
