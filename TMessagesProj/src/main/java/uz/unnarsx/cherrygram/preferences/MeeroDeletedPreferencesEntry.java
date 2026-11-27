@@ -151,7 +151,7 @@ public class MeeroDeletedPreferencesEntry extends BaseCGPreferencesEntry {
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(getString(R.string.MG_Deleted_Color));
         builder.setItems(names, (dialog, which) -> {
-            MeeroDeletedConfig.INSTANCE.setEntryColor(which == 0 ? 0 : MeeroDeletedConfig.ENTRY_COLORS[which - 1]);
+            MeeroDeletedConfig.INSTANCE.setEntryColor(which == 0 ? 0 : MeeroDeletedConfig.INSTANCE.getENTRY_COLORS()[which - 1]);
             updateRows(true);
         });
         builder.setNegativeButton(getString(R.string.Cancel), null);
