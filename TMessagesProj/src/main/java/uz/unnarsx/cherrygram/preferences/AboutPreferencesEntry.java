@@ -331,6 +331,18 @@ public class AboutPreferencesEntry extends BaseCGPreferencesEntry {
     }
 
     private void updateCommunity(boolean animated) {
+        // MeeroGram R14.30: the community block is a fully-custom item, and the screen
+        // is filled twice (the chat links first, then the linked community once it
+        // resolves). The previous group view stayed attached to its parent while the
+        // new one was laid out over it, which is what let two sets of rows be
+        // painted on top of each other. Detach the old block first and swap without
+        // the row animations, so the screen settles in one frame.
+        if (communityGroup != null) {
+            if (communityGroup.getParent() instanceof android.view.ViewGroup) {
+                ((android.view.ViewGroup) communityGroup.getParent()).removeView(communityGroup);
+            }
+            communityGroup = null;
+        }
         TLRPC.Chat linkedCommunity = null;
         if (cherrygramSupportChatLoaded && cherrygramSupportChat != null && cherrygramSupportChat.linked_community_id != 0) {
             linkedCommunity = getMessagesController().getChat(cherrygramSupportChat.linked_community_id);
@@ -352,7 +364,7 @@ public class AboutPreferencesEntry extends BaseCGPreferencesEntry {
             communityGroupItem = chatsItem;
         }
         communityGroup = headerView.createGroup(getString(R.string.CGP_About_Community), communityLinkView, chats, 4);
-        updateRows(animated);
+        updateRows(false);
     }
 
     public static String getLastCheckUpdateTime() {

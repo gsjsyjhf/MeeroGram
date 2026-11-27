@@ -573,6 +573,27 @@ public class Switch extends FrameLayout implements Theme.Colorable {
         invalidate();
     }
 
+    /**
+     * MeeroGram R14.30: whether the styled switches have the room they were drawn for.
+     *
+     * Both Cherrygram styles paint a knob that is taller than the stock switch view
+     * (OneUI 22dp, iOS26 24dp against Telegram's 20dp row) and the iOS26 track also
+     * needs its full 63dp width. In the compact rows used by the settings sheets the
+     * view is only ~39x20dp, so the knob was being clipped into a white block and the
+     * iOS26 capsule was squeezed under its own knob - the broken toggles in the
+     * conversation-shortcuts sheet. Where there is no room we fall back to stock.
+     */
+    private boolean meeroCanDrawOneUi() {
+        return CherrygramAppearanceConfig.INSTANCE.getOneUI_SwitchStyle()
+                && getMeasuredHeight() >= AndroidUtilities.dp(26);
+    }
+
+    private boolean meeroCanDrawIos26() {
+        return CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()
+                && getMeasuredWidth() >= AndroidUtilities.dp(60)
+                && getMeasuredHeight() >= AndroidUtilities.dp(26);
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (glassSwitch != null) {
@@ -590,7 +611,7 @@ public class Switch extends FrameLayout implements Theme.Colorable {
         int thumb;
         int meeroTrackW = 0, meeroTrackH = 0;
 
-        if (CherrygramAppearanceConfig.INSTANCE.getOneUI_SwitchStyle()) {
+        if (meeroCanDrawOneUi()) {
             thumb = AndroidUtilities.dp(17.5F);
             x = (getMeasuredWidth() - width) / 2;
             y = getMeasuredHeight() / 2 - thumb / 2;
@@ -599,7 +620,7 @@ public class Switch extends FrameLayout implements Theme.Colorable {
             float end = x + width - thumb / 2f + AndroidUtilities.dp(2);
 
             tx = (int) (start + (end - start) * progress);
-        } else if (CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()) {
+        } else if (meeroCanDrawIos26()) {
             // R11.3: real iOS26 keyboard switch - 63x28dp track, 37x24dp
             // capsule knob, 2dp pad, 22dp travel (Ios26CapsuleSwitch).
             meeroTrackW = Math.min(AndroidUtilities.dp(63), getMeasuredWidth());
@@ -697,7 +718,7 @@ public class Switch extends FrameLayout implements Theme.Colorable {
             paint4.setColor(color4);
             paint5.setColor(color5);
 
-            if (CherrygramAppearanceConfig.INSTANCE.getOneUI_SwitchStyle()) {
+            if (meeroCanDrawOneUi()) {
                 rectF.set(x, y, getMeasuredWidth(), getMeasuredHeight() / 2 + thumb / 2);
                 if (!isChecked && Color.alpha(color) < 255) {
                     Paint grayPaint = Theme.isCurrentThemeDark() || Theme.isCurrentThemeNight() ? paint5 : paint4;
@@ -706,7 +727,7 @@ public class Switch extends FrameLayout implements Theme.Colorable {
                 }
                 canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(11), AndroidUtilities.dpf2(11), paint);
                 canvasToDraw.drawCircle(tx, ty, AndroidUtilities.dpf2(11), paint);
-            } else if (CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()) {
+            } else if (meeroCanDrawIos26()) {
                 // R11.4: Ios26CapsuleSwitch track - fixed iOS palette (off
                 // 0xFF787880 @38% dark / 24% light, on IosGreen 0xFF34C759),
                 // inner specular rim white 16% (inset 1dp), iOS micro-indicators
@@ -787,9 +808,9 @@ public class Switch extends FrameLayout implements Theme.Colorable {
             alpha = (int) (a1 + (a2 - a1) * colorProgress);
             paint.setColor(((alpha & 0xff) << 24) | ((red & 0xff) << 16) | ((green & 0xff) << 8) | (blue & 0xff));
 
-            if (CherrygramAppearanceConfig.INSTANCE.getOneUI_SwitchStyle()) {
+            if (meeroCanDrawOneUi()) {
                 canvasToDraw.drawCircle(tx, ty, AndroidUtilities.dp(9.5F), paint3);
-            } else if (CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()) {
+            } else if (meeroCanDrawIos26()) {
                 // R11.4: Ios26CapsuleSwitch knob - the Liquid Glass droplet rises
                 // while the finger touches/drags (glassFrac) and on external
                 // toggles, exactly like the uploaded keyboard source (native
