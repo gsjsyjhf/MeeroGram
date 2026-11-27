@@ -12,6 +12,7 @@ package uz.unnarsx.cherrygram.core.configs
 import android.app.Activity
 import android.content.SharedPreferences
 import org.telegram.messenger.ApplicationLoader
+import org.telegram.messenger.R
 import uz.unnarsx.cherrygram.preferences.boolean
 import uz.unnarsx.cherrygram.preferences.int
 
@@ -46,7 +47,17 @@ object MeeroDeletedConfig {
     val ENTRY_COLORS = intArrayOf(0xFFE5484D.toInt(), 0xFFFF9500.toInt(), 0xFFAF52DE.toInt(),
             0xFF0A84FF.toInt(), 0xFF30D158.toInt())
 
-    val ENTRY_ICONS = arrayOf("", "\uD83D\uDDD1", "\uD83D\uDEAB", "\uD83D\uDC7B", "\u2757")
+    /**
+     * MeeroGram R14.21: markers are real vector drawables (SVG-style paths), not emoji.
+     * Index 0 = no marker.
+     */
+    val ENTRY_ICON_DRAWABLES = intArrayOf(
+        0,
+        R.drawable.meero_ic_deleted,
+        R.drawable.meero_ic_edited,
+        R.drawable.meero_ic_eye_off,
+        R.drawable.meero_ic_alert
+    )
 
     fun isEnabled(): Boolean = keepDeletedMessages || keepEditsHistory
 }

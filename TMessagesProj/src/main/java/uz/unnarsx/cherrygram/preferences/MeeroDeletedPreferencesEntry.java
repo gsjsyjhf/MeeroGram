@@ -8,15 +8,18 @@ package uz.unnarsx.cherrygram.preferences;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.graphics.Color;
+import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 import android.view.View;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 
@@ -167,6 +170,36 @@ public class MeeroDeletedPreferencesEntry extends BaseCGPreferencesEntry {
         showDialog(builder.create());
     }
 
+    /** Builds a vector-drawable marker span for a recovered entry row. */
+    private android.text.style.ImageSpan meeroIconSpan(int resId, int color) {
+        try {
+            android.graphics.drawable.Drawable drawable = getParentActivity() != null
+                    ? getParentActivity().getResources().getDrawable(resId, getParentActivity().getTheme())
+                    : null;
+            if (drawable == null) {
+                drawable = androidx.core.content.ContextCompat.getDrawable(
+                        org.telegram.messenger.ApplicationLoader.applicationContext, resId);
+            }
+            int size = AndroidUtilities.dp(14);
+            drawable.setBounds(0, 0, size, size);
+            drawable.setColorFilter(color != 0 ? color : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2),
+                    android.graphics.PorterDuff.Mode.SRC_IN);
+            return new android.text.style.ImageSpan(drawable, android.text.style.ImageSpan.ALIGN_BOTTOM);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    /** Drawable marker + label, used by the icon picker so no emoji is shown anywhere. */
+    private CharSequence meeroIconLabel(int resId, String label, int color) {
+        SpannableString ss = new SpannableString("  " + label);
+        android.text.style.ImageSpan span = meeroIconSpan(resId, color);
+        if (span != null) {
+            ss.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        return ss;
+    }
+
     /** AyuGram-style colour picker for recovered entries. */
     private void showColorPicker() {
         if (getParentActivity() == null) {
@@ -192,12 +225,13 @@ public class MeeroDeletedPreferencesEntry extends BaseCGPreferencesEntry {
         if (getParentActivity() == null) {
             return;
         }
+        final int color = MeeroDeletedConfig.INSTANCE.getEntryColor();
         final CharSequence[] names = new CharSequence[]{
                 getString(R.string.MG_Deleted_Icon_None),
-                "\uD83D\uDDD1  \u0633\u0644\u0629 \u0627\u0644\u0645\u0647\u0645\u0644\u0627\u062a",
-                "\uD83D\uDEAB  \u0645\u0645\u0646\u0648\u0639",
-                "\uD83D\uDC7B  \u0634\u0628\u062d",
-                "\u2757  \u062a\u0646\u0628\u064a\u0647"
+                meeroIconLabel(org.telegram.messenger.R.drawable.meero_ic_deleted, getString(R.string.MG_Deleted_Icon_Trash), color),
+                meeroIconLabel(org.telegram.messenger.R.drawable.meero_ic_edited, getString(R.string.MG_Deleted_Icon_Pencil), color),
+                meeroIconLabel(org.telegram.messenger.R.drawable.meero_ic_eye_off, getString(R.string.MG_Deleted_Icon_Eye), color),
+                meeroIconLabel(org.telegram.messenger.R.drawable.meero_ic_alert, getString(R.string.MG_Deleted_Icon_Alert), color)
         };
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(getString(R.string.MG_Deleted_Icon));
@@ -231,8 +265,8 @@ public class MeeroDeletedPreferencesEntry extends BaseCGPreferencesEntry {
             return;
         }
         final CharSequence[] items = new CharSequence[list.size()];
-        final int iconIndex = Math.max(0, Math.min(MeeroDeletedConfig.INSTANCE.getEntryIcon(), MeeroDeletedConfig.INSTANCE.getENTRY_ICONS().length - 1));
-        final String icon = MeeroDeletedConfig.INSTANCE.getENTRY_ICONS()[iconIndex];
+        final int iconIndex = Math.max(0, Math.min(MeeroDeletedConfig.INSTANCE.getEntryIcon(), MeeroDeletedConfig.INSTANCE.getENTRY_ICON_DRAWABLES().length - 1));
+        final int iconRes = MeeroDeletedConfig.INSTANCE.getENTRY_ICON_DRAWABLES()[iconIndex];
         final int color = MeeroDeletedConfig.INSTANCE.getEntryColor();
         java.text.SimpleDateFormat format = new java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale.getDefault());
         for (int a = 0; a < items.length; a++) {
@@ -246,8 +280,11 @@ public class MeeroDeletedPreferencesEntry extends BaseCGPreferencesEntry {
             String when = format.format(new java.util.Date(entry.date));
             String text = entry.text == null ? "" : entry.text.replace('\n', ' ');
             SpannableStringBuilder body = new SpannableStringBuilder();
-            if (!icon.isEmpty()) {
-                body.append(icon).append(' ');
+            if (iconRes != 0) {
+                // R14.21: vector marker (ImageSpan) instead of an emoji glyph.
+                SpannableString marker = new SpannableString("  ");
+                marker.setSpan(meeroIconSpan(iconRes, color), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                body.append(marker).append(' ');
             }
             if (entry.edit) {
                 String newText = entry.newText == null ? "" : entry.newText.replace('\n', ' ');

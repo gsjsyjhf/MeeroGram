@@ -11841,4 +11841,8 @@
     <string name="MG_InterfaceStyle_iOS">iOS</string>
     <string name="MG_Deleted_Storage">Storage</string>
     <string name="MG_Deleted_Storage_Value">SQLite</string>
+    <string name="MG_Deleted_Icon_Trash">Delete</string>
+    <string name="MG_Deleted_Icon_Pencil">Edited</string>
+    <string name="MG_Deleted_Icon_Eye">Hidden</string>
+    <string name="MG_Deleted_Icon_Alert">Alert</string>
 </resources>

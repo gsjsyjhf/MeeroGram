@@ -102,6 +102,7 @@ import java.util.Objects;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.animator.ReplaceAnimator;
+import uz.unnarsx.cherrygram.core.configs.CherrygramAppearanceConfig;
 import uz.unnarsx.cherrygram.core.configs.CherrygramChatsConfig;
 import uz.unnarsx.cherrygram.core.configs.CherrygramCoreConfig;
 import uz.unnarsx.cherrygram.helpers.ui.FontHelper;
@@ -653,7 +654,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         }
 
         if (!hasOverlayText) {
-            titleView.setText(currentTitle, animated && !LocaleController.isRTL);
+            titleView.setText(meeroBrand(currentTitle), animated && !LocaleController.isRTL);
         }
 
         animatorHasTitleText.setValue(!TextUtils.isEmpty(currentTitle) || hasOverlayText, animated);
@@ -707,7 +708,31 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         float bottomY = AndroidUtilities.lerp(0, maxY, collapsedProgress1);
         recyclerListView.setTranslationY(bottomY);
         listViewMini.setTranslationY(bottomY);
-        listViewMini.setTranslationX(menuItemsOffset);
+        // MeeroGram R14.21: with the iOS interface style the whole header group - the stacked
+        // story pile plus the title text - is centred; otherwise the stock left-anchored look
+        // is kept. (Cherrygram's old "centre title" only changed the ActionBar gravity, which
+        // never moved this title because the chats title is drawn HERE, not by ActionBar.)
+        float meeroCenterShift = 0f;
+        if (CherrygramAppearanceConfig.INSTANCE.getInterfaceStyle() == 1 /* iOS */) {
+            try {
+                float titleWidth = 0;
+                if (titleView != null && titleView.getDrawable() != null) {
+                    titleWidth = titleView.getDrawable().getCurrentWidth();
+                }
+                float pileRight = 0;
+                for (int i = 0; i < listViewMini.getChildCount(); i++) {
+                    View child = listViewMini.getChildAt(i);
+                    if (child.getVisibility() != View.VISIBLE) continue;
+                    float right = child.getX() + child.getMeasuredWidth();
+                    if (right > pileRight) pileRight = right;
+                }
+                if (pileRight <= 0) pileRight = dp(24);
+                float contentWidth = pileRight + dp(12) + titleWidth;
+                meeroCenterShift = Math.max(0f, (getMeasuredWidth() - contentWidth) / 2f);
+            } catch (Throwable ignore) {
+            }
+        }
+        listViewMini.setTranslationX(menuItemsOffset + meeroCenterShift);
 
         for (int i = 0; i < viewsDrawInParent.size(); i++) {
             viewsDrawInParent.get(i).drawInParent = false;
@@ -1345,12 +1370,12 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 //                        textToSet = spannableString;
 //                    }
 //                }
-                titleView.setText(textToSet, !LocaleController.isRTL);
+                titleView.setText(meeroBrand(textToSet), !LocaleController.isRTL);
             }
         } else {
             hasOverlayText = false;
             overlayTextId = 0;
-            titleView.setText(currentTitle, !LocaleController.isRTL);
+            titleView.setText(meeroBrand(currentTitle), !LocaleController.isRTL);
         }
 
         animatorHasTitleText.setValue(hasOverlayText, true);
@@ -1495,6 +1520,21 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             }
         }
         return null;
+    }
+
+    /**
+     * MeeroGram R14.21: last line of defence for the app name. Whatever the resource, the
+     * language pack or a cached pack returns, the chats header can never read "Cherrygram".
+     */
+    private static CharSequence meeroBrand(CharSequence text) {
+        if (text == null) {
+            return null;
+        }
+        String value = text.toString();
+        if (value.contains("Cherrygram")) {
+            return value.replace("Cherrygram", "Meerogram");
+        }
+        return text;
     }
 
     /** MeeroGram start: stacked (iOS 26 style) unviewed story avatars */
@@ -2399,7 +2439,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             // chats header even though our own resource says Meerogram.
             if (TextUtils.isEmpty(titleOverlayText)) titleOverlayText = org.telegram.ui.ActionBar.BaseFragment.MEERO_APP_NAME;
 
-            titleView.setText(titleOverlayText, !LocaleController.isRTL);
+            titleView.setText(meeroBrand(titleOverlayText), !LocaleController.isRTL);
             ellipsizeSpanAnimator.addView(titleView);
             ellipsizeSpanAnimator.addView(telegramLogoView);
 
@@ -2411,7 +2451,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             hasOverlayText = false;
             overlayTextId = 0;
 
-            titleView.setText(currentTitle, !LocaleController.isRTL);
+            titleView.setText(meeroBrand(currentTitle), !LocaleController.isRTL);
             ellipsizeSpanAnimator.removeView(titleView);
         }
 

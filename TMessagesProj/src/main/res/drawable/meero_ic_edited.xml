@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- MeeroGram: vector (SVG-style path) marker for edited messages -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M4,16.6V20a1,1 0,0 0,1 1h3.4a1,1 0,0 0,0.7 -0.3l9.5,-9.5 -4.8,-4.8 -9.5,9.5a1,1 0,0 0,-0.3 0.7zM20.7,6.3a1,1 0,0 0,0 -1.4l-2.6,-2.6a1,1 0,0 0,-1.4 0l-1.6,1.6 4.8,4.8 1.8,-1.8z" />
+</vector>

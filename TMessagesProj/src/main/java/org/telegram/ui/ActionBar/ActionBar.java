@@ -757,6 +757,10 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         }
         if (titleTextView[0] != null) {
             titleTextView[0].setVisibility(value != null && !isSearchFieldVisible ? VISIBLE : INVISIBLE);
+            // R14.21: the old fork name must never reach the screen through any path.
+            if (value != null && value.toString().contains("Cherrygram")) {
+                value = value.toString().replace("Cherrygram", BaseFragment.MEERO_APP_NAME);
+            }
             titleTextView[0].setText(lastTitle = value);
             if (UserConfig.getInstance(UserConfig.selectedAccount).isPremium()) {
                 if (attached && lastRightDrawable instanceof AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable) {
@@ -1966,6 +1970,10 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         CharSequence textToSet = title != null
                 ? ((titleId == R.string.CG_AppName || "CG_AppName".equals(title)) ? BaseFragment.MEERO_APP_NAME : LocaleController.getString(title, titleId))
                 : lastTitle;
+        // Extra guard (R14.21): no path may put the old fork name on screen.
+        if (textToSet != null && textToSet.toString().contains("Cherrygram")) {
+            textToSet = textToSet.toString().replace("Cherrygram", BaseFragment.MEERO_APP_NAME);
+        }
         Drawable rightDrawableToSet = title != null ? null : lastRightDrawable;
         boolean ellipsize = false;
         if (title != null) {

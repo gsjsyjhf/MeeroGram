@@ -89,10 +89,9 @@ public class AppearancePreferencesEntry extends BaseCGPreferencesEntry {
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         items.add(UItem.asHeader(getString(R.string.AP_Header)));
-        items.add(SettingsHelper.asSwitchCG(centerTitleRow, getString(R.string.AP_CenterTitle))
-                .setChecked(CherrygramAppearanceConfig.INSTANCE.getCenterTitle())
-                .slug("centerTitle")
-        );
+        // MeeroGram R14.21: the standalone "centre title" switch is gone - the MR-parity
+        // "Interface style" row in General settings (Telegram / iOS) owns centred title AND
+        // stacked stories, so there is exactly one switch per behaviour.
         items.add(SettingsHelper.asSwitchCG(hideSearchBar, getString(R.string.AP_HideSearchBar))
                 .setChecked(CherrygramAppearanceConfig.INSTANCE.getHideSearchFiled())
                 .slug("hideSearchBar")
@@ -243,11 +242,7 @@ public class AppearancePreferencesEntry extends BaseCGPreferencesEntry {
 
                 updateRows(true);
             });
-        } else if (item.id == centerTitleRow) {
-            CherrygramAppearanceConfig.INSTANCE.setCenterTitle(!CherrygramAppearanceConfig.INSTANCE.getCenterTitle());
-            SettingsHelper.updateCheckState(view, CherrygramAppearanceConfig.INSTANCE.getCenterTitle());
-
-            getParentLayout().rebuildAllFragmentViews(false, false);
+        } else if (false) {
         } else  if (item.id == hideSearchBar) {
             CherrygramAppearanceConfig.INSTANCE.setHideSearchFiled(!CherrygramAppearanceConfig.INSTANCE.getHideSearchFiled());
             SettingsHelper.updateCheckState(view, CherrygramAppearanceConfig.INSTANCE.getHideSearchFiled());

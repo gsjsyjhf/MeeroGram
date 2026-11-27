@@ -1535,4 +1535,8 @@
     <string name="MG_InterfaceStyle_iOS">iOS</string>
     <string name="MG_Deleted_Storage">التخزين</string>
     <string name="MG_Deleted_Storage_Value">SQLite</string>
+    <string name="MG_Deleted_Icon_Trash">حذف</string>
+    <string name="MG_Deleted_Icon_Pencil">تعديل</string>
+    <string name="MG_Deleted_Icon_Eye">مخفي</string>
+    <string name="MG_Deleted_Icon_Alert">تنبيه</string>
 </resources>
