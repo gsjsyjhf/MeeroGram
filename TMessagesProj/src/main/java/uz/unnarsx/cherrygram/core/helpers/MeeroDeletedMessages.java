@@ -549,6 +549,30 @@ public final class MeeroDeletedMessages implements NotificationCenter.Notificati
                 .getSharedPreferences("meerogram_deleted_log_" + account, android.app.Activity.MODE_PRIVATE);
     }
 
+    /** Base64 helpers, still used by the one-shot import of the pre-R14.20 log. */
+    private static String enc(String value) {
+        if (value == null) {
+            return "";
+        }
+        try {
+            return Base64.encodeToString(value.getBytes("UTF-8"), Base64.NO_WRAP);
+        } catch (Throwable t) {
+            return "";
+        }
+    }
+
+    private static String dec(String value) {
+        if (TextUtils.isEmpty(value)) {
+            return "";
+        }
+        try {
+            byte[] bytes = Base64.decode(value, Base64.NO_WRAP);
+            return new String(bytes, "UTF-8");
+        } catch (Throwable t) {
+            return "";
+        }
+    }
+
     private void save(int account) {
         try {
             final ArrayList<Entry> snapshot;
