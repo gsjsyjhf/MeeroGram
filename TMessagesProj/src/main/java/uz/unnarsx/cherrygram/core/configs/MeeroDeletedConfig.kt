@@ -25,5 +25,27 @@ object MeeroDeletedConfig {
     /** Keep the previous text of edited messages. */
     var keepEditsHistory by sharedPreferences.boolean("MG_Deleted_Edits", false)
 
+    /* ---- R14.16: AyuGram-style message-saving options ---- */
+
+    /** Keep the reactions that were on the message when it was deleted. */
+    var saveReactions by sharedPreferences.boolean("MG_Deleted_Reactions", true)
+
+    /** Keep messages sent by bots (AyuGram's "save for bots"). */
+    var saveBots by sharedPreferences.boolean("MG_Deleted_Bots", true)
+
+    /** Keep a placeholder for media/captioned posts (photo, video, file, ...). */
+    var saveMedia by sharedPreferences.boolean("MG_Deleted_Media", true)
+
+    /** Row tint for recovered entries (0 = theme text colour). */
+    var entryColor by sharedPreferences.int("MG_Deleted_Color", 0)
+
+    /** Marker drawn in front of recovered entries (0 none, else index of MARKERS). */
+    var entryIcon by sharedPreferences.int("MG_Deleted_Icon", 0)
+
+    val ENTRY_COLORS = intArrayOf(0xFFE5484D.toInt(), 0xFFFF9500.toInt(), 0xFFAF52DE.toInt(),
+            0xFF0A84FF.toInt(), 0xFF30D158.toInt())
+
+    val ENTRY_ICONS = arrayOf("", "\uD83D\uDDD1", "\uD83D\uDEAB", "\uD83D\uDC7B", "\u2757")
+
     fun isEnabled(): Boolean = keepDeletedMessages || keepEditsHistory
 }

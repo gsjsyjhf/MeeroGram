@@ -41,7 +41,7 @@ public class GhostModePreferencesEntry extends BaseCGPreferencesEntry {
 
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
-        items.add(UItem.asShadow("MeeroGram R14.15 \u00b7 build 7326\n" + getString(R.string.MG_Ghost_Desc)));
+        items.add(UItem.asShadow("MeeroGram R14.16 \u00b7 build 7327\n" + getString(R.string.MG_Ghost_Desc)));
         items.add(
                 SettingsHelper.asSwitchCG(ghostMasterRow, getString(R.string.MG_Ghost_Master))
                         .setChecked(MeeroGhostConfig.INSTANCE.getGhostMaster())

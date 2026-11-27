@@ -11821,4 +11821,17 @@
     <string name="MG_Deleted_Intro">Messages that get deleted on the server stay on this device, and the old text of edited messages is saved.</string>
     <string name="MG_Deleted_Count_Zero">Nothing saved yet</string>
     <string name="MG_Deleted_Clear_Confirm">Delete every saved message from the local log? This cannot be undone.</string>
+
+    <string name="MG_Deleted_Reactions">Save reactions</string>
+    <string name="MG_Deleted_Reactions_Desc">Keeps the reactions a message had before it was deleted.</string>
+    <string name="MG_Deleted_Bots">Save bot messages</string>
+    <string name="MG_Deleted_Bots_Desc">Also keep deleted messages that were sent by bots.</string>
+    <string name="MG_Deleted_Media">Save media placeholder</string>
+    <string name="MG_Deleted_Media_Desc">Keeps the media kind (photo, video, voice, sticker…) of a deleted post.</string>
+    <string name="MG_Deleted_Color">Deleted message colour</string>
+    <string name="MG_Deleted_Color_Value">Colour of recovered rows</string>
+    <string name="MG_Deleted_Color_Default">Default</string>
+    <string name="MG_Deleted_Icon">Deleted message icon</string>
+    <string name="MG_Deleted_Icon_Value">Marker before recovered rows</string>
+    <string name="MG_Deleted_Icon_None">None</string>
 </resources>

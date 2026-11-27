@@ -7,6 +7,11 @@ package uz.unnarsx.cherrygram.preferences;
 
 import static org.telegram.messenger.LocaleController.getString;
 
+import android.graphics.Color;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
 import android.view.View;
 
 import org.telegram.messenger.R;
@@ -27,6 +32,12 @@ public class MeeroDeletedPreferencesEntry extends BaseCGPreferencesEntry {
     private final int deletedEditsRow = 2;
     private final int deletedViewRow = 3;
     private final int deletedClearRow = 4;
+    /* R14.16: AyuGram's message-saving options, same order/semantics. */
+    private final int deletedReactionsRow = 5;
+    private final int deletedBotsRow = 6;
+    private final int deletedMediaRow = 7;
+    private final int deletedColorRow = 8;
+    private final int deletedIconRow = 9;
 
     @Override
     protected CharSequence getTitle() {
@@ -50,6 +61,20 @@ public class MeeroDeletedPreferencesEntry extends BaseCGPreferencesEntry {
                 SettingsHelper.asSwitchCG(deletedEditsRow, getString(R.string.MG_Deleted_Edits), getString(R.string.MG_Deleted_Edits_Desc))
                         .setChecked(MeeroDeletedConfig.INSTANCE.getKeepEditsHistory())
         );
+        items.add(
+                SettingsHelper.asSwitchCG(deletedReactionsRow, getString(R.string.MG_Deleted_Reactions), getString(R.string.MG_Deleted_Reactions_Desc))
+                        .setChecked(MeeroDeletedConfig.INSTANCE.getSaveReactions())
+        );
+        items.add(
+                SettingsHelper.asSwitchCG(deletedBotsRow, getString(R.string.MG_Deleted_Bots), getString(R.string.MG_Deleted_Bots_Desc))
+                        .setChecked(MeeroDeletedConfig.INSTANCE.getSaveBots())
+        );
+        items.add(
+                SettingsHelper.asSwitchCG(deletedMediaRow, getString(R.string.MG_Deleted_Media), getString(R.string.MG_Deleted_Media_Desc))
+                        .setChecked(MeeroDeletedConfig.INSTANCE.getSaveMedia())
+        );
+        items.add(UItem.asButton(deletedColorRow, getString(R.string.MG_Deleted_Color), getString(R.string.MG_Deleted_Color_Value)));
+        items.add(UItem.asButton(deletedIconRow, getString(R.string.MG_Deleted_Icon), getString(R.string.MG_Deleted_Icon_Value)));
         int count = MeeroDeletedMessages.countFor(account);
         items.add(
                 UItem.asButton(deletedViewRow, getString(R.string.MG_Deleted_View),
@@ -85,6 +110,19 @@ public class MeeroDeletedPreferencesEntry extends BaseCGPreferencesEntry {
                 MeeroDeletedMessages.getInstance().ensureInit(UserConfig.selectedAccount);
             }
             updateRows(true);
+        } else if (item.id == deletedReactionsRow) {
+            MeeroDeletedConfig.INSTANCE.setSaveReactions(!MeeroDeletedConfig.INSTANCE.getSaveReactions());
+            updateRows(true);
+        } else if (item.id == deletedBotsRow) {
+            MeeroDeletedConfig.INSTANCE.setSaveBots(!MeeroDeletedConfig.INSTANCE.getSaveBots());
+            updateRows(true);
+        } else if (item.id == deletedMediaRow) {
+            MeeroDeletedConfig.INSTANCE.setSaveMedia(!MeeroDeletedConfig.INSTANCE.getSaveMedia());
+            updateRows(true);
+        } else if (item.id == deletedColorRow) {
+            showColorPicker();
+        } else if (item.id == deletedIconRow) {
+            showIconPicker();
         } else if (item.id == deletedViewRow) {
             showDeletedMessagesLog();
         } else if (item.id == deletedClearRow) {
@@ -98,6 +136,48 @@ public class MeeroDeletedPreferencesEntry extends BaseCGPreferencesEntry {
             builder.setNegativeButton(getString(R.string.Cancel), null);
             showDialog(builder.create());
         }
+    }
+
+    /** AyuGram-style colour picker for recovered entries. */
+    private void showColorPicker() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        final CharSequence[] names = new CharSequence[]{
+                getString(R.string.MG_Deleted_Color_Default),
+                "\u0623\u062d\u0645\u0631", "\u0628\u0631\u062a\u0642\u0627\u0644\u064a",
+                "\u0628\u0646\u0641\u0633\u062c\u064a", "\u0623\u0632\u0631\u0642", "\u0623\u062e\u0636\u0631"
+        };
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(getString(R.string.MG_Deleted_Color));
+        builder.setItems(names, (dialog, which) -> {
+            MeeroDeletedConfig.INSTANCE.setEntryColor(which == 0 ? 0 : MeeroDeletedConfig.ENTRY_COLORS[which - 1]);
+            updateRows(true);
+        });
+        builder.setNegativeButton(getString(R.string.Cancel), null);
+        showDialog(builder.create());
+    }
+
+    /** AyuGram-style marker drawn in front of a recovered message. */
+    private void showIconPicker() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        final CharSequence[] names = new CharSequence[]{
+                getString(R.string.MG_Deleted_Icon_None),
+                "\uD83D\uDDD1  \u0633\u0644\u0629 \u0627\u0644\u0645\u0647\u0645\u0644\u0627\u062a",
+                "\uD83D\uDEAB  \u0645\u0645\u0646\u0648\u0639",
+                "\uD83D\uDC7B  \u0634\u0628\u062d",
+                "\u2757  \u062a\u0646\u0628\u064a\u0647"
+        };
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(getString(R.string.MG_Deleted_Icon));
+        builder.setItems(names, (dialog, which) -> {
+            MeeroDeletedConfig.INSTANCE.setEntryIcon(which);
+            updateRows(true);
+        });
+        builder.setNegativeButton(getString(R.string.Cancel), null);
+        showDialog(builder.create());
     }
 
     /** Local log of deleted messages and old edit versions. */
@@ -121,7 +201,10 @@ public class MeeroDeletedPreferencesEntry extends BaseCGPreferencesEntry {
             showDialog(builder.create());
             return;
         }
-        final String[] items = new String[list.size()];
+        final CharSequence[] items = new CharSequence[list.size()];
+        final int iconIndex = Math.max(0, Math.min(MeeroDeletedConfig.INSTANCE.getEntryIcon(), MeeroDeletedConfig.INSTANCE.getENTRY_ICONS().length - 1));
+        final String icon = MeeroDeletedConfig.INSTANCE.getENTRY_ICONS()[iconIndex];
+        final int color = MeeroDeletedConfig.INSTANCE.getEntryColor();
         java.text.SimpleDateFormat format = new java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale.getDefault());
         for (int a = 0; a < items.length; a++) {
             MeeroDeletedMessages.Entry entry = list.get(a);
@@ -133,12 +216,26 @@ public class MeeroDeletedPreferencesEntry extends BaseCGPreferencesEntry {
             }
             String when = format.format(new java.util.Date(entry.date));
             String text = entry.text == null ? "" : entry.text.replace('\n', ' ');
+            SpannableStringBuilder body = new SpannableStringBuilder();
+            if (!icon.isEmpty()) {
+                body.append(icon).append(' ');
+            }
             if (entry.edit) {
                 String newText = entry.newText == null ? "" : entry.newText.replace('\n', ' ');
-                items[a] = "[" + when + "] " + peer + "\n" + text + "  \u2192  " + newText;
+                body.append(text).append("  \u2192  ").append(newText);
             } else {
-                items[a] = "[" + when + "] " + peer + "\n" + text;
+                body.append(text);
+                if (entry.mediaLabel != null) {
+                    body.append(' ').append(entry.mediaLabel);
+                }
+                if (entry.reactions != null) {
+                    body.append("   ").append(entry.reactions);
+                }
             }
+            if (color != 0) {
+                body.setSpan(new ForegroundColorSpan(color), 0, body.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            items[a] = TextUtils.concat("[" + when + "] " + peer + "\n", body);
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(getString(R.string.MG_Deleted_Header));

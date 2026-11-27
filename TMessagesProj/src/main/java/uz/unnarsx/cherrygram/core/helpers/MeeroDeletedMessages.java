@@ -44,11 +44,17 @@ public final class MeeroDeletedMessages implements NotificationCenter.Notificati
         public boolean edit;
         public String text;
         public String newText;
+        /* R14.16 (AyuGram parity) */
+        public String mediaLabel;
+        public String reactions;
+        public boolean fromBot;
     }
 
     private static final MeeroDeletedMessages INSTANCE = new MeeroDeletedMessages();
 
     private final ConcurrentHashMap<Integer, LinkedHashMap<Long, String>> cache = new ConcurrentHashMap<>();
+    /** cacheKey -> "bot|media|reactions" snapshot taken while the message was still loaded. */
+    private final ConcurrentHashMap<Integer, LinkedHashMap<Long, String>> metaCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, ArrayList<Entry>> entries = new ConcurrentHashMap<>();
     private final SparseArray<Object> registered = new SparseArray<>();
 
@@ -92,6 +98,20 @@ public final class MeeroDeletedMessages implements NotificationCenter.Notificati
         return map;
     }
 
+    private LinkedHashMap<Long, String> metaFor(int account) {
+        LinkedHashMap<Long, String> map = metaCache.get(account);
+        if (map == null) {
+            map = new LinkedHashMap<Long, String>() {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<Long, String> eldest) {
+                    return size() > MAX_CACHE;
+                }
+            };
+            metaCache.put(account, map);
+        }
+        return map;
+    }
+
     private ArrayList<Entry> entriesFor(int account) {
         ArrayList<Entry> list = entries.get(account);
         if (list == null) {
@@ -122,14 +142,101 @@ public final class MeeroDeletedMessages implements NotificationCenter.Notificati
                         continue;
                     }
                     String text = plainText(object);
-                    if (TextUtils.isEmpty(text)) {
+                    String meta = describe(object);
+                    if (TextUtils.isEmpty(text) && !(MeeroDeletedConfig.INSTANCE.getSaveMedia() && !TextUtils.isEmpty(meta))) {
                         continue;
                     }
-                    map.put(cacheKey(object.getDialogId(), object.getId()), text);
+                    long key = cacheKey(object.getDialogId(), object.getId());
+                    if (!TextUtils.isEmpty(text)) {
+                        map.put(key, text);
+                    }
+                    if (!TextUtils.isEmpty(meta)) {
+                        synchronized (metaFor(account)) {
+                            metaFor(account).put(key, meta);
+                        }
+                    }
                 }
             }
         } catch (Throwable t) {
             FileLog.e(t);
+        }
+    }
+
+    /**
+     * AyuGram-style snapshot of everything we can still see while the message is loaded:
+     * bot flag, media kind and the reactions that were attached to it.
+     */
+    private static String describe(MessageObject object) {
+        try {
+            StringBuilder sb = new StringBuilder();
+            TLRPC.Message owner = object.messageOwner;
+            if (owner != null && owner.from_id != null) {
+                TLRPC.User user = org.telegram.messenger.MessagesController.getInstance(object.currentAccount)
+                        .getUser(MessageObject.getPeerId(owner.from_id));
+                if (user != null && user.bot) {
+                    sb.append("bot");
+                }
+            }
+            String media = mediaLabel(owner);
+            if (media != null) {
+                if (sb.length() > 0) sb.append('|');
+                sb.append(media);
+            }
+            String reactions = reactionsLabel(owner);
+            if (reactions != null) {
+                if (sb.length() > 0) sb.append('|');
+                sb.append(reactions);
+            }
+            return sb.toString();
+        } catch (Throwable t) {
+            return "";
+        }
+    }
+
+    private static String reactionsLabel(TLRPC.Message owner) {
+        try {
+            if (owner == null || owner.reactions == null || owner.reactions.results == null) return null;
+            StringBuilder sb = new StringBuilder();
+            for (int a = 0; a < owner.reactions.results.size(); a++) {
+                TLRPC.ReactionCount rc = owner.reactions.results.get(a);
+                if (rc == null || rc.reaction instanceof TLRPC.TL_reactionEmpty) continue;
+                String emoji = null;
+                if (rc.reaction instanceof TLRPC.TL_reactionEmoji) {
+                    emoji = ((TLRPC.TL_reactionEmoji) rc.reaction).emoticon;
+                }
+                if (TextUtils.isEmpty(emoji)) continue;
+                if (sb.length() > 0) sb.append(' ');
+                sb.append(emoji).append(rc.count);
+            }
+            return sb.length() == 0 ? null : sb.toString();
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    /** Human placeholder for a media-only post, AyuGram keeps the attachment itself. */
+    private static String mediaLabel(TLRPC.Message owner) {
+        try {
+            if (owner == null || owner.media == null) return null;
+            if (owner.media instanceof TLRPC.TL_messageMediaPhoto) return "\uD83D\uDCF7";
+            if (owner.media instanceof TLRPC.TL_messageMediaDocument) {
+                if (owner.media.round) return "\uD83C\uDFA4";
+                if (owner.media.document != null) {
+                    for (int a = 0; a < owner.media.document.attributes.size(); a++) {
+                        TLRPC.DocumentAttribute attr = owner.media.document.attributes.get(a);
+                        if (attr instanceof TLRPC.TL_documentAttributeSticker) return "\uD83D\uDCAC";
+                        if (attr instanceof TLRPC.TL_documentAttributeAnimated) return "GIF";
+                        if (attr instanceof TLRPC.TL_documentAttributeVideo) return "\uD83C\uDFA5";
+                    }
+                }
+                return "\uD83D\uDCCE";
+            }
+            if (owner.media instanceof TLRPC.TL_messageMediaPoll) return "\uD83D\uDCCA";
+            if (owner.media instanceof TLRPC.TL_messageMediaGeo) return "\uD83D\uDCCD";
+            if (owner.media instanceof TLRPC.TL_messageMediaWebPage) return "\uD83D\uDD17";
+            return "\uD83D\uDCCE";
+        } catch (Throwable t) {
+            return null;
         }
     }
 
@@ -187,22 +294,84 @@ public final class MeeroDeletedMessages implements NotificationCenter.Notificati
                 if (mid == null) {
                     continue;
                 }
+                long key = cacheKey(dialogId, mid);
                 String text;
                 synchronized (map) {
-                    text = map.remove(cacheKey(dialogId, mid));
+                    text = map.remove(key);
                 }
-                if (TextUtils.isEmpty(text)) {
-                    continue;
+                String meta = takeMeta(account, key);
+                Entry entry = buildEntry(dialogId, mid, text, meta);
+                if (entry != null) {
+                    addEntry(account, entry);
                 }
-                Entry entry = new Entry();
-                entry.dialogId = dialogId;
-                entry.mid = mid;
-                entry.date = System.currentTimeMillis();
-                entry.text = text;
-                addEntry(account, entry);
             }
         } catch (Throwable t) {
             FileLog.e(t);
+        }
+    }
+
+    private String takeMeta(int account, long key) {
+        try {
+            LinkedHashMap<Long, String> meta = metaFor(account);
+            synchronized (meta) {
+                return meta.remove(key);
+            }
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    /**
+     * R14.16 (AyuGram parity): turns the cached text + metadata snapshot into a log entry,
+     * honouring the "save for bots" and "save media" switches.
+     */
+    private Entry buildEntry(long dialogId, int mid, String text, String meta) {
+        String media = null;
+        String reactions = null;
+        boolean bot = false;
+        if (!TextUtils.isEmpty(meta)) {
+            String[] parts = meta.split("\\|");
+            for (int a = 0; a < parts.length; a++) {
+                String part = parts[a];
+                if ("bot".equals(part)) {
+                    bot = true;
+                } else if (!TextUtils.isEmpty(part) && (reactions == null && part.length() > 0 && isEmojiReactions(part))) {
+                    reactions = part;
+                } else if (!TextUtils.isEmpty(part)) {
+                    media = part;
+                }
+            }
+        }
+        if (bot && !MeeroDeletedConfig.INSTANCE.getSaveBots()) {
+            return null;
+        }
+        if (!MeeroDeletedConfig.INSTANCE.getSaveMedia()) {
+            media = null;
+        }
+        if (!MeeroDeletedConfig.INSTANCE.getSaveReactions()) {
+            reactions = null;
+        }
+        if (TextUtils.isEmpty(text) && TextUtils.isEmpty(media)) {
+            return null;
+        }
+        Entry entry = new Entry();
+        entry.dialogId = dialogId;
+        entry.mid = mid;
+        entry.date = System.currentTimeMillis();
+        entry.text = text == null ? "" : text;
+        entry.mediaLabel = media;
+        entry.reactions = reactions;
+        entry.fromBot = bot;
+        return entry;
+    }
+
+    /** Reactions snapshot always carries a count, media labels never do. */
+    private static boolean isEmojiReactions(String part) {
+        try {
+            char last = part.charAt(part.length() - 1);
+            return Character.isDigit(last);
+        } catch (Throwable t) {
+            return false;
         }
     }
 
@@ -235,15 +404,14 @@ public final class MeeroDeletedMessages implements NotificationCenter.Notificati
                         }
                     }
                 }
-                if (foundKey == Long.MIN_VALUE || TextUtils.isEmpty(text)) {
+                if (foundKey == Long.MIN_VALUE) {
                     continue;
                 }
-                Entry entry = new Entry();
-                entry.dialogId = foundKey >> 32;
-                entry.mid = mid;
-                entry.date = System.currentTimeMillis();
-                entry.text = text;
-                addEntry(account, entry);
+                String meta = takeMeta(account, foundKey);
+                Entry entry = buildEntry(foundKey >> 32, mid, text, meta);
+                if (entry != null) {
+                    addEntry(account, entry);
+                }
             }
         } catch (Throwable t) {
             FileLog.e(t);
