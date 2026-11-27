@@ -11839,4 +11839,6 @@
     <string name="MG_InterfaceStyle_Desc">Choose the general interface style. Screens that are not adapted yet keep the official Telegram appearance.</string>
     <string name="MG_InterfaceStyle_Telegram">Telegram (default)</string>
     <string name="MG_InterfaceStyle_iOS">iOS</string>
+    <string name="MG_Deleted_Storage">Storage</string>
+    <string name="MG_Deleted_Storage_Value">SQLite</string>
 </resources>

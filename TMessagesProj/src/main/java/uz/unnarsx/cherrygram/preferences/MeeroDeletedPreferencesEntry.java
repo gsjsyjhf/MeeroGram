@@ -38,6 +38,7 @@ public class MeeroDeletedPreferencesEntry extends BaseCGPreferencesEntry {
     private final int deletedMediaRow = 7;
     private final int deletedColorRow = 8;
     private final int deletedIconRow = 9;
+    private final int deletedStorageRow = 10;
 
     @Override
     protected CharSequence getTitle() {
@@ -75,6 +76,8 @@ public class MeeroDeletedPreferencesEntry extends BaseCGPreferencesEntry {
         );
         items.add(UItem.asButton(deletedColorRow, getString(R.string.MG_Deleted_Color), getString(R.string.MG_Deleted_Color_Value)));
         items.add(UItem.asButton(deletedIconRow, getString(R.string.MG_Deleted_Icon), getString(R.string.MG_Deleted_Icon_Value)));
+        // MeeroGram R14.20: the log is a real SQLite database now (AyuGram-style schema).
+        items.add(UItem.asButton(deletedStorageRow, getString(R.string.MG_Deleted_Storage), getString(R.string.MG_Deleted_Storage_Value)));
         int count = MeeroDeletedMessages.countFor(account);
         items.add(
                 UItem.asButton(deletedViewRow, getString(R.string.MG_Deleted_View),
@@ -123,6 +126,8 @@ public class MeeroDeletedPreferencesEntry extends BaseCGPreferencesEntry {
             showColorPicker();
         } else if (item.id == deletedIconRow) {
             showIconPicker();
+        } else if (item.id == deletedStorageRow) {
+            showStorageInfo();
         } else if (item.id == deletedViewRow) {
             showDeletedMessagesLog();
         } else if (item.id == deletedClearRow) {
@@ -136,6 +141,30 @@ public class MeeroDeletedPreferencesEntry extends BaseCGPreferencesEntry {
             builder.setNegativeButton(getString(R.string.Cancel), null);
             showDialog(builder.create());
         }
+    }
+
+    /** Storage details: where the SQLite database lives and how big it is. */
+    private void showStorageInfo() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        final int account = UserConfig.selectedAccount;
+        String info;
+        try {
+            java.io.File file = MeeroDeletedMessages.dbFile();
+            final long size = file.exists() ? file.length() : 0;
+            info = getString(R.string.MG_Deleted_Storage) + ": SQLite\n"
+                    + MeeroDeletedMessages.dbPath() + "\n"
+                    + "(" + android.text.format.Formatter.formatShortFileSize(getParentActivity(), size) + ")\n"
+                    + LocaleControllerString(MeeroDeletedMessages.countFor(account));
+        } catch (Throwable t) {
+            info = MeeroDeletedMessages.dbPath();
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(getString(R.string.MG_Deleted_Storage));
+        builder.setMessage(info);
+        builder.setPositiveButton(getString(R.string.OK), null);
+        showDialog(builder.create());
     }
 
     /** AyuGram-style colour picker for recovered entries. */

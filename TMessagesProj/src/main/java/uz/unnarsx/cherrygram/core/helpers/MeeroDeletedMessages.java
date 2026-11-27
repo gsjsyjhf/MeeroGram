@@ -20,21 +20,29 @@ import android.util.SparseArray;
 
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.SQLite.SQLiteCursor;
+import org.telegram.SQLite.SQLiteDatabase;
+import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.tgnet.TLRPC;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import uz.unnarsx.cherrygram.core.configs.MeeroDeletedConfig;
 
 public final class MeeroDeletedMessages implements NotificationCenter.NotificationCenterDelegate {
 
-    public static final int MAX_ENTRIES = 250;
+    /** MeeroGram R14.20: real storage, the whole history is kept in SQLite. */
+    public static final int MAX_ENTRIES = 5000;
     private static final int MAX_CACHE = 4000;
 
     public static final class Entry {
@@ -490,58 +498,173 @@ public final class MeeroDeletedMessages implements NotificationCenter.Notificati
         }
     }
 
-    // ---- persistence -------------------------------------------------------
+    // ---- persistence (SQLite, AyuGram-style) -------------------------------
+
+    /**
+     * MeeroGram R14.20: the log used to live in SharedPreferences as a base64 text
+     * blob. It is now a real SQLite database - column layout mirrors AyuGram's
+     * Room entities (userId/dialogId/topicId/groupedId/messageId/date/...), so no
+     * ordering information is lost and the history is queryable.
+     */
+    private static final Object DB_LOCK = new Object();
+    private static SQLiteDatabase database;
+    private static ExecutorService storeQueue;
+
+    public static File dbFile() {
+        return new File(ApplicationLoader.getFilesDirFixed(), "meero_saved.sqlite");
+    }
+
+    public static String dbPath() {
+        return dbFile().getAbsolutePath();
+    }
+
+    private static ExecutorService storeQueue() {
+        if (storeQueue == null) {
+            storeQueue = Executors.newSingleThreadExecutor(r -> {
+                Thread t = new Thread(r, "meero-deleted-store");
+                t.setPriority(Thread.MIN_PRIORITY);
+                return t;
+            });
+        }
+        return storeQueue;
+    }
+
+    private static SQLiteDatabase db() throws Exception {
+        synchronized (DB_LOCK) {
+            if (database == null) {
+                database = new SQLiteDatabase(dbFile().getPath());
+                database.executeFast("CREATE TABLE IF NOT EXISTS meero_deleted_messages(" +
+                        "fakeId INTEGER PRIMARY KEY AUTOINCREMENT, userId INTEGER, dialogId INTEGER, " +
+                        "topicId INTEGER DEFAULT 0, groupedId INTEGER DEFAULT 0, messageId INTEGER, " +
+                        "date INTEGER, edit INTEGER, text TEXT, newText TEXT, media TEXT, reactions TEXT, fromBot INTEGER)").stepThis().dispose();
+                database.executeFast("CREATE INDEX IF NOT EXISTS meero_deleted_idx ON meero_deleted_messages(userId, dialogId, messageId)").stepThis().dispose();
+                database.executeFast("CREATE INDEX IF NOT EXISTS meero_deleted_date_idx ON meero_deleted_messages(userId, date DESC)").stepThis().dispose();
+            }
+            return database;
+        }
+    }
 
     private static SharedPreferences prefs(int account) {
-        return org.telegram.messenger.ApplicationLoader.applicationContext
+        return ApplicationLoader.applicationContext
                 .getSharedPreferences("meerogram_deleted_log_" + account, android.app.Activity.MODE_PRIVATE);
-    }
-
-    private static String enc(String value) {
-        if (value == null) {
-            return "";
-        }
-        try {
-            return Base64.encodeToString(value.getBytes("UTF-8"), Base64.NO_WRAP);
-        } catch (Throwable t) {
-            return "";
-        }
-    }
-
-    private static String dec(String value) {
-        if (TextUtils.isEmpty(value)) {
-            return "";
-        }
-        try {
-            byte[] bytes = Base64.decode(value, Base64.NO_WRAP);
-            return new String(bytes, "UTF-8");
-        } catch (Throwable t) {
-            return "";
-        }
     }
 
     private void save(int account) {
         try {
-            StringBuilder sb = new StringBuilder();
+            final ArrayList<Entry> snapshot;
             ArrayList<Entry> list = entriesFor(account);
             synchronized (list) {
-                for (int a = 0; a < list.size(); a++) {
-                    Entry entry = list.get(a);
-                    sb.append(entry.dialogId).append(';')
-                            .append(entry.mid).append(';')
-                            .append(entry.date).append(';')
-                            .append(entry.edit ? 1 : 0).append(';')
-                            .append(enc(entry.text)).append(';')
-                            .append(enc(entry.newText)).append('\n');
-                }
+                snapshot = new ArrayList<>(list);
             }
-            prefs(account).edit().putString("log", sb.toString()).apply();
+            final int acc = account;
+            storeQueue().execute(() -> writeRows(acc, snapshot));
         } catch (Throwable t) {
             FileLog.e(t);
         }
     }
 
+    private static void writeRows(int account, ArrayList<Entry> rows) {
+        try {
+            final SQLiteDatabase db = db();
+            synchronized (DB_LOCK) {
+                db.beginTransaction();
+                try {
+                    db.executeFast("DELETE FROM meero_deleted_messages WHERE userId = ?").stepThis().dispose();
+                    SQLitePreparedStatement stmt = db.executeFast(
+                            "INSERT INTO meero_deleted_messages (userId, dialogId, messageId, date, edit, text, newText, media, reactions, fromBot) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    for (int a = 0; a < rows.size(); a++) {
+                        Entry e = rows.get(a);
+                        stmt.requery();
+                        stmt.bindInteger(1, account);
+                        stmt.bindLong(2, e.dialogId);
+                        stmt.bindInteger(3, e.mid);
+                        stmt.bindLong(4, e.date);
+                        stmt.bindInteger(5, e.edit ? 1 : 0);
+                        bindString(stmt, 6, e.text);
+                        bindString(stmt, 7, e.newText);
+                        bindString(stmt, 8, e.mediaLabel);
+                        bindString(stmt, 9, e.reactions);
+                        stmt.bindInteger(10, e.fromBot ? 1 : 0);
+                        stmt.step();
+                    }
+                    stmt.dispose();
+                    db.commitTransaction();
+                } catch (Throwable inner) {
+                    FileLog.e(inner);
+                    try {
+                        db.executeFast("ROLLBACK").stepThis().dispose();
+                    } catch (Throwable ignore) {
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            FileLog.e(t);
+        }
+    }
+
+    private static void bindString(SQLitePreparedStatement stmt, int index, String value) throws Exception {
+        if (value == null) {
+            stmt.bindNull(index);
+        } else {
+            stmt.bindString(index, value);
+        }
+    }
+
     private void load(int account) {
+        try {
+            ArrayList<Entry> list = entriesFor(account);
+            ArrayList<Entry> loaded = new ArrayList<>();
+            synchronized (DB_LOCK) {
+                SQLiteCursor cursor = db().queryFinalized(
+                        "SELECT dialogId, messageId, date, edit, text, newText, media, reactions, fromBot " +
+                                "FROM meero_deleted_messages WHERE userId = ? ORDER BY date ASC LIMIT " + MAX_ENTRIES,
+                        account);
+                try {
+                    while (cursor.next() && loaded.size() < MAX_ENTRIES) {
+                        Entry entry = new Entry();
+                        entry.dialogId = cursor.longValue(0);
+                        entry.mid = cursor.intValue(1);
+                        entry.date = cursor.longValue(2);
+                        entry.edit = cursor.intValue(3) != 0;
+                        entry.text = cursor.isNull(4) ? "" : cursor.stringValue(4);
+                        entry.newText = cursor.isNull(5) ? "" : cursor.stringValue(5);
+                        entry.mediaLabel = cursor.isNull(6) ? null : cursor.stringValue(6);
+                        entry.reactions = cursor.isNull(7) ? null : cursor.stringValue(7);
+                        entry.fromBot = cursor.intValue(8) != 0;
+                        loaded.add(entry);
+                    }
+                } finally {
+                    cursor.dispose();
+                }
+            }
+            synchronized (list) {
+                list.clear();
+                list.addAll(loaded);
+            }
+            migrateLegacyLog(account);
+        } catch (Throwable t) {
+            FileLog.e(t);
+            loadLegacyLog(account);
+        }
+    }
+
+    /** One-shot import of the pre-R14.20 SharedPreferences blob. */
+    private void migrateLegacyLog(int account) {
+        try {
+            SharedPreferences p = prefs(account);
+            String raw = p.getString("log", "");
+            if (TextUtils.isEmpty(raw)) {
+                return;
+            }
+            loadLegacyLog(account);
+            p.edit().remove("log").apply();
+            save(account);
+        } catch (Throwable t) {
+            FileLog.e(t);
+        }
+    }
+
+    private void loadLegacyLog(int account) {
         try {
             String raw = prefs(account).getString("log", "");
             if (TextUtils.isEmpty(raw)) {
@@ -550,8 +673,7 @@ public final class MeeroDeletedMessages implements NotificationCenter.Notificati
             ArrayList<Entry> list = entriesFor(account);
             String[] lines = raw.split("\n");
             synchronized (list) {
-                list.clear();
-                for (int a = 0; a < lines.length && list.size() < MAX_ENTRIES; a++) {
+                for (int a = 0; a < lines.length; a++) {
                     String line = lines[a];
                     if (TextUtils.isEmpty(line)) {
                         continue;
@@ -571,6 +693,9 @@ public final class MeeroDeletedMessages implements NotificationCenter.Notificati
                         list.add(entry);
                     } catch (Throwable ignore) {
                     }
+                }
+                while (list.size() > MAX_ENTRIES) {
+                    list.remove(0);
                 }
             }
         } catch (Throwable t) {

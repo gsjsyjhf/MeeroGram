@@ -1533,4 +1533,6 @@
     <string name="MG_InterfaceStyle_Desc">اختر نمط الواجهة العام. الشاشات غير المهيّأة بعد تبقى بمظهر تيليجرام الرسمي.</string>
     <string name="MG_InterfaceStyle_Telegram">تيليجرام (افتراضي)</string>
     <string name="MG_InterfaceStyle_iOS">iOS</string>
+    <string name="MG_Deleted_Storage">التخزين</string>
+    <string name="MG_Deleted_Storage_Value">SQLite</string>
 </resources>
