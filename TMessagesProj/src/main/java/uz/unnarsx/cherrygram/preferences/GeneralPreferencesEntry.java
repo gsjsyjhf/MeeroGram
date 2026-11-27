@@ -121,11 +121,9 @@ public class GeneralPreferencesEntry extends BaseCGPreferencesEntry {
         final boolean ios = style == 1 /* iOS */;
         CherrygramAppearanceConfig.INSTANCE.setCenterTitle(ios);
         uz.unnarsx.cherrygram.core.configs.CherrygramChatsConfig.INSTANCE.setStackedStories(ios);
-        try {
-            if (getParentLayout() != null) {
-                getParentLayout().rebuildAllFragmentViews(false, false);
-            }
-        } catch (Throwable ignore) {
+        // same refresh path the proven Appearance > "توسيط العنوان" row uses
+        if (getParentLayout() != null) {
+            getParentLayout().rebuildAllFragmentViews(false, false);
         }
     }
 

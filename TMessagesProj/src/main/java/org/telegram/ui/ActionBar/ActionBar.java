@@ -1960,7 +1960,12 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         }
 
 
-        CharSequence textToSet = title != null ? LocaleController.getString(title, titleId) : lastTitle;
+        // MeeroGram R14.19: the chats header resolves its title through here, and
+        // LocaleController.getString() lets an installed language pack override "CG_AppName"
+        // with "Cherrygram". Force our own literal at the single point of resolution.
+        CharSequence textToSet = title != null
+                ? ((titleId == R.string.CG_AppName || "CG_AppName".equals(title)) ? BaseFragment.MEERO_APP_NAME : LocaleController.getString(title, titleId))
+                : lastTitle;
         Drawable rightDrawableToSet = title != null ? null : lastRightDrawable;
         boolean ellipsize = false;
         if (title != null) {

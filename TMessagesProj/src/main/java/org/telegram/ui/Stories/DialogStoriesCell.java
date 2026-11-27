@@ -1330,7 +1330,11 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             hasOverlayText = true;
             if (overlayTextId != textId) {
                 overlayTextId = textId;
-                String title = LocaleController.getString(titleOverlayText, textId);
+                // MeeroGram R14.19: same language-pack override as in ActionBar - the app name
+                // must never be resolved through getString().
+                String title = (textId == R.string.CG_AppName || "CG_AppName".equals(titleOverlayText))
+                        ? org.telegram.ui.ActionBar.BaseFragment.MEERO_APP_NAME
+                        : LocaleController.getString(titleOverlayText, textId);
                 CharSequence textToSet = title;
 //                if (!TextUtils.isEmpty(title)) {
 //                    int index = TextUtils.indexOf(textToSet, "...");
