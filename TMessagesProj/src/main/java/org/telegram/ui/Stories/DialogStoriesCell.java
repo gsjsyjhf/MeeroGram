@@ -113,44 +113,8 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     public final static int TYPE_DIALOGS = 0;
     public final static int TYPE_ARCHIVE= 1;
     private static final float COLLAPSED_DIS = 16;
-    /**
-     * MeeroGram R14.22 - ported verbatim from MeeroX (the owner's own fork, whose
-     * iOS header is the reference): the collapsed circles are 23.6dp wide with a
-     * 13.5dp step instead of the stock 26.33dp / 16dp, which is what makes the
-     * row read as the same pile as the reference.
-     */
-    private static final float MEERO_COLLAPSED_SIZE = 23.6f;
-    private static final float MEERO_COLLAPSED_DIS = 13.5f;
-
-    /** iOS-26 header = MR "Interface style: iOS". */
-    public static boolean meeroIosStories() {
-        try {
-            return CherrygramAppearanceConfig.INSTANCE.getInterfaceStyle() == 1;
-        } catch (Throwable ignore) {
-            return false;
-        }
-    }
-
-    /**
-     * MeeroGram R14.24: the iOS metrics (23.6/13.5dp) were reverted. They were
-     * correct for the finished collapsed row, but the same numbers feed the
-     * collapse interpolation, so during the drag the circles were being lerped
-     * to a size their 70dp boxes never reserved and the row piled up on itself.
-     * The stock sizes are kept; only the centring and the word are ours.
-     */
-    private static float collapsedSizeDp() {
-        return COLLAPSED_SIZE;
-    }
-
-    /**
-     * MeeroGram R14.26: only the *step* changes in the iOS style - the circles keep
-     * the stock diameter, so the collapse interpolation never has to lerp to a size
-     * its 70dp box did not reserve (that mismatch is what piled the row up).
-     * 13.5dp is MeeroX's step, which is what gives their tight, overlapping pile.
-     */
-    private static float collapsedDisDp() {
-        return COLLAPSED_DIS;
-    }
+    private static final float ITEM_WIDTH = 70;
+    private static final int FAKE_TOP_PADDING = 4;
 
     private static final int ANIMATOR_ID_HAS_TITLE_TEXT = 1;
     private final BoolAnimator animatorHasTitleText = new BoolAnimator(ANIMATOR_ID_HAS_TITLE_TEXT, this, CubicBezierInterpolator.EASE_OUT_QUINT, 380);
@@ -463,9 +427,9 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                 int p = parent.getChildLayoutPosition(view);
                 outRect.setEmpty();
                 if (p == 1) {
-                    outRect.left = -dp(85) + dp(29 + collapsedDisDp() - 14);
+                    outRect.left = -dp(85) + dp(29 + COLLAPSED_DIS - 14);
                 } else if (p == 2) {
-                    outRect.left = -dp(85) + dp(29 + collapsedDisDp() - 14);
+                    outRect.left = -dp(85) + dp(29 + COLLAPSED_DIS - 14);
                 }
             }
         });
@@ -805,7 +769,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                     StoryCell previousCell = (StoryCell) recyclerListView.getChildAt(i - 1);
                     if (previousCell != null) {
                         float size = dp(48);
-                        float collapsedSize = dp(collapsedSizeDp());
+                        float collapsedSize = dp(COLLAPSED_SIZE);
                         float previousSize = AndroidUtilities.lerp(size, collapsedSize, previousCell.progressToCollapsed) + dp(8);
                         float currentSize = AndroidUtilities.lerp(size, collapsedSize, cell.progressToCollapsed) + dp(8);
                         float radiusPrev = previousSize / 2f;
@@ -855,9 +819,9 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                 if (adapterPosition <= animateFromPosition) {
                     toX = 0;
                 } else if (adapterPosition == animateFromPosition + 1) {
-                    toX = dp(collapsedDisDp()) * cellCollapsedProgress - AndroidUtilities.dpf2(0.5f) + AndroidUtilities.lerp(dp(collapsedDisDp()), 0f, collapsedProgress);
+                    toX = dp(COLLAPSED_DIS) * cellCollapsedProgress - AndroidUtilities.dpf2(0.5f) + AndroidUtilities.lerp(dp(COLLAPSED_DIS), 0f, collapsedProgress);
                 } else {
-                    toX = dp(collapsedDisDp()) + dp(collapsedDisDp()) * cellCollapsedProgress - AndroidUtilities.dpf2(0.5f) + AndroidUtilities.lerp(dp(collapsedDisDp() + collapsedDisDp()), 0f, collapsedProgress);
+                    toX = dp(COLLAPSED_DIS) + dp(COLLAPSED_DIS) * cellCollapsedProgress - AndroidUtilities.dpf2(0.5f) + AndroidUtilities.lerp(dp(COLLAPSED_DIS + COLLAPSED_DIS), 0f, collapsedProgress);
                 }
                 toX += menuItemsOffset;
                 if (!collapsed) {
@@ -1721,7 +1685,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
         float getCy() {
             float size = dp(48);
-            float collapsedSize = dp(collapsedSizeDp());
+            float collapsedSize = dp(COLLAPSED_SIZE);
 
             float finalSize = AndroidUtilities.lerp(size, collapsedSize, progressToCollapsed);
             float radius = finalSize / 2f;
@@ -1733,7 +1697,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         @Override
         protected void dispatchDraw(Canvas canvas) {
             float size = dp(48);
-            float collapsedSize = dp(collapsedSizeDp());
+            float collapsedSize = dp(COLLAPSED_SIZE);
             float overscrollSize = dp(8) *  Utilities.clamp(DialogStoriesCell.this.overscrollProgress / 0.5f, 1f, 0);
             if (selectedForOverscroll) {
                 overscrollSize += dp(16) * Utilities.clamp((DialogStoriesCell.this.overscrollProgress - 0.5f) / 0.5f, 1f, 0f);
@@ -1924,7 +1888,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                 return 0;
             }
             float p = CubicBezierInterpolator.EASE_OUT.getInterpolation(progressToCollapsed);
-            float distance = AndroidUtilities.lerp(getMeasuredWidth(), dp(collapsedDisDp()), p);
+            float distance = AndroidUtilities.lerp(getMeasuredWidth(), dp(COLLAPSED_DIS), p);
             radius += AndroidUtilities.dpf2(3.5f);
             if (distance < radius * 2) {
                 //double cosA = (distance / 2f) / radius;
@@ -2150,7 +2114,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
     static float getAvatarRight(int width, float progressToCollapsed) {
         float size = dp(48);
-        float collapsedSize = dp(collapsedSizeDp());
+        float collapsedSize = dp(COLLAPSED_SIZE);
         float finalSize = AndroidUtilities.lerp(size, collapsedSize, progressToCollapsed);
         float radius = finalSize / 2f;
 
@@ -2224,7 +2188,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     public boolean onTouchEvent(MotionEvent event) {
         if (currentState == COLLAPSED_STATE) {
             int k = miniItems.size();
-            int width = dp(collapsedSizeDp() * k - collapsedDisDp() * Math.max(0, k - 1));
+            int width = dp(COLLAPSED_SIZE * k - COLLAPSED_DIS * Math.max(0, k - 1));
             miniItemsClickArea.setRect((int) listViewMini.getX(), (int) listViewMini.getY(), (int) (listViewMini.getX() + width), (int) (listViewMini.getY() + listViewMini.getHeight()));
             if (miniItemsClickArea.checkTouchEvent(event)) {
                 return true;
