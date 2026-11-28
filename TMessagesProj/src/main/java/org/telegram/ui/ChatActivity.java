@@ -19295,6 +19295,7 @@ public class ChatActivity extends BaseFragment implements
                                 actionCell.setInvalidatesParent(true);
                                 actionCell.setScrimReaction(scrimViewReaction);
                             }
+                            final boolean mgHideScrim = mgSnapshotView != null;
                             final boolean mgLift = mgMenuLiftProgress > 0f && cell != null && scrimGroup == null;
                             if (mgLift) {
                                 // leave room for the scaled/lifted bubble to paint outside its own box
@@ -19311,6 +19312,7 @@ public class ChatActivity extends BaseFragment implements
                                 canvas.scale(sc, sc, child.getMeasuredWidth() / 2f, child.getMeasuredHeight() / 2f);
                                 canvas.translate(0, -dp(6) * mgMenuLiftProgress);
                             }
+                            if (!mgHideScrim) {
                             if (cell != null && scrimGroup == null && cell.drawBackgroundInParent()) {
                                 canvas.save();
                                 canvas.translate(0, cell.getPaddingTop());
@@ -19320,8 +19322,11 @@ public class ChatActivity extends BaseFragment implements
                             if (cell != null && scrimGroup == null) {
                                 cell.drawCompactScrimBackground(canvas, scrimViewProgress);
                             }
-                            child.draw(canvas);
-                            if (cell != null && cell.hasOutboundsContent()) {
+                            }
+                            if (!mgHideScrim) {
+                                child.draw(canvas);
+                            }
+                            if (!mgHideScrim && cell != null && cell.hasOutboundsContent()) {
                                 canvas.save();
                                 canvas.translate(0, cell.getPaddingTop());
                                 cell.drawOutboundsContent(canvas);
@@ -34148,6 +34153,8 @@ public class ChatActivity extends BaseFragment implements
                     if (popupLayout.getLayoutParams() instanceof LinearLayout.LayoutParams) {
                         ((LinearLayout.LayoutParams) popupLayout.getLayoutParams()).gravity = out ? Gravity.RIGHT : Gravity.LEFT;
                     }
+                    snap.setAlpha(0f);
+                    snap.animate().alpha(1f).setDuration(180).setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
                     mgSnapshotView = snap;
                 }
             }
@@ -34277,8 +34284,12 @@ public class ChatActivity extends BaseFragment implements
             if (mgSnapshotView != null) {
                 // anchor the captured bubble exactly where the real one sits: the menu then
                 // falls below it and the reaction bar floats above it
-                final int bubbleX = chatListView.getLeft() + v.getLeft() + mgSnapshotView.getBubbleLeftInCell();
-                final int bubbleY = (int) (chatListView.getY() + v.getTop() + mgSnapshotView.getBubbleTopInCell());
+                // window coordinates are the same space showAtLocation() works in, so the
+                // captured bubble lands pixel-exact on the real one
+                final int[] mgLoc = new int[2];
+                v.getLocationInWindow(mgLoc);
+                final int bubbleX = mgLoc[0] + mgSnapshotView.getBubbleLeftInCell();
+                final int bubbleY = mgLoc[1] + mgSnapshotView.getBubbleTopInCell();
                 popupX = bubbleX - mgSnapshotView.getLeft();
                 popupY = bubbleY - mgSnapshotView.getTop();
                 final int maxPopupX = Math.max(AndroidUtilities.dp(6), chatListView.getMeasuredWidth() - scrimPopupContainerLayout.getMeasuredWidth() - AndroidUtilities.dp(6));
