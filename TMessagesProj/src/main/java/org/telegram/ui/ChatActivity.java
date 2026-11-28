@@ -11689,6 +11689,9 @@ public class ChatActivity extends BaseFragment implements
     // MeeroGram R14.38: "raised bubble" - the pressed bubble is drawn above the
     // blurred chat, scaled up ~2% and lifted a few dp, so it reads as detached from
     // the list exactly like the MeeroX/iOS message menu.
+    // MeeroGram R14.39: the captured bubble that rides inside the menu popup.
+    private org.telegram.ui.Components.MGBubbleSnapshotView mgSnapshotView;
+
     private float mgMenuLiftProgress;
     private ValueAnimator mgMenuLiftAnimator;
 
@@ -34124,6 +34127,31 @@ public class ChatActivity extends BaseFragment implements
                 }
             }
 
+            // MeeroGram R14.39: iOS stack - capture the pressed bubble and put it inside
+            // the popup, between the reaction bar and the menu card.
+            if (mgSnapshotView != null) {
+                mgSnapshotView.release();
+                mgSnapshotView = null;
+            }
+            if (mgIosMsgMenuOn() && reactionsLayout != null && v instanceof ChatMessageCell && message != null) {
+                final org.telegram.ui.Components.MGBubbleSnapshotView snap =
+                        org.telegram.ui.Components.MGBubbleSnapshotView.capture(scrimPopupContainerLayout.getContext(), (ChatMessageCell) v);
+                if (snap != null) {
+                    final boolean out = message.isOut();
+                    final LinearLayout.LayoutParams lp = LayoutHelper.createLinear(
+                            LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT,
+                            out ? Gravity.RIGHT : Gravity.LEFT,
+                            out ? 0 : 16, 0, out ? 36 : 0, 10);
+                    final int menuIndex = scrimPopupContainerLayout.indexOfChild(popupLayout);
+                    scrimPopupContainerLayout.addView(snap, menuIndex >= 0 ? menuIndex : scrimPopupContainerLayout.getChildCount(), lp);
+                    scrimPopupContainerLayout.setIosBubbleView(snap);
+                    if (popupLayout.getLayoutParams() instanceof LinearLayout.LayoutParams) {
+                        ((LinearLayout.LayoutParams) popupLayout.getLayoutParams()).gravity = out ? Gravity.RIGHT : Gravity.LEFT;
+                    }
+                    mgSnapshotView = snap;
+                }
+            }
+
             ReactionsContainerLayout finalReactionsLayout1 = reactionsLayout;
             if (reactionsLayout != null) {
                 reactionsLayout.setParentLayout(scrimPopupContainerLayout);
@@ -34147,8 +34175,10 @@ public class ChatActivity extends BaseFragment implements
                     menuDeleteItem = null;
                     scrimPopupWindowItems = null;
                     chatLayoutManager.setCanScrollVertically(true);
-                    if (mgMenuLiftProgress > 0f) {
-                        mgAnimateMenuLift(false);
+                    if (mgSnapshotView != null) {
+                        scrimPopupContainerLayout.setIosBubbleView(null);
+                        mgSnapshotView.release();
+                        mgSnapshotView = null;
                     }
                     if (scrimPopupWindowHideDimOnDismiss) {
                         dimBehindView(false);
@@ -34190,6 +34220,9 @@ public class ChatActivity extends BaseFragment implements
             }
             scrimPopupWindow.setFocusable(true);
             scrimPopupContainerLayout.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST));
+            if (mgSnapshotView != null) {
+                scrimPopupContainerLayout.layout(0, 0, scrimPopupContainerLayout.getMeasuredWidth(), scrimPopupContainerLayout.getMeasuredHeight());
+            }
             scrimPopupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
             scrimPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
             scrimPopupWindow.getContentView().setFocusableInTouchMode(true);
@@ -34239,6 +34272,20 @@ public class ChatActivity extends BaseFragment implements
             if (getMessageMenuHelper().allowNewMessageMenu(message)) {
                 popupX = 0;
                 popupY = 0;
+            }
+
+            if (mgSnapshotView != null) {
+                // anchor the captured bubble exactly where the real one sits: the menu then
+                // falls below it and the reaction bar floats above it
+                final int bubbleX = chatListView.getLeft() + v.getLeft() + mgSnapshotView.getBubbleLeftInCell();
+                final int bubbleY = (int) (chatListView.getY() + v.getTop() + mgSnapshotView.getBubbleTopInCell());
+                popupX = bubbleX - mgSnapshotView.getLeft();
+                popupY = bubbleY - mgSnapshotView.getTop();
+                final int maxPopupX = Math.max(AndroidUtilities.dp(6), chatListView.getMeasuredWidth() - scrimPopupContainerLayout.getMeasuredWidth() - AndroidUtilities.dp(6));
+                popupX = Utilities.clamp(popupX, maxPopupX, AndroidUtilities.dp(6));
+                if (popupY < minY) {
+                    popupY = minY;
+                }
             }
 
             final int finalPopupX = scrimPopupX = popupX;
@@ -34291,7 +34338,6 @@ public class ChatActivity extends BaseFragment implements
                     // heavy 50% dim, so the bubble under it stays readable.
                     setScrimView(v);
                     dimBehindView(0.25f, Build.VERSION.SDK_INT >= 31, v != sideControlsButtonsLayout);
-                    mgAnimateMenuLift(true);
                 } else {
                     dimBehindView(v, true);
                 }

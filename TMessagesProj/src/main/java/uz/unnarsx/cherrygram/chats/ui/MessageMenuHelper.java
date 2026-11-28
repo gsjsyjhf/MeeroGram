@@ -74,9 +74,10 @@ public class MessageMenuHelper {
     }
 
     public boolean openMenuByLongPress() {
-        // MeeroGram R14.38: long-press always opens the message menu (iOS behaviour).
-        // The switch that used to gate this was removed from the settings screen.
-        return true;
+        // MeeroGram R14.39: long-press opens the menu while the iOS menu style is on;
+        // with the switch off the stored Telegram/Cherrygram preference decides.
+        return uz.unnarsx.cherrygram.core.configs.CherrygramAppearanceConfig.INSTANCE.getIosMsgMenu()
+                || CherrygramMessagesConfig.INSTANCE.getMsgMenuOpenByLongPress();
     }
 
     public boolean showGap() {

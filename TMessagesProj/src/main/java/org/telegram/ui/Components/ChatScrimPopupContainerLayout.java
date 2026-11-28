@@ -16,6 +16,9 @@ public class ChatScrimPopupContainerLayout extends LinearLayout {
     private ReactionsContainerLayout reactionsLayout;
     private ActionBarPopupWindow.ActionBarPopupWindowLayout popupWindowLayout;
     private View bottomView;
+    // MeeroGram R14.39: the captured bubble that sits between the reaction bar and
+    // the menu card, so the popup itself is the iOS stack.
+    private View iosBubbleView;
     private int maxHeight;
     private float popupLayoutLeftOffset;
     private float progressToSwipeBack;
@@ -31,6 +34,14 @@ public class ChatScrimPopupContainerLayout extends LinearLayout {
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
+    }
+
+    public void setIosBubbleView(View view) {
+        this.iosBubbleView = view;
+    }
+
+    public View getIosBubbleView() {
+        return iosBubbleView;
     }
 
     @Override
