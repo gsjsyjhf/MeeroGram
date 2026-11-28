@@ -600,10 +600,20 @@ public class Switch extends FrameLayout implements Theme.Colorable {
     }
 
     private boolean meeroCanDrawIos26() {
+        // R14.32: the capsule draws itself at whatever size the cell hands it (see
+        // meeroScale), so the only requirement is a box big enough to see it. That is
+        // what makes the shortcut sheet's rows - which lay the switch out smaller than
+        // the settings rows - look like the same switch as everywhere else.
         return CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()
-                && getMeasuredWidth() >= AndroidUtilities.dp(60)
-                && getMeasuredHeight() >= AndroidUtilities.dp(26);
+                && getMeasuredWidth() >= AndroidUtilities.dp(20)
+                && getMeasuredHeight() >= AndroidUtilities.dp(12);
     }
+
+    /** Scale of the iOS26 capsule against its native 63x28dp / 37x24dp knob. */
+    private float meeroScale = 1f;
+    private float meeroKnobHalfW = AndroidUtilities.dp(18.5f);
+    private float meeroKnobHalfH = AndroidUtilities.dp(12f);
+    private int meeroTrackWPx, meeroTrackHPx;
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -634,14 +644,21 @@ public class Switch extends FrameLayout implements Theme.Colorable {
         } else if (meeroCanDrawIos26()) {
             // R11.3: real iOS26 keyboard switch - 63x28dp track, 37x24dp
             // capsule knob, 2dp pad, 22dp travel (Ios26CapsuleSwitch).
+            final int maxH = Math.max(1, getMeasuredHeight());
             meeroTrackW = Math.min(AndroidUtilities.dp(63), getMeasuredWidth());
-            meeroTrackH = AndroidUtilities.dp(28);
+            meeroTrackH = Math.min(AndroidUtilities.dp(28), maxH);
+            meeroScale = Math.min(meeroTrackW / (float) AndroidUtilities.dp(63),
+                    meeroTrackH / (float) AndroidUtilities.dp(28));
+            thumb = Math.round(AndroidUtilities.dp(37) * meeroScale);
+            meeroKnobHalfW = AndroidUtilities.dp(18.5f) * meeroScale;
+            meeroKnobHalfH = AndroidUtilities.dp(12f) * meeroScale;
+            meeroTrackWPx = meeroTrackW;
+            meeroTrackHPx = meeroTrackH;
             x = (getMeasuredWidth() - meeroTrackW) / 2;
             y = getMeasuredHeight() / 2 - meeroTrackH / 2;
-            thumb = AndroidUtilities.dp(37);
 
-            float start = x + thumb / 2f + AndroidUtilities.dp(2);
-            float end = x + meeroTrackW - thumb / 2f - AndroidUtilities.dp(2);
+            float start = x + meeroKnobHalfW + AndroidUtilities.dp(2) * meeroScale;
+            float end = x + meeroTrackW - meeroKnobHalfW - AndroidUtilities.dp(2) * meeroScale;
 
             tx = (int) (start + (end - start) * progress);
             if (meeroPointerActive) {
@@ -757,13 +774,13 @@ public class Switch extends FrameLayout implements Theme.Colorable {
                             0xFF34C759, meeroColorT));
                 }
                 rectF.set(meeroX, meeroY, meeroX + meeroTrackW, meeroY + meeroTrackH);
-                canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(14f), AndroidUtilities.dpf2(14f), paint);
+                canvasToDraw.drawRoundRect(rectF, meeroTrackHPx / 2f, meeroTrackHPx / 2f, paint);
                 Paint rimPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                 rimPaint.setStyle(Paint.Style.STROKE);
                 rimPaint.setStrokeWidth(Math.max(1, AndroidUtilities.dp(1)));
                 rimPaint.setColor(0x29FFFFFF);
                 rectF.set(meeroX + 1, meeroY + 1, meeroX + meeroTrackW - 1, meeroY + meeroTrackH - 1);
-                canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(13f), AndroidUtilities.dpf2(13f), rimPaint);
+                canvasToDraw.drawRoundRect(rectF, Math.max(0f, meeroTrackHPx / 2f - 1f), Math.max(0f, meeroTrackHPx / 2f - 1f), rimPaint);
                 // R11.5: the iOS micro-indicators (on = white bar, off = grey
                 // ring) are removed - users read them as stray "O"/"I" glyphs
                 // on the switch. The track stays a clean iOS capsule.
@@ -832,8 +849,8 @@ public class Switch extends FrameLayout implements Theme.Colorable {
                 final float g = meeroGlassFrac;
                 final float swellX = (1f + 0.34f * g) * meeroStretchX;
                 final float swellY = (1f + 0.46f * g) * meeroStretchY;
-                final float hw = AndroidUtilities.dp(18.5f) * swellX;
-                final float hh = AndroidUtilities.dp(12f) * swellY;
+                final float hw = meeroKnobHalfW * swellX;
+                final float hh = meeroKnobHalfH * swellY;
                 if (g > 0.02f) {
                     canvas.save();
                     canvas.translate(tx, ty);
@@ -842,16 +859,16 @@ public class Switch extends FrameLayout implements Theme.Colorable {
                     Paint shPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                     final float shadowA = (meeroDark ? 0.40f : 0.18f) * Math.min(1f, 0.35f + 0.65f * g);
                     shPaint.setShader(new android.graphics.RadialGradient(0, AndroidUtilities.dp(1.5f),
-                            AndroidUtilities.dp(19f),
+                            meeroKnobHalfW * 1.03f,
                             new int[]{Theme.multAlpha(0xFF000000, (int) (255f * shadowA)), 0},
                             new float[]{0.55f, 1f}, android.graphics.Shader.TileMode.CLAMP));
-                    canvasToDraw.drawCircle(0, AndroidUtilities.dp(1.5f), AndroidUtilities.dp(19f), shPaint);
+                    canvasToDraw.drawCircle(0, AndroidUtilities.dp(1.5f), meeroKnobHalfW * 1.03f, shPaint);
                     // solid white fading out as the droplet takes over
                     Paint knobPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                     knobPaint.setColor(paint3.getColor());
                     knobPaint.setAlpha((int) (255f * (1f - 0.84f * g)));
-                    android.graphics.RectF knobRect = new android.graphics.RectF(-AndroidUtilities.dp(18.5f), -AndroidUtilities.dp(12f), AndroidUtilities.dp(18.5f), AndroidUtilities.dp(12f));
-                    canvasToDraw.drawRoundRect(knobRect, AndroidUtilities.dpf2(12f), AndroidUtilities.dpf2(12f), knobPaint);
+                    android.graphics.RectF knobRect = new android.graphics.RectF(-meeroKnobHalfW, -meeroKnobHalfH, meeroKnobHalfW, meeroKnobHalfH);
+                    canvasToDraw.drawRoundRect(knobRect, meeroKnobHalfH, meeroKnobHalfH, knobPaint);
                     // liquid surface gradient (native style: white tints)
                     Paint dropPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                     dropPaint.setShader(new android.graphics.LinearGradient(0, -hh, 0, hh,
@@ -861,14 +878,14 @@ public class Switch extends FrameLayout implements Theme.Colorable {
                                     Theme.multAlpha(0xFFFFFFFF, (int) (255f * (meeroDark ? 0.20f : 0.28f) * g)),
                             },
                             new float[]{0f, 0.48f, 1f}, android.graphics.Shader.TileMode.CLAMP));
-                    canvasToDraw.drawRoundRect(knobRect, AndroidUtilities.dpf2(12f), AndroidUtilities.dpf2(12f), dropPaint);
+                    canvasToDraw.drawRoundRect(knobRect, meeroKnobHalfH, meeroKnobHalfH, dropPaint);
                     // upper specular liquid highlight arc
                     Paint hiPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                     hiPaint.setShader(new android.graphics.LinearGradient(0, -hh, 0, 0f,
                             new int[]{Theme.multAlpha(0xFFFFFFFF, (int) (255f * 0.90f * g)), Theme.multAlpha(0xFFFFFFFF, (int) (255f * 0.05f * g))},
                             new float[]{0f, 1f}, android.graphics.Shader.TileMode.CLAMP));
-                    android.graphics.RectF hiRect = new android.graphics.RectF(-AndroidUtilities.dp(15.5f), -AndroidUtilities.dp(11f), AndroidUtilities.dp(15.5f), -hh * 0.06f);
-                    canvasToDraw.drawRoundRect(hiRect, AndroidUtilities.dpf2(10.5f), AndroidUtilities.dpf2(10.5f), hiPaint);
+                    android.graphics.RectF hiRect = new android.graphics.RectF(-meeroKnobHalfW * 0.84f, -meeroKnobHalfH * 0.92f, meeroKnobHalfW * 0.84f, -hh * 0.06f);
+                    canvasToDraw.drawRoundRect(hiRect, meeroKnobHalfH * 0.875f, meeroKnobHalfH * 0.875f, hiPaint);
                     // chromatic caustic rim (cyan -> white -> green)
                     Paint rimPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                     rimPaint.setStyle(Paint.Style.STROKE);
@@ -880,16 +897,16 @@ public class Switch extends FrameLayout implements Theme.Colorable {
                                     Theme.multAlpha(0xFF34C759, (int) (255f * 0.30f * g)),
                             },
                             new float[]{0f, 0.5f, 1f}, android.graphics.Shader.TileMode.CLAMP));
-                    canvasToDraw.drawRoundRect(knobRect, AndroidUtilities.dpf2(12f), AndroidUtilities.dpf2(12f), rimPaint);
+                    canvasToDraw.drawRoundRect(knobRect, meeroKnobHalfH, meeroKnobHalfH, rimPaint);
                     canvas.restore();
                 } else {
-                    android.graphics.RectF knobRect = new android.graphics.RectF(tx - AndroidUtilities.dp(18.5f), ty - AndroidUtilities.dp(12f), tx + AndroidUtilities.dp(18.5f), ty + AndroidUtilities.dp(12f));
-                    canvasToDraw.drawRoundRect(knobRect, AndroidUtilities.dpf2(12f), AndroidUtilities.dpf2(12f), paint3);
+                    android.graphics.RectF knobRect = new android.graphics.RectF(tx - meeroKnobHalfW, ty - meeroKnobHalfH, tx + meeroKnobHalfW, ty + meeroKnobHalfH);
+                    canvasToDraw.drawRoundRect(knobRect, meeroKnobHalfH, meeroKnobHalfH, paint3);
                     Paint rimPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                     rimPaint.setStyle(Paint.Style.STROKE);
                     rimPaint.setStrokeWidth(Math.max(1, AndroidUtilities.dp(0.8f)));
                     rimPaint.setColor(0xF5FFFFFF);
-                    canvasToDraw.drawRoundRect(knobRect, AndroidUtilities.dpf2(12f), AndroidUtilities.dpf2(12f), rimPaint);
+                    canvasToDraw.drawRoundRect(knobRect, meeroKnobHalfH, meeroKnobHalfH, rimPaint);
                 }
             } else {
                 canvasToDraw.drawCircle(tx, ty, AndroidUtilities.dp(8), paint);
@@ -1030,7 +1047,9 @@ public class Switch extends FrameLayout implements Theme.Colorable {
     /** 63dp track, 37dp thumb, 2dp pad each side -> 22dp travel (Ios26CapsuleSwitch). */
     private float meeroMaxTravel() {
         final float trackW = Math.min(AndroidUtilities.dp(63), getMeasuredWidth());
-        return Math.max(AndroidUtilities.dp(1), trackW - AndroidUtilities.dp(37) - AndroidUtilities.dp(4));
+        final float trackH = Math.min(AndroidUtilities.dp(28), Math.max(1, getMeasuredHeight()));
+        final float scale = Math.min(trackW / (float) AndroidUtilities.dp(63), trackH / (float) AndroidUtilities.dp(28));
+        return Math.max(AndroidUtilities.dp(1), trackW - AndroidUtilities.dp(37) * scale - AndroidUtilities.dp(4) * scale);
     }
 
     private static int meeroBlend(int c1, int c2, float t) {
