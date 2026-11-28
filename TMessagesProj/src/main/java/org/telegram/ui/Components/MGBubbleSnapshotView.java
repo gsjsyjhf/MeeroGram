@@ -6,6 +6,10 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.RectF;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import org.telegram.ui.Cells.ChatMessageCell;
@@ -29,6 +33,14 @@ public class MGBubbleSnapshotView extends FrameLayout {
 
     private final int bubbleLeft, bubbleTop;
     private final int bubbleWidth, bubbleHeight;
+
+    /** MeeroGram R14.41: tall messages shrink to this and scroll inside. */
+    private int maxHeight;
+    private float scroll;
+    private float maxScroll;
+    private float lastTouchY;
+    private boolean dragging;
+    private final int touchSlop = dp(6);
 
     private MGBubbleSnapshotView(Context context, Bitmap bitmap, int bubbleLeft, int bubbleTop, int w, int h) {
         super(context);
@@ -139,9 +151,31 @@ public class MGBubbleSnapshotView extends FrameLayout {
         return bubbleTop;
     }
 
+    /** Space the popup can spare; 0 = no limit. */
+    public void setMaxHeight(int value) {
+        if (maxHeight != value) {
+            maxHeight = value;
+            requestLayout();
+            invalidate();
+        }
+    }
+
+    public boolean isScrollable() {
+        return maxScroll > 0;
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(bubbleWidth, bubbleHeight);
+        int h = bubbleHeight;
+        if (maxHeight > 0) {
+            h = Math.min(h, maxHeight);
+        }
+        h = Math.max(dp(40), h);
+        maxScroll = Math.max(0, bubbleHeight - h);
+        if (scroll > maxScroll) {
+            scroll = maxScroll;
+        }
+        setMeasuredDimension(bubbleWidth, h);
     }
 
     @Override
@@ -149,7 +183,61 @@ public class MGBubbleSnapshotView extends FrameLayout {
         if (bitmap == null || bitmap.isRecycled()) {
             return;
         }
+        canvas.save();
+        canvas.translate(0, -scroll);
         canvas.drawBitmap(bitmap, 0, 0, paint);
+        canvas.restore();
+        if (maxScroll > 0) {
+            final float trackW = dp(3);
+            final float inset = dp(3);
+            final float h = getMeasuredHeight();
+            final float thumbH = Math.max(dp(28), h * (h / (float) bubbleHeight));
+            final float travel = Math.max(0, h - thumbH);
+            final float y = travel * (scroll / maxScroll);
+            final float x = getMeasuredWidth() - inset - trackW;
+            paint.setColor(0x40000000);
+            canvas.drawRoundRect(new RectF(x, y, x + trackW, y + thumbH), trackW / 2f, trackW / 2f, paint);
+            paint.setColor(0x66FFFFFF);
+        }
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (maxScroll <= 0) {
+            return false;
+        }
+        switch (event.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN: {
+                lastTouchY = event.getY();
+                dragging = false;
+                return true;
+            }
+            case MotionEvent.ACTION_MOVE: {
+                final float dy = lastTouchY - event.getY();
+                if (!dragging && Math.abs(dy) > touchSlop) {
+                    dragging = true;
+                    lastTouchY = event.getY();
+                    final ViewGroup parent = (ViewGroup) getParent();
+                    if (parent != null) {
+                        parent.requestDisallowInterceptTouchEvent(true);
+                    }
+                    return true;
+                }
+                if (dragging) {
+                    scroll += dy;
+                    if (scroll < 0) scroll = 0;
+                    if (scroll > maxScroll) scroll = maxScroll;
+                    lastTouchY = event.getY();
+                    invalidate();
+                }
+                return true;
+            }
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                dragging = false;
+                return true;
+        }
+        return true;
     }
 
     public void release() {

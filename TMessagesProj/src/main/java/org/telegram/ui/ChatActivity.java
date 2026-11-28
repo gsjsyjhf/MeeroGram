@@ -34228,6 +34228,18 @@ public class ChatActivity extends BaseFragment implements
             scrimPopupWindow.setFocusable(true);
             scrimPopupContainerLayout.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST));
             if (mgSnapshotView != null) {
+                // MeeroGram R14.41: a long message must stay readable. Cap the captured
+                // bubble to whatever the screen can spare once the reaction bar and the
+                // menu have taken their space; anything taller scrolls inside the bubble
+                // exactly like iOS, so the menu is never pushed off screen.
+                final int mgReactionsH = reactionsLayout != null && reactionsLayout.getVisibility() == View.VISIBLE ? reactionsLayout.getMeasuredHeight() : 0;
+                final int mgMenuH = popupLayout.getMeasuredHeight();
+                final int mgTop = (int) (chatListView.getY() + dp(24));
+                final int mgBottom = contentView.getHeight() - dp(8);
+                final int mgAvail = mgBottom - mgTop - mgReactionsH - mgMenuH - dp(28);
+                final int mgCap = Math.max(dp(120), Math.min(mgAvail, (int) (contentView.getHeight() * 0.55f)));
+                mgSnapshotView.setMaxHeight(mgCap);
+                scrimPopupContainerLayout.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST));
                 scrimPopupContainerLayout.layout(0, 0, scrimPopupContainerLayout.getMeasuredWidth(), scrimPopupContainerLayout.getMeasuredHeight());
             }
             scrimPopupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
@@ -34294,6 +34306,12 @@ public class ChatActivity extends BaseFragment implements
                 popupY = bubbleY - mgSnapshotView.getTop();
                 final int maxPopupX = Math.max(AndroidUtilities.dp(6), chatListView.getMeasuredWidth() - scrimPopupContainerLayout.getMeasuredWidth() - AndroidUtilities.dp(6));
                 popupX = Utilities.clamp(popupX, maxPopupX, AndroidUtilities.dp(6));
+                // never let the stack run past the bottom of the screen: the menu has to
+                // stay fully reachable even when the bubble above it is very tall
+                final int mgMaxPopupY = contentView.getHeight() - scrimPopupContainerLayout.getMeasuredHeight() - dp(8);
+                if (popupY > mgMaxPopupY) {
+                    popupY = Math.max(mgMaxPopupY, minY);
+                }
                 if (popupY < minY) {
                     popupY = minY;
                 }
