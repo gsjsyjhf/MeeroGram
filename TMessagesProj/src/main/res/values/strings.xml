@@ -11715,6 +11715,8 @@
     <string name="MG_Exp_ForcePerfClass">Force performance class</string>
     <string name="MG_Exp_FixChineseKb">Fix Chinese keyboards *</string>
     <string name="MG_Exp_FixChineseKbDesc">Fix empty keyboard input</string>
+    <string name="MG_IOSMenu_Title">iOS-Style Context Menu</string>
+    <string name="MG_IOSMenu_Desc">Rounded floating card with hairlines and a light blur behind it when you long-press a message. The reactions bar keeps its current glass.</string>
     <string name="MG_iOS26_Switch_Style">iOS26-Style Switches</string>
     <string name="MG_iOS26_Switch_Desc">New pill switch look - enabling it turns the OneUI style off.</string>
     <string name="MG_FloatingActions">Floating Glass Actions</string>

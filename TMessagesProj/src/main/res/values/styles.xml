@@ -110,6 +110,11 @@
         <item name="android:windowEnterAnimation">@anim/popup_context_in</item>
     </style>
 
+    <!-- MeeroGram R14.37: iOS-speed message menu (120ms fade / 180ms scale) -->
+    <style name="MGIosPopupContextAnimation" parent="android:Animation" mce_bogus="1">
+        <item name="android:windowEnterAnimation">@anim/mg_popup_context_in</item>
+    </style>
+
     <style name="PopupContextAnimation2" parent="android:Animation" mce_bogus="1">
         <item name="android:windowEnterAnimation">@anim/popup_context_in</item>
         <item name="android:windowExitAnimation">@anim/popup_out</item>

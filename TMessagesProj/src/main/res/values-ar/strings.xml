@@ -1409,6 +1409,8 @@
     <string name="MG_Exp_ForcePerfClass">فرض فئة الأداء</string>
     <string name="MG_Exp_FixChineseKb">إصلاح لوحات المفاتيح الصينية *</string>
     <string name="MG_Exp_FixChineseKbDesc">إصلاح خانة الإدخال الفارغة</string>
+    <string name="MG_IOSMenu_Title">القائمة السياقية بأسلوب iOS</string>
+    <string name="MG_IOSMenu_Desc">بطاقة عائمة مستديرة بفواصل رقيقة وتعتيم خفيف مع ضبابية خلفها عند الضغط المطول على الرسالة. شريط التفاعلات يبقى بزجاجه الحالي.</string>
     <string name="MG_iOS26_Switch_Style">مبدل بأسلوب iOS26</string>
     <string name="MG_iOS26_Switch_Desc">شكل المبدل الجديد على طريقة iOS26 — عند تفعيله يُطفأ خيار مبدل بأسلوب OneUI.</string>
     <string name="MG_FloatingActions">أزرار عائمة زجاجية</string>

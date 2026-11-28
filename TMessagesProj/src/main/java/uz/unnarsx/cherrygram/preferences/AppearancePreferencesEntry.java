@@ -70,6 +70,7 @@ public class AppearancePreferencesEntry extends BaseCGPreferencesEntry {
     // "أيقونة التطبيق" hit the iOS26 branch instead (icon screen never opened and the
     // iOS26 switch flipped off). Give every row a unique id.
     private final int ios26SwitchesRow = 14;
+    private final int iosMsgMenuRow = 15;
 
     private static final Set<String> GLARE_EFFECTS_SECTION_SLUG = Set.of(
             "glareEffectsType"
@@ -114,6 +115,10 @@ public class AppearancePreferencesEntry extends BaseCGPreferencesEntry {
         items.add(SettingsHelper.asSwitchCG(ios26SwitchesRow, getString(R.string.MG_iOS26_Switch_Style), getString(R.string.MG_iOS26_Switch_Desc))
                 .setChecked(CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle())
                 .slug("ios26_Switches")
+        );
+        items.add(SettingsHelper.asSwitchCG(iosMsgMenuRow, getString(R.string.MG_IOSMenu_Title), getString(R.string.MG_IOSMenu_Desc))
+                .setChecked(CherrygramAppearanceConfig.INSTANCE.getIosMsgMenu())
+                .slug("iosMsgMenu")
         );
         items.add(SettingsHelper.asSwitchCG(disableDividersRow, getString(R.string.AP_DisableDividers))
                 .setChecked(CherrygramAppearanceConfig.INSTANCE.getDisableDividers())
@@ -300,6 +305,11 @@ public class AppearancePreferencesEntry extends BaseCGPreferencesEntry {
 
             Theme.applyCommonTheme();
             getParentLayout().rebuildAllFragmentViews(false, false);
+            updateRows(true);
+        } else if (item.id == iosMsgMenuRow) {
+            // MeeroGram R14.37: iOS-style message menu.
+            CherrygramAppearanceConfig.INSTANCE.setIosMsgMenu(!CherrygramAppearanceConfig.INSTANCE.getIosMsgMenu());
+            SettingsHelper.updateCheckState(view, CherrygramAppearanceConfig.INSTANCE.getIosMsgMenu());
             updateRows(true);
         } else if (item.id == disableDividersRow) {
             CherrygramAppearanceConfig.INSTANCE.setDisableDividers(!CherrygramAppearanceConfig.INSTANCE.getDisableDividers());

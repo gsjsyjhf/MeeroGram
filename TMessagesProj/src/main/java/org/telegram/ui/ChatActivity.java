@@ -11686,6 +11686,15 @@ public class ChatActivity extends BaseFragment implements
         }
     }
 
+    /** MeeroGram R14.37: the iOS message-menu switch (Appearance > iOS menu). */
+    private static boolean mgIosMsgMenuOn() {
+        try {
+            return uz.unnarsx.cherrygram.core.configs.CherrygramAppearanceConfig.INSTANCE.getIosMsgMenu();
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
     private void dimBehindView(View view, boolean enable) {
         dimBehindView(view, false, enable);
     }
@@ -32705,6 +32714,9 @@ public class ChatActivity extends BaseFragment implements
             }
 
             ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getParentActivity(), R.drawable.popup_fixed_alert4, themeDelegate, flags);
+            // MeeroGram R14.37: the message context menu is the one menu that wears the
+            // iOS card skin (reaction bars and sheets keep their own glass untouched).
+            popupLayout.setIosMenuSkin(true);
             popupLayout.setMinimumWidth(AndroidUtilities.dp(200));
             Rect backgroundPaddings = new Rect();
             Drawable shadowDrawable = getParentActivity().getResources().getDrawable(R.drawable.popup_fixed_alert4).mutate();
@@ -34126,7 +34138,7 @@ public class ChatActivity extends BaseFragment implements
                 scrimPopupWindow.setEmptyOutAnimation(getMessageMenuHelper().getCloseAnimationDuration());
             } else {
                 if (!isReactionsAvailable || reactionsLayout == null || !ReactionsContainerLayout.allowSmoothEnterTransition()) {
-                    scrimPopupWindow.setAnimationStyle(R.style.PopupContextAnimation);
+                    scrimPopupWindow.setAnimationStyle(mgIosMsgMenuOn() ? R.style.MGIosPopupContextAnimation : R.style.PopupContextAnimation);
                 } else {
                     scrimPopupWindow.setAnimationStyle(0);
                 }
@@ -34229,7 +34241,14 @@ public class ChatActivity extends BaseFragment implements
             if (getMessageMenuHelper().allowNewMessageMenu(message)) {
                 dimBehindViewCG(v, true);
             } else {
-                dimBehindView(v, true);
+                if (mgIosMsgMenuOn()) {
+                    // MeeroGram R14.37: the iOS menu sits over a light blur instead of a
+                    // heavy 50% dim, so the bubble under it stays readable.
+                    setScrimView(v);
+                    dimBehindView(0.25f, Build.VERSION.SDK_INT >= 31, v != sideControlsButtonsLayout);
+                } else {
+                    dimBehindView(v, true);
+                }
             }
             hideHints(false);
             if (topUndoView != null) {

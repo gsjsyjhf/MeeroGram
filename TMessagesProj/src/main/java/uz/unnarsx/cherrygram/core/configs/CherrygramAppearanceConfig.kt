@@ -56,6 +56,9 @@ object CherrygramAppearanceConfig {
 
     /** MeeroGram R11: iOS26-style settings switches - enabling it turns the OneUI style off. */
     var ios26_SwitchStyle by sharedPreferences.boolean("AP_iOS26_SwitchStyle", false)
+    // MeeroGram R14.37: iOS-style message context menu (rounded card + lighter blur
+    // behind + 180ms motion). The reaction bar is deliberately left alone.
+    var iosMsgMenu by sharedPreferences.boolean("AP_iOSMsgMenu", true)
 
     /**
      * MeeroGram R14.19: MR's "Interface style" switch (General settings).

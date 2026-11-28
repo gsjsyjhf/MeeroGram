@@ -337,22 +337,10 @@ public class AboutPreferencesEntry extends BaseCGPreferencesEntry {
             }
             communityGroup = null;
         }
-        TLRPC.Chat linkedCommunity = null;
-        if (cherrygramSupportChatLoaded && cherrygramSupportChat != null && cherrygramSupportChat.linked_community_id != 0) {
-            linkedCommunity = getMessagesController().getChat(cherrygramSupportChat.linked_community_id);
-        }
-
+        // MeeroGram R14.37: the linked-community card no longer appears on this
+        // screen (owner request) - only the channel/chat link rows stay.
         ArrayList<AboutHeaderView.Link> chats = new ArrayList<>();
-        CommunityLinkView communityLinkView = null;
-        if (linkedCommunity != null && getParentActivity() != null) {
-            communityLinkView = new CommunityLinkView(getParentActivity(), getResourceProvider());
-            communityLinkView.setChat(currentAccount, linkedCommunity);
-            long communityId = cherrygramSupportChat.linked_community_id;
-            communityLinkView.setOnClickListener(v -> showDialog(new CommunitySheet(this, communityId)));
-            communityGroupItem = communityItem;
-        } else {
-            communityGroupItem = chatsItem;
-        }
+        communityGroupItem = chatsItem;
         // MeeroGram R14.31: the channel/chat links are the block the owner was missing
         // once the linked community resolved - they used to be the *alternative* to the
         // community card, so resolving the community replaced them. Both are listed now:
@@ -361,7 +349,7 @@ public class AboutPreferencesEntry extends BaseCGPreferencesEntry {
         // off-topic rows are removed and the chat points at the owner's own group).
         chats.add(new AboutHeaderView.Link(channelRow, R.drawable.msg_channel_solar, getString(R.string.CGP_ToChannel), "@" + Constants.CG_CHANNEL_USERNAME));
         chats.add(new AboutHeaderView.Link(chatRow, R.drawable.msg_discuss_solar, getString(R.string.CGP_ToChat), "@fjjfdhds"));
-        communityGroup = headerView.createGroup(getString(R.string.CGP_About_Community), communityLinkView, chats, 4);
+        communityGroup = headerView.createGroup(getString(R.string.CGP_About_Community), null, chats, 4);
         updateRows(false);
     }
 

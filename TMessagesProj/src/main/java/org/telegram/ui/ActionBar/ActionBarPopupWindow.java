@@ -16,6 +16,7 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
@@ -135,12 +136,73 @@ public class ActionBarPopupWindow extends PopupWindow {
         protected Drawable backgroundDrawable;
 
         private boolean fitItems;
+
+        // ---------------- MeeroGram R14.37: iOS-style context menu skin ----------------
+        // This is a layer over stock Telegram drawing, not a replacement: menus that
+        // never call setIosMenuSkin() (reaction bars, sheets) keep their exact look,
+        // and with the switch off everything falls back to the stock drawable.
+        private boolean mgIosEligible;
+        private boolean mgIosSettled;
+        private Drawable mgIosStockDrawable;
+        private MgIosCardDrawable mgIosCardDrawable;
         private final Theme.ResourcesProvider resourcesProvider;
         private View topView;
         protected ActionBarPopupWindow window;
 
         public int subtractBackgroundHeight;
         Rect rect;
+
+        /** Opts this layout into the iOS card skin (message context menus only). */
+        public void setIosMenuSkin(boolean eligible) {
+            mgIosEligible = eligible;
+            if (eligible) {
+                mgIosSync();
+            }
+            invalidate();
+        }
+
+        public boolean isIosMenuOn() {
+            if (!mgIosEligible) {
+                return false;
+            }
+            try {
+                return uz.unnarsx.cherrygram.core.configs.CherrygramAppearanceConfig.INSTANCE.getIosMsgMenu();
+            } catch (Throwable e) {
+                return false;
+            }
+        }
+
+        private int mgIosCardColor() {
+            return Theme.isCurrentThemeDark() ? 0xF5202024 : 0xF7FFFFFF;
+        }
+
+        private void mgIosSync() {
+            final boolean on = isIosMenuOn();
+            if (on) {
+                if (mgIosStockDrawable == null) {
+                    mgIosStockDrawable = backgroundDrawable;
+                }
+                if (mgIosCardDrawable == null) {
+                    mgIosCardDrawable = new MgIosCardDrawable(getContext());
+                }
+                backgroundDrawable = mgIosCardDrawable;
+                backgroundDrawable.setColorFilter(new PorterDuffColorFilter(mgIosCardColor(), PorterDuff.Mode.MULTIPLY));
+                backgroundDrawable.getPadding(bgPaddings);
+                if (!mgIosSettled) {
+                    mgIosSettled = true;
+                    setPadding(bgPaddings.left, bgPaddings.top, bgPaddings.right, bgPaddings.bottom);
+                }
+            } else if (mgIosSettled) {
+                mgIosSettled = false;
+                if (mgIosStockDrawable != null) {
+                    backgroundDrawable = mgIosStockDrawable;
+                    mgIosStockDrawable = null;
+                    bgPaddings.setEmpty();
+                    backgroundDrawable.getPadding(bgPaddings);
+                    setPadding(bgPaddings.left, bgPaddings.top, bgPaddings.right, bgPaddings.bottom);
+                }
+            }
+        }
 
         public Rect getPadding() {
             return bgPaddings;
@@ -302,6 +364,11 @@ public class ActionBarPopupWindow extends PopupWindow {
         }
 
         public void setBackgroundColor(int color) {
+            if (mgIosSettled) {
+                // the iOS card owns its own tint
+                backgroundColor = color;
+                return;
+            }
             if (backgroundColor != color && backgroundDrawable != null) {
                 backgroundDrawable.setColorFilter(new PorterDuffColorFilter(backgroundColor = color, PorterDuff.Mode.MULTIPLY));
             }
@@ -468,6 +535,7 @@ public class ActionBarPopupWindow extends PopupWindow {
 
         @Override
         protected void dispatchDraw(Canvas canvas) {
+            mgIosSync();
             if (swipeBackGravityRight) {
                 setTranslationX(getMeasuredWidth() * (1f - backScaleX));
                 if (topView != null) {
@@ -692,6 +760,7 @@ public class ActionBarPopupWindow extends PopupWindow {
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            mgIosSync();
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
             if (swipeBackLayout != null) {
                 swipeBackLayout.invalidateTransforms(!startAnimationPending);
@@ -1158,6 +1227,100 @@ public class ActionBarPopupWindow extends PopupWindow {
 
     public interface onSizeChangedListener {
         void onSizeChanged();
+    }
+
+    /**
+     * MeeroGram R14.37: nine-sliced rounded card with a soft shadow, the surface the
+     * iOS-style context menu is painted on. Rendered once into a bitmap on a software
+     * canvas so the shadow actually blurs (a hardware dispatchDraw would drop it).
+     */
+    public static class MgIosCardDrawable extends Drawable {
+
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+        private final Rect paddingRect = new Rect();
+        private final Rect src = new Rect();
+        private final Rect dst = new Rect();
+        private Bitmap bitmap;
+        private int cL, cT, cR, cB;
+
+        public MgIosCardDrawable(Context context) {
+            build();
+        }
+
+        private void build() {
+            final int padL = dp(8), padT = dp(6), padR = dp(8), padB = dp(12);
+            final int rad = dp(14);
+            final int coreX = Math.max(2, dp(8));
+            final int coreY = Math.max(2, dp(8));
+            final int w = padL + rad + coreX + rad + padR;
+            final int h = padT + rad + coreY + rad + padB;
+            Bitmap bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bmp);
+            Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+            p.setColor(0xFFFFFFFF);
+            p.setShadowLayer(dp(5), 0, dp(2), 0x66000000);
+            canvas.drawRoundRect(new RectF(padL, padT, w - padR, h - padB), rad, rad, p);
+            bitmap = bmp;
+            cL = padL + rad;
+            cT = padT + rad;
+            cR = padR + rad;
+            cB = padB + rad;
+            paddingRect.set(padL, padT, padR, padB);
+        }
+
+        @Override
+        public void draw(Canvas canvas) {
+            if (bitmap == null || bitmap.isRecycled()) {
+                return;
+            }
+            final Rect b = getBounds();
+            final int x0 = b.left, x3 = b.right;
+            final int y0 = b.top, y3 = b.bottom;
+            final int x1 = x0 + cL, x2 = x3 - cR;
+            final int y1 = y0 + cT, y2 = y3 - cB;
+            final int sw = bitmap.getWidth(), sh = bitmap.getHeight();
+            slice(canvas, 0, 0, cL, cT, x0, y0, x1, y1);
+            slice(canvas, cL, 0, sw - cR, cT, x1, y0, x2, y1);
+            slice(canvas, sw - cR, 0, sw, cT, x2, y0, x3, y1);
+            slice(canvas, 0, cT, cL, sh - cB, x0, y1, x1, y2);
+            slice(canvas, cL, cT, sw - cR, sh - cB, x1, y1, x2, y2);
+            slice(canvas, sw - cR, cT, sw, sh - cB, x2, y1, x3, y2);
+            slice(canvas, 0, sh - cB, cL, sh, x0, y2, x1, y3);
+            slice(canvas, cL, sh - cB, sw - cR, sh, x1, y2, x2, y3);
+            slice(canvas, sw - cR, sh - cB, sw, sh, x2, y2, x3, y3);
+        }
+
+        private void slice(Canvas canvas, int sx0, int sy0, int sx1, int sy1, int dx0, int dy0, int dx1, int dy1) {
+            if (sx1 <= sx0 || sy1 <= sy0 || dx1 <= dx0 || dy1 <= dy0) {
+                return;
+            }
+            src.set(sx0, sy0, sx1, sy1);
+            dst.set(dx0, dy0, dx1, dy1);
+            canvas.drawBitmap(bitmap, src, dst, paint);
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+            paint.setAlpha(alpha);
+            invalidateSelf();
+        }
+
+        @Override
+        public void setColorFilter(ColorFilter colorFilter) {
+            paint.setColorFilter(colorFilter);
+            invalidateSelf();
+        }
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSLUCENT;
+        }
+
+        @Override
+        public boolean getPadding(Rect padding) {
+            padding.set(paddingRect);
+            return true;
+        }
     }
 
     public static class GapView extends FrameLayout {
