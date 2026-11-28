@@ -34234,7 +34234,7 @@ public class ChatActivity extends BaseFragment implements
                 // exactly like iOS, so the menu is never pushed off screen.
                 final int mgReactionsH = reactionsLayout != null && reactionsLayout.getVisibility() == View.VISIBLE ? reactionsLayout.getMeasuredHeight() : 0;
                 final int mgMenuH = popupLayout.getMeasuredHeight();
-                final int mgTop = (int) (chatListView.getY() + dp(24));
+                final int mgTop = inBubbleMode ? (int) (chatListView.getY() + dp(24)) : AndroidUtilities.statusBarHeight + dp(8);
                 final int mgBottom = contentView.getHeight() - dp(8);
                 final int mgAvail = mgBottom - mgTop - mgReactionsH - mgMenuH - dp(28);
                 final int mgCap = Math.max(dp(120), Math.min(mgAvail, (int) (contentView.getHeight() * 0.55f)));
@@ -34308,12 +34308,14 @@ public class ChatActivity extends BaseFragment implements
                 popupX = Utilities.clamp(popupX, maxPopupX, AndroidUtilities.dp(6));
                 // never let the stack run past the bottom of the screen: the menu has to
                 // stay fully reachable even when the bubble above it is very tall
-                final int mgMaxPopupY = contentView.getHeight() - scrimPopupContainerLayout.getMeasuredHeight() - dp(8);
-                if (popupY > mgMaxPopupY) {
-                    popupY = Math.max(mgMaxPopupY, minY);
+                // keep the whole stack under the status bar and above the navigation bar
+                final int mgYMin = inBubbleMode ? minY : Math.max(minY, AndroidUtilities.statusBarHeight + dp(8));
+                final int mgYMax = contentView.getHeight() - AndroidUtilities.navigationBarHeight - scrimPopupContainerLayout.getMeasuredHeight() - dp(8);
+                if (popupY > mgYMax) {
+                    popupY = Math.max(mgYMax, mgYMin);
                 }
-                if (popupY < minY) {
-                    popupY = minY;
+                if (popupY < mgYMin) {
+                    popupY = mgYMin;
                 }
             }
 

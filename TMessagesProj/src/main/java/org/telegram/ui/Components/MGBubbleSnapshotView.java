@@ -116,6 +116,16 @@ public class MGBubbleSnapshotView extends FrameLayout {
                 cell.drawBackgroundInternal(canvas, true);
                 canvas.restore();
             }
+            // MeeroGram R14.42: channel posts, media, albums and button bubbles paint
+            // their bubble only through the group/background pass, so a plain draw()
+            // left the snapshot see-through. Paint the bubble shape as well.
+            try {
+                canvas.save();
+                canvas.translate(0, cell.getPaddingTop());
+                cell.drawBackground(canvas, 0, 0, cell.getMeasuredWidth(), cell.getMeasuredHeight(), false, false, false, 0);
+                canvas.restore();
+            } catch (Throwable ignore) {
+            }
             cell.draw(canvas);
             if (cell.hasNameLayout()) {
                 canvas.save();
