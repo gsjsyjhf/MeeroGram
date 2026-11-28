@@ -580,43 +580,26 @@ public class Switch extends FrameLayout implements Theme.Colorable {
     }
 
     /**
-     * MeeroGram R14.30: whether the styled switches have the room they were drawn for.
+     * Whether the styled switches have the room they were drawn for.
      *
      * Both Cherrygram styles paint a knob that is taller than the stock switch view
-     * (OneUI 22dp, iOS26 24dp against Telegram's 20dp row) and the iOS26 track also
-     * needs its full 63dp width. In the compact rows used by the settings sheets the
-     * view is only ~39x20dp, so the knob was being clipped into a white block and the
-     * iOS26 capsule was squeezed under its own knob - the broken toggles in the
-     * conversation-shortcuts sheet. Where there is no room we fall back to stock.
+     * (OneUI 22dp, iOS26 24dp against Telegram's 20dp row). In the compact rows used by
+     * the settings sheets the view is narrower than the styles assume, so each one needs
+     * a minimum box or its knob is clipped by the view bounds.
      */
-    /**
-     * MeeroGram R14.33 - one switch, everywhere.
-     *
-     * The fork used to carry two extra switch skins (OneUI and iOS26). Neither could be
-     * made to look like the other: the cells hand the switch different boxes (39x40dp in
-     * the shortcut dialogs, 64x40dp in the settings rows), so the same settings produced
-     * two different-looking switches in the same app, and the hosted glass variant drew
-     * a square track with a clipped knob. The owner's verdict after three attempts was
-     * simply "they must all look alike", so both skins are switched off at the draw site
-     * and every switch in the app now uses Telegram's own rendering, which is identical
-     * everywhere by construction. The two settings rows are removed from Appearance as
-     * well - nothing to configure, nothing to disagree.
-     */
-    // Geometry of the (now unreachable) iOS26 capsule. Kept as fields because the
-    // draw path still names them; with both skins switched off the values are never
-    // read at runtime.
-    private float meeroScale = 1f;
-    private float meeroKnobHalfW = AndroidUtilities.dp(18.5f);
-    private float meeroKnobHalfH = AndroidUtilities.dp(12f);
-    private int meeroTrackWPx;
-    private int meeroTrackHPx;
-
     private boolean meeroCanDrawOneUi() {
-        return false;
+        // The OneUI track is painted from its own x to the view's right edge and its knob
+        // (22dp across) is centred off a fixed 30.5dp track, so a narrow view clips it.
+        return CherrygramAppearanceConfig.INSTANCE.getOneUI_SwitchStyle()
+                && getMeasuredWidth() >= AndroidUtilities.dp(45)
+                && getMeasuredHeight() >= AndroidUtilities.dp(26);
     }
 
     private boolean meeroCanDrawIos26() {
-        return false;
+        // The capsule scales itself to the box (meeroScale), so it only needs to fit.
+        return CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()
+                && getMeasuredWidth() >= AndroidUtilities.dp(20)
+                && getMeasuredHeight() >= AndroidUtilities.dp(12);
     }
 
     @Override

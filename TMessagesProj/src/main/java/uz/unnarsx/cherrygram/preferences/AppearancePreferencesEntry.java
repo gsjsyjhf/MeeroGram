@@ -106,10 +106,15 @@ public class AppearancePreferencesEntry extends BaseCGPreferencesEntry {
         items.add(UItem.asButton(iconPackRow, getString(R.string.AP_IconReplacements), getIconPackValueText())
                 .slug("iconPack")
         );
-        // MeeroGram R14.33: the OneUI / iOS26 switch styles are gone. Both are switched
-        // off at the drawing site (Switch.meeroCanDrawOneUi/Ios26 return false), so the
-        // rows would only be dead toggles - and a setting that does nothing is exactly
-        // what the owner asked us to stop shipping. Every switch is Telegram's own now.
+        items.add(SettingsHelper.asSwitchCG(oneUISwitchesRow, getString(R.string.AP_OneUI_Switch_Style))
+                .setChecked(CherrygramAppearanceConfig.INSTANCE.getOneUI_SwitchStyle())
+                .slug("oneUI_Switches")
+        );
+        // iOS26-style switches, right under the OneUI option.
+        items.add(SettingsHelper.asSwitchCG(ios26SwitchesRow, getString(R.string.MG_iOS26_Switch_Style), getString(R.string.MG_iOS26_Switch_Desc))
+                .setChecked(CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle())
+                .slug("ios26_Switches")
+        );
         items.add(SettingsHelper.asSwitchCG(disableDividersRow, getString(R.string.AP_DisableDividers))
                 .setChecked(CherrygramAppearanceConfig.INSTANCE.getDisableDividers())
                 .slug("dividers")
