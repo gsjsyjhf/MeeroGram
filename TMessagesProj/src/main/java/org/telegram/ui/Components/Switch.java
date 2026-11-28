@@ -602,6 +602,15 @@ public class Switch extends FrameLayout implements Theme.Colorable {
      * everywhere by construction. The two settings rows are removed from Appearance as
      * well - nothing to configure, nothing to disagree.
      */
+    // Geometry of the (now unreachable) iOS26 capsule. Kept as fields because the
+    // draw path still names them; with both skins switched off the values are never
+    // read at runtime.
+    private float meeroScale = 1f;
+    private float meeroKnobHalfW = AndroidUtilities.dp(18.5f);
+    private float meeroKnobHalfH = AndroidUtilities.dp(12f);
+    private int meeroTrackWPx;
+    private int meeroTrackHPx;
+
     private boolean meeroCanDrawOneUi() {
         return false;
     }
