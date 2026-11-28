@@ -47,23 +47,6 @@
                             </gradient>
                         </aapt:attr>
                     </path>
-                    
-                        <aapt:attr name="android:fillColor">
-                            <gradient
-                                android:type="linear"
-                                android:startX="70.87"
-                                android:startY="31.85"
-                                android:endX="31.15"
-                                android:endY="68.25">
-                                <item
-                                    android:color="#FFE64C7F"
-                                    android:offset="0.12"/>
-                                <item
-                                    android:color="#FF872847"
-                                    android:offset="0.86"/>
-                            </gradient>
-                        </aapt:attr>
-                    </path>
                 </group>
             </group>
         </vector>
