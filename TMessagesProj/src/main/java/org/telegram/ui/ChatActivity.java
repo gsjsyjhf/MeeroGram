@@ -11689,6 +11689,75 @@ public class ChatActivity extends BaseFragment implements
     // MeeroGram R14.38: "raised bubble" - the pressed bubble is drawn above the
     // blurred chat, scaled up ~2% and lifted a few dp, so it reads as detached from
     // the list exactly like the MeeroX/iOS message menu.
+    // MeeroGram R14.43: exact pixels of the pressed bubble, copied straight from the
+    // window. Re-drawing the cell into a bitmap misses whatever a cell type paints
+    // through its parent, which made the snapshot look see-through; a pixel copy is
+    // always what the user is actually looking at.
+    private android.graphics.Bitmap mgExactBubble;
+    // MeeroGram R14.43: the real cell is hidden while its copy is on screen, otherwise
+    // the translucent theme bubble shows through and the message looks doubled.
+    private java.lang.ref.WeakReference<View> mgHiddenCellRef;
+    private int mgExactBubbleStamp;
+
+    private void mgHiddenCell(View v) {
+        try {
+            if (mgHiddenCellRef != null && mgHiddenCellRef.get() != null && mgHiddenCellRef.get() != v) {
+                mgHiddenCellRef.get().setAlpha(1f);
+            }
+            mgHiddenCellRef = new java.lang.ref.WeakReference<>(v);
+            v.setAlpha(0f);
+        } catch (Throwable ignore) {
+        }
+    }
+
+    private void mgShowHiddenCell() {
+        try {
+            if (mgHiddenCellRef != null && mgHiddenCellRef.get() != null) {
+                mgHiddenCellRef.get().setAlpha(1f);
+                mgHiddenCellRef.get().invalidate();
+            }
+        } catch (Throwable ignore) {
+        }
+        mgHiddenCellRef = null;
+    }
+
+    private void mgRequestExactBubble(View v) {
+        mgExactBubble = null;
+        if (!mgIosMsgMenuOn() || Build.VERSION.SDK_INT < 24 || !(v instanceof ChatMessageCell) || getParentActivity() == null) {
+            return;
+        }
+        try {
+            final int[] b = org.telegram.ui.Components.MGBubbleSnapshotView.bubbleBounds((ChatMessageCell) v);
+            if (b == null) {
+                return;
+            }
+            final int[] loc = new int[2];
+            v.getLocationInWindow(loc);
+            final android.graphics.Rect rect = new android.graphics.Rect(
+                    loc[0] + b[0], loc[1] + b[1], loc[0] + b[2], loc[1] + b[3]);
+            if (rect.width() <= 0 || rect.height() <= 0) {
+                return;
+            }
+            final android.graphics.Bitmap bmp = android.graphics.Bitmap.createBitmap(
+                    rect.width(), rect.height(), android.graphics.Bitmap.Config.ARGB_8888);
+            final int stamp = ++mgExactBubbleStamp;
+            android.view.PixelCopy.request(getParentActivity().getWindow(), rect, bmp, result -> {
+                if (result == android.view.PixelCopy.SUCCESS && stamp == mgExactBubbleStamp) {
+                    mgExactBubble = bmp;
+                    if (mgSnapshotView != null) {
+                        mgSnapshotView.setBitmap(bmp);
+                    }
+                } else {
+                    try {
+                        bmp.recycle();
+                    } catch (Throwable ignore) {
+                    }
+                }
+            }, new android.os.Handler(android.os.Looper.getMainLooper()));
+        } catch (Throwable ignore) {
+        }
+    }
+
     // MeeroGram R14.39: the captured bubble that rides inside the menu popup.
     private org.telegram.ui.Components.MGBubbleSnapshotView mgSnapshotView;
 
@@ -32387,6 +32456,8 @@ public class ChatActivity extends BaseFragment implements
         if (chatActivityEnterView != null) {
             chatActivityEnterView.hideHints();
         }
+        // grab the bubble before anything gets dimmed or covered
+        mgRequestExactBubble(v);
 
         MessageObject message;
         MessageObject primaryMessage;
@@ -34139,8 +34210,12 @@ public class ChatActivity extends BaseFragment implements
                 mgSnapshotView = null;
             }
             if (mgIosMsgMenuOn() && reactionsLayout != null && v instanceof ChatMessageCell && message != null) {
-                final org.telegram.ui.Components.MGBubbleSnapshotView snap =
+                org.telegram.ui.Components.MGBubbleSnapshotView snap =
                         org.telegram.ui.Components.MGBubbleSnapshotView.capture(scrimPopupContainerLayout.getContext(), (ChatMessageCell) v);
+                if (snap != null && mgExactBubble != null) {
+                    snap.setBitmap(mgExactBubble);
+                    mgExactBubble = null;
+                }
                 if (snap != null) {
                     final boolean out = message.isOut();
                     final LinearLayout.LayoutParams lp = LayoutHelper.createLinear(
@@ -34153,9 +34228,8 @@ public class ChatActivity extends BaseFragment implements
                     if (popupLayout.getLayoutParams() instanceof LinearLayout.LayoutParams) {
                         ((LinearLayout.LayoutParams) popupLayout.getLayoutParams()).gravity = out ? Gravity.RIGHT : Gravity.LEFT;
                     }
-                    snap.setAlpha(0f);
-                    snap.animate().alpha(1f).setDuration(180).setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
                     mgSnapshotView = snap;
+                    mgHiddenCell(v);
                 }
             }
 
@@ -34187,6 +34261,7 @@ public class ChatActivity extends BaseFragment implements
                         mgSnapshotView.release();
                         mgSnapshotView = null;
                     }
+                    mgShowHiddenCell();
                     if (scrimPopupWindowHideDimOnDismiss) {
                         dimBehindView(false);
                     } else {

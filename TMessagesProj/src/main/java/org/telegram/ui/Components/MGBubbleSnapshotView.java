@@ -28,7 +28,7 @@ import org.telegram.ui.Cells.ChatMessageCell;
  */
 public class MGBubbleSnapshotView extends FrameLayout {
 
-    private final Bitmap bitmap;
+    private Bitmap bitmap;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
 
     private final int bubbleLeft, bubbleTop;
@@ -50,6 +50,67 @@ public class MGBubbleSnapshotView extends FrameLayout {
         this.bubbleWidth = w;
         this.bubbleHeight = h;
         setWillNotDraw(false);
+    }
+
+    /**
+     * MeeroGram R14.43: the region of {@code cell} that holds the bubble, in cell
+     * coordinates: {left, top, right, bottom}.
+     */
+    public static int[] bubbleBounds(ChatMessageCell cell) {
+        if (cell == null || cell.getMeasuredWidth() <= 0 || cell.getMeasuredHeight() <= 0) {
+            return null;
+        }
+        int left, top, right, bottom;
+        try {
+            final int pad = cell.getPaddingTop();
+            left = cell.getBackgroundDrawableLeft();
+            right = cell.getBackgroundDrawableRight();
+            top = pad + cell.getBackgroundDrawableTop();
+            bottom = pad + cell.getBackgroundDrawableBottom();
+        } catch (Throwable e) {
+            return null;
+        }
+        if (right <= left || bottom <= top) {
+            left = 0;
+            top = cell.getPaddingTop();
+            right = cell.getMeasuredWidth();
+            bottom = cell.getMeasuredHeight();
+        }
+        try {
+            final org.telegram.messenger.ImageReceiver avatar = cell.getAvatarImage();
+            if (avatar != null) {
+                final int aLeft = (int) avatar.getImageX();
+                final int aRight = (int) avatar.getImageX2();
+                final int aTop = (int) avatar.getImageY();
+                final int aBottom = (int) avatar.getImageY2();
+                if (aRight > aLeft && aBottom > aTop) {
+                    left = Math.min(left, aLeft);
+                    right = Math.max(right, aRight);
+                    top = Math.min(top, aTop);
+                    bottom = Math.max(bottom, aBottom);
+                }
+            }
+        } catch (Throwable ignore) {
+        }
+        return new int[]{
+                Math.max(0, left - dp(4)),
+                Math.max(0, top - dp(3)),
+                Math.min(cell.getMeasuredWidth(), right + dp(4)),
+                Math.min(cell.getMeasuredHeight(), bottom + dp(3))
+        };
+    }
+
+    /** Replaces the picture once the exact pixels arrive from the window copy. */
+    public void setBitmap(Bitmap value) {
+        final Bitmap old = bitmap;
+        bitmap = value;
+        if (old != null && old != value && !old.isRecycled()) {
+            try {
+                old.recycle();
+            } catch (Throwable ignore) {
+            }
+        }
+        invalidate();
     }
 
     /** Renders the bubble of {@code cell} into a bitmap, or null when it can't be captured. */
@@ -110,6 +171,22 @@ public class MGBubbleSnapshotView extends FrameLayout {
         canvas.translate(-left, -top);
         try {
             cell.setInvalidatesParent(false);
+            final float mgOldAlpha = cell.getAlpha();
+            final boolean mgAlphaForced = mgOldAlpha != 1f;
+            if (mgAlphaForced) {
+                cell.setAlpha(1f);
+            }
+            try {
+                canvas.save();
+                cell.drawBackground(canvas,
+                        cell.getBackgroundDrawableLeft(),
+                        cell.getPaddingTop() + cell.getBackgroundDrawableTop(),
+                        cell.getBackgroundDrawableRight(),
+                        cell.getPaddingTop() + cell.getBackgroundDrawableBottom(),
+                        false, false, false, 0);
+                canvas.restore();
+            } catch (Throwable ignore) {
+            }
             if (cell.drawBackgroundInParent()) {
                 canvas.save();
                 canvas.translate(0, cell.getPaddingTop());
@@ -137,6 +214,9 @@ public class MGBubbleSnapshotView extends FrameLayout {
                 canvas.translate(0, cell.getPaddingTop());
                 cell.drawOutboundsContent(canvas);
                 canvas.restore();
+            }
+            if (mgAlphaForced) {
+                cell.setAlpha(mgOldAlpha);
             }
         } catch (Throwable e) {
             try {
