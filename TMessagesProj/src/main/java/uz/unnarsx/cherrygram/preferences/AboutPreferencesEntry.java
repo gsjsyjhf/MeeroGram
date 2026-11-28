@@ -178,11 +178,12 @@ public class AboutPreferencesEntry extends BaseCGPreferencesEntry {
                 } else if (id == betaChannelRow) {
                     getMessagesController().openByUserName(Constants.CG_BETA_APKS_CHANNEL_USERNAME, AboutPreferencesEntry.this, 1);
                 } else if (id == chatRow) {
-                    getMessagesController().openByUserName(Constants.CG_CHAT_USERNAME, AboutPreferencesEntry.this, 1);
+                    // MeeroGram R14.33: the owner's own public chat.
+                    getMessagesController().openByUserName("fjjfdhds", AboutPreferencesEntry.this, 1);
                 } else if (id == offtopicChatRow) {
                     getMessagesController().openByUserName(Constants.CG_OFFTOPIC_CHAT_USERNAME, AboutPreferencesEntry.this, 1);
                 } else if (id == tikTokRow) {
-                    Browser.openUrl(getContext(), Constants.TIKTOK_URL);
+                    // MeeroGram R14.33: no TikTok account yet - nothing to open.
                 } else if (id == githubRow) {
                     if (CherrygramCoreConfig.isStandaloneBetaBuild() || CherrygramCoreConfig.isDevBuild()) {
                         Browser.openInTelegramBrowser(getContext(), Constants.CG_GITHUB_URL, null);
@@ -201,7 +202,7 @@ public class AboutPreferencesEntry extends BaseCGPreferencesEntry {
                 } else if (id == betaChannelRow) {
                     AndroidUtilities.addToClipboard("@" + Constants.CG_BETA_APKS_CHANNEL_USERNAME);
                 } else if (id == chatRow) {
-                    AndroidUtilities.addToClipboard("@" + Constants.CG_CHAT_USERNAME);
+                    AndroidUtilities.addToClipboard("@fjjfdhds");
                 } else if (id == offtopicChatRow) {
                     AndroidUtilities.addToClipboard("@" + Constants.CG_OFFTOPIC_CHAT_USERNAME);
                 } else if (id == tikTokRow) {
@@ -220,19 +221,12 @@ public class AboutPreferencesEntry extends BaseCGPreferencesEntry {
         listView.addItemDecoration(headerView.new Background(), 0);
 
         ArrayList<AboutHeaderView.Link> tikTok = new ArrayList<>();
-        tikTok.add(new AboutHeaderView.Link(tikTokRow, R.drawable.tiktok_logo_outline, "TikTok", "@cherrygram_official"));
+        tikTok.add(new AboutHeaderView.Link(tikTokRow, R.drawable.tiktok_logo_outline, "TikTok", "قريباً"));
         tikTokGroup = headerView.createGroup(null, null, tikTok, 0);
 
-        ArrayList<AboutHeaderView.Link> project = new ArrayList<>();
-        if (!CherrygramCoreConfig.isStandalonePremiumBuild()) {
-            String source = "commit " + BuildConfig.GIT_COMMIT_HASH.substring(0, 8);
-            if (CherrygramCoreConfig.isStandaloneBetaBuild() || CherrygramCoreConfig.isDevBuild()) {
-                source = "GitHub";
-            }
-            project.add(new AboutHeaderView.Link(githubRow, R.drawable.github_cat, getString(R.string.CGP_Source), source));
-        }
-        project.add(new AboutHeaderView.Link(crowdinRow, R.drawable.msg_translate_solar, getString(R.string.CGP_Crowdin), "Crowdin"));
-        projectGroup = headerView.createGroup(getString(R.string.CGP_About_Project), null, project, 11);
+        // MeeroGram R14.33: the PROJECT block is gone at the owner's request - no source
+        // code row, no Crowdin row, so the group is never created.
+        projectGroup = null;
 
         footerView = new AboutHeaderView.FullWidthLayout(context);
         footerView.setPadding(0, 0, 0, dp(16));
@@ -363,10 +357,10 @@ public class AboutPreferencesEntry extends BaseCGPreferencesEntry {
         // once the linked community resolved - they used to be the *alternative* to the
         // community card, so resolving the community replaced them. Both are listed now:
         // the card on top, the four links under it.
+        // MeeroGram R14.33: one channel + one public chat (the beta-channel and
+        // off-topic rows are removed and the chat points at the owner's own group).
         chats.add(new AboutHeaderView.Link(channelRow, R.drawable.msg_channel_solar, getString(R.string.CGP_ToChannel), "@" + Constants.CG_CHANNEL_USERNAME));
-        chats.add(new AboutHeaderView.Link(betaChannelRow, R.drawable.msg_channel_solar, getString(R.string.CGP_ToBetaChannel), "@" + Constants.CG_BETA_APKS_CHANNEL_USERNAME));
-        chats.add(new AboutHeaderView.Link(chatRow, R.drawable.msg_discuss_solar, getString(R.string.CGP_ToChat), "@" + Constants.CG_CHAT_USERNAME));
-        chats.add(new AboutHeaderView.Link(offtopicChatRow, R.drawable.msg_discuss_solar, getString(R.string.CGP_ToOfftopicChat), "@" + Constants.CG_OFFTOPIC_CHAT_USERNAME));
+        chats.add(new AboutHeaderView.Link(chatRow, R.drawable.msg_discuss_solar, getString(R.string.CGP_ToChat), "@fjjfdhds"));
         communityGroup = headerView.createGroup(getString(R.string.CGP_About_Community), communityLinkView, chats, 4);
         updateRows(false);
     }

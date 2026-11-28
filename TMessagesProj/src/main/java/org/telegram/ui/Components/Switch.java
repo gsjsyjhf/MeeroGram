@@ -589,31 +589,26 @@ public class Switch extends FrameLayout implements Theme.Colorable {
      * iOS26 capsule was squeezed under its own knob - the broken toggles in the
      * conversation-shortcuts sheet. Where there is no room we fall back to stock.
      */
+    /**
+     * MeeroGram R14.33 - one switch, everywhere.
+     *
+     * The fork used to carry two extra switch skins (OneUI and iOS26). Neither could be
+     * made to look like the other: the cells hand the switch different boxes (39x40dp in
+     * the shortcut dialogs, 64x40dp in the settings rows), so the same settings produced
+     * two different-looking switches in the same app, and the hosted glass variant drew
+     * a square track with a clipped knob. The owner's verdict after three attempts was
+     * simply "they must all look alike", so both skins are switched off at the draw site
+     * and every switch in the app now uses Telegram's own rendering, which is identical
+     * everywhere by construction. The two settings rows are removed from Appearance as
+     * well - nothing to configure, nothing to disagree.
+     */
     private boolean meeroCanDrawOneUi() {
-        // R14.31: the OneUI track is painted from its own x to the view's right edge
-        // and its knob (22dp across) is centred off a fixed 30.5dp track, so in a
-        // 39dp-wide cell the knob ran into the view bounds and was clipped into a
-        // white blob on a green rectangle. Both dimensions have to leave room.
-        return CherrygramAppearanceConfig.INSTANCE.getOneUI_SwitchStyle()
-                && getMeasuredWidth() >= AndroidUtilities.dp(45)
-                && getMeasuredHeight() >= AndroidUtilities.dp(26);
+        return false;
     }
 
     private boolean meeroCanDrawIos26() {
-        // R14.32: the capsule draws itself at whatever size the cell hands it (see
-        // meeroScale), so the only requirement is a box big enough to see it. That is
-        // what makes the shortcut sheet's rows - which lay the switch out smaller than
-        // the settings rows - look like the same switch as everywhere else.
-        return CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle()
-                && getMeasuredWidth() >= AndroidUtilities.dp(20)
-                && getMeasuredHeight() >= AndroidUtilities.dp(12);
+        return false;
     }
-
-    /** Scale of the iOS26 capsule against its native 63x28dp / 37x24dp knob. */
-    private float meeroScale = 1f;
-    private float meeroKnobHalfW = AndroidUtilities.dp(18.5f);
-    private float meeroKnobHalfH = AndroidUtilities.dp(12f);
-    private int meeroTrackWPx, meeroTrackHPx;
 
     @Override
     protected void onDraw(Canvas canvas) {
