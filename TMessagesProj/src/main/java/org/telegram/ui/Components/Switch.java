@@ -587,6 +587,13 @@ public class Switch extends FrameLayout implements Theme.Colorable {
      * the settings sheets the view is narrower than the styles assume, so each one needs
      * a minimum box or its knob is clipped by the view bounds.
      */
+    // iOS26 capsule geometry, refreshed every frame from the box the row hands us.
+    private float meeroScale = 1f;
+    private float meeroKnobHalfW = AndroidUtilities.dp(18.5f);
+    private float meeroKnobHalfH = AndroidUtilities.dp(12f);
+    private int meeroTrackWPx;
+    private int meeroTrackHPx;
+
     private boolean meeroCanDrawOneUi() {
         // The OneUI track is painted from its own x to the view's right edge and its knob
         // (22dp across) is centred off a fixed 30.5dp track, so a narrow view clips it.
