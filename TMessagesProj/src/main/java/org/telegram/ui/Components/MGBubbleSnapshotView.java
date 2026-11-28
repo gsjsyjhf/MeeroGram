@@ -193,16 +193,6 @@ public class MGBubbleSnapshotView extends FrameLayout {
                 cell.drawBackgroundInternal(canvas, true);
                 canvas.restore();
             }
-            // MeeroGram R14.42: channel posts, media, albums and button bubbles paint
-            // their bubble only through the group/background pass, so a plain draw()
-            // left the snapshot see-through. Paint the bubble shape as well.
-            try {
-                canvas.save();
-                canvas.translate(0, cell.getPaddingTop());
-                cell.drawBackground(canvas, 0, 0, cell.getMeasuredWidth(), cell.getMeasuredHeight(), false, false, false, 0);
-                canvas.restore();
-            } catch (Throwable ignore) {
-            }
             cell.draw(canvas);
             if (cell.hasNameLayout()) {
                 canvas.save();
@@ -230,7 +220,44 @@ public class MGBubbleSnapshotView extends FrameLayout {
             } catch (Throwable ignore) {
             }
         }
-        return new MGBubbleSnapshotView(context, bmp, left, top, w, h);
+        // MeeroGram R14.44: keep only what the cell actually painted. The capture rect is
+        // the row, so without this the snapshot carried a strip of chat background beside
+        // the bubble; trimming to the painted pixels leaves nothing but the bubble.
+        int tl = 0, tt = 0, tr = w - 1, tb = h - 1;
+        try {
+            final int step = 2;
+            int minX = w, minY = h, maxX = -1, maxY = -1;
+            final int[] row = new int[w];
+            for (int y = 0; y < h; y += step) {
+                bmp.getPixels(row, 0, w, 0, y, w, 1);
+                for (int x = 0; x < w; x += step) {
+                    if ((row[x] >>> 24) > 8) {
+                        if (x < minX) minX = x;
+                        if (x > maxX) maxX = x;
+                        if (y < minY) minY = y;
+                        if (y > maxY) maxY = y;
+                    }
+                }
+            }
+            if (maxX > minX && maxY > minY) {
+                tl = minX;
+                tt = minY;
+                tr = Math.min(w - 1, maxX + step);
+                tb = Math.min(h - 1, maxY + step);
+            }
+        } catch (Throwable ignore) {
+        }
+        if (tl > 0 || tt > 0 || tr < w - 1 || tb < h - 1) {
+            try {
+                final Bitmap cropped = Bitmap.createBitmap(bmp, tl, tt, tr - tl + 1, tb - tt + 1);
+                bmp.recycle();
+                left += tl;
+                top += tt;
+                bmp = cropped;
+            } catch (Throwable ignore) {
+            }
+        }
+        return new MGBubbleSnapshotView(context, bmp, left, top, bmp.getWidth(), bmp.getHeight());
     }
 
     public int getBubbleLeftInCell() {
