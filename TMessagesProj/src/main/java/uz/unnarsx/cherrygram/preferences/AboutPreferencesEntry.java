@@ -357,12 +357,16 @@ public class AboutPreferencesEntry extends BaseCGPreferencesEntry {
             communityLinkView.setOnClickListener(v -> showDialog(new CommunitySheet(this, communityId)));
             communityGroupItem = communityItem;
         } else {
-            chats.add(new AboutHeaderView.Link(channelRow, R.drawable.msg_channel_solar, getString(R.string.CGP_ToChannel), "@" + Constants.CG_CHANNEL_USERNAME));
-            chats.add(new AboutHeaderView.Link(betaChannelRow, R.drawable.msg_channel_solar, getString(R.string.CGP_ToBetaChannel), "@" + Constants.CG_BETA_APKS_CHANNEL_USERNAME));
-            chats.add(new AboutHeaderView.Link(chatRow, R.drawable.msg_discuss_solar, getString(R.string.CGP_ToChat), "@" + Constants.CG_CHAT_USERNAME));
-            chats.add(new AboutHeaderView.Link(offtopicChatRow, R.drawable.msg_discuss_solar, getString(R.string.CGP_ToOfftopicChat), "@" + Constants.CG_OFFTOPIC_CHAT_USERNAME));
             communityGroupItem = chatsItem;
         }
+        // MeeroGram R14.31: the channel/chat links are the block the owner was missing
+        // once the linked community resolved - they used to be the *alternative* to the
+        // community card, so resolving the community replaced them. Both are listed now:
+        // the card on top, the four links under it.
+        chats.add(new AboutHeaderView.Link(channelRow, R.drawable.msg_channel_solar, getString(R.string.CGP_ToChannel), "@" + Constants.CG_CHANNEL_USERNAME));
+        chats.add(new AboutHeaderView.Link(betaChannelRow, R.drawable.msg_channel_solar, getString(R.string.CGP_ToBetaChannel), "@" + Constants.CG_BETA_APKS_CHANNEL_USERNAME));
+        chats.add(new AboutHeaderView.Link(chatRow, R.drawable.msg_discuss_solar, getString(R.string.CGP_ToChat), "@" + Constants.CG_CHAT_USERNAME));
+        chats.add(new AboutHeaderView.Link(offtopicChatRow, R.drawable.msg_discuss_solar, getString(R.string.CGP_ToOfftopicChat), "@" + Constants.CG_OFFTOPIC_CHAT_USERNAME));
         communityGroup = headerView.createGroup(getString(R.string.CGP_About_Community), communityLinkView, chats, 4);
         updateRows(false);
     }

@@ -164,7 +164,13 @@ public class Switch extends FrameLayout implements Theme.Colorable {
     }
 
     private void updateGlassMode() {
-        final boolean want = hostGlassSwitch && CherrygramAppearanceConfig.INSTANCE.getIos26_SwitchStyle();
+        // MeeroGram R14.31: the hosted glass switch is off. In the settings rows it
+        // came out as a square green block with an oversized capsule knob clipped on
+        // the right (the blur backdrop source is not available inside dialogs, so the
+        // fillet path never loaded and the thumb kept its 24dp height). This view's
+        // own onDraw already paints the iOS26 capsule correctly, so the hosted copy
+        // is what gets dropped, not the style.
+        final boolean want = false;
         if (want && glassSwitch == null) {
             final MeeroGlassSwitch hosted;
             try {
@@ -584,7 +590,12 @@ public class Switch extends FrameLayout implements Theme.Colorable {
      * conversation-shortcuts sheet. Where there is no room we fall back to stock.
      */
     private boolean meeroCanDrawOneUi() {
+        // R14.31: the OneUI track is painted from its own x to the view's right edge
+        // and its knob (22dp across) is centred off a fixed 30.5dp track, so in a
+        // 39dp-wide cell the knob ran into the view bounds and was clipped into a
+        // white blob on a green rectangle. Both dimensions have to leave room.
         return CherrygramAppearanceConfig.INSTANCE.getOneUI_SwitchStyle()
+                && getMeasuredWidth() >= AndroidUtilities.dp(45)
                 && getMeasuredHeight() >= AndroidUtilities.dp(26);
     }
 
