@@ -11686,6 +11686,34 @@ public class ChatActivity extends BaseFragment implements
         }
     }
 
+    // MeeroGram R14.38: "raised bubble" - the pressed bubble is drawn above the
+    // blurred chat, scaled up ~2% and lifted a few dp, so it reads as detached from
+    // the list exactly like the MeeroX/iOS message menu.
+    private float mgMenuLiftProgress;
+    private ValueAnimator mgMenuLiftAnimator;
+
+    private void mgAnimateMenuLift(boolean enable) {
+        if (mgMenuLiftAnimator != null) {
+            mgMenuLiftAnimator.cancel();
+            mgMenuLiftAnimator = null;
+        }
+        final float from = mgMenuLiftProgress;
+        final float to = enable ? 1f : 0f;
+        if (from == to) {
+            return;
+        }
+        mgMenuLiftAnimator = ValueAnimator.ofFloat(from, to);
+        mgMenuLiftAnimator.setDuration(enable ? 180 : 150);
+        mgMenuLiftAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+        mgMenuLiftAnimator.addUpdateListener(a -> {
+            mgMenuLiftProgress = (float) a.getAnimatedValue();
+            if (contentView != null) {
+                contentView.invalidate();
+            }
+        });
+        mgMenuLiftAnimator.start();
+    }
+
     /** MeeroGram R14.37: the iOS message-menu switch (Appearance > iOS menu). */
     private static boolean mgIosMsgMenuOn() {
         try {
@@ -19264,8 +19292,22 @@ public class ChatActivity extends BaseFragment implements
                                 actionCell.setInvalidatesParent(true);
                                 actionCell.setScrimReaction(scrimViewReaction);
                             }
+                            final boolean mgLift = mgMenuLiftProgress > 0f && cell != null && scrimGroup == null;
+                            if (mgLift) {
+                                // leave room for the scaled/lifted bubble to paint outside its own box
+                                final float grow = dp(10) * mgMenuLiftProgress;
+                                viewClipLeft -= grow;
+                                viewClipTop -= grow;
+                                viewClipRight += grow;
+                                viewClipBottom += grow;
+                            }
                             canvas.clipRect(viewClipLeft, viewClipTop, viewClipRight, viewClipBottom);
                             canvas.translate(chatListView.getLeft() + child.getX(), chatListView.getY() + child.getY());
+                            if (mgLift) {
+                                final float sc = 1f + 0.02f * mgMenuLiftProgress;
+                                canvas.scale(sc, sc, child.getMeasuredWidth() / 2f, child.getMeasuredHeight() / 2f);
+                                canvas.translate(0, -dp(6) * mgMenuLiftProgress);
+                            }
                             if (cell != null && scrimGroup == null && cell.drawBackgroundInParent()) {
                                 canvas.save();
                                 canvas.translate(0, cell.getPaddingTop());
@@ -34105,6 +34147,9 @@ public class ChatActivity extends BaseFragment implements
                     menuDeleteItem = null;
                     scrimPopupWindowItems = null;
                     chatLayoutManager.setCanScrollVertically(true);
+                    if (mgMenuLiftProgress > 0f) {
+                        mgAnimateMenuLift(false);
+                    }
                     if (scrimPopupWindowHideDimOnDismiss) {
                         dimBehindView(false);
                     } else {
@@ -34246,6 +34291,7 @@ public class ChatActivity extends BaseFragment implements
                     // heavy 50% dim, so the bubble under it stays readable.
                     setScrimView(v);
                     dimBehindView(0.25f, Build.VERSION.SDK_INT >= 31, v != sideControlsButtonsLayout);
+                    mgAnimateMenuLift(true);
                 } else {
                     dimBehindView(v, true);
                 }

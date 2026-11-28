@@ -35,12 +35,6 @@ import uz.unnarsx.cherrygram.preferences.helpers.SettingsHelper;
 
 public class MessageMenuPreferencesEntry extends BaseCGPreferencesEntry {
 
-    private final int enableNewMessageMenuRow = 1;
-    private final int useNativeBlurRow = 2;
-    private final int openByLongPressRow = 3;
-    private final int fixAnimationDurationRow = 4;
-    private final int showWholeAlbumRow = 5;
-    private final int rememberKeyboardStateRow = 6;
 
     private final int messageMenuItemsRow = 7;
     private final int messageMenuItemsCompactViewRow = 8;
@@ -61,63 +55,10 @@ public class MessageMenuPreferencesEntry extends BaseCGPreferencesEntry {
         boolean requireDonate = !DonatesManager.INSTANCE.checkAllDonatedAccountsForMarketplace();
         boolean requireDonate2 = !DonatesManager.INSTANCE.checkAllDonatedAccounts() && !DonatesManager.INSTANCE.checkAllDonatedAccountsForMarketplace();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            items.add(UItem.asHeader(getString(R.string.AP_Header_Appearance)));
-            items.add(
-                    SettingsHelper.asSwitchCG
-                            (
-                                    enableNewMessageMenuRow,
-                                    applyProSpan(getString(R.string.CP_BlurMessageMenu), getResourceProvider()),
-                                    getString(R.string.CP_BlurMessageMenu_Desc)
-                            )
-                    .setChecked(CherrygramMessagesConfig.INSTANCE.getBlurMessageMenuBackground())
-                    .setLocked(requireDonate)
-                    .slug("iosMsgMenu")
-            );
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                items.add(SettingsHelper.asSwitchCG(useNativeBlurRow, getString(R.string.CP_MessageMenuNativeBlur), getString(R.string.CP_MessageMenuNativeBlur_Desc))
-                        .setChecked(CherrygramMessagesConfig.INSTANCE.getMsgMenuNativeBlur())
-                        .setEnabled(CherrygramMessagesConfig.INSTANCE.getBlurMessageMenuBackground())
-                        .slug("nativeBlur")
-                );
-            }
-            items.add(UItem.asShadow(null));
-            items.add(
-                    SettingsHelper.asSwitchCG
-                            (
-                                    openByLongPressRow,
-                                    applyNewSpan(getString(R.string.CG_MsgMenuOpenByLongPress)),
-                                    getString(R.string.CG_MsgMenuOpenByLongPress_Desc)
-                            )
-                    .setChecked(CherrygramMessagesConfig.INSTANCE.getMsgMenuOpenByLongPress())
-                    .setEnabled(CherrygramMessagesConfig.INSTANCE.getBlurMessageMenuBackground())
-                    .slug("openByLongPress")
-            );
-            items.add(
-                    SettingsHelper.asSwitchCG
-                            (
-                                    showWholeAlbumRow,
-                                    applyNewSpan(getString(R.string.CG_MsgMenuShowWholeAlbum)),
-                                    getString(R.string.CG_MsgMenuShowWholeAlbum_Desc)
-                            )
-                    .setChecked(CherrygramMessagesConfig.INSTANCE.getMsgMenuShowWholeAlbum())
-                    .setEnabled(CherrygramMessagesConfig.INSTANCE.getBlurMessageMenuBackground())
-                    .slug("showWholeAlbum")
-            );
-            items.add(SettingsHelper.asSwitchCG(rememberKeyboardStateRow, applyNewSpan(getString(R.string.CP_RememberKeyboardState)))
-                    .setChecked(CherrygramMessagesConfig.INSTANCE.getRememberKeyboardState())
-                    .setEnabled(CherrygramMessagesConfig.INSTANCE.getBlurMessageMenuBackground())
-                    .slug("rememberKbdState")
-            );
-            /*if (CherrygramCoreConfig.isDevBuild()) {
-                items.add(SettingsHelper.asSwitchCG(fixAnimationDurationRow, "Fix animation duration")
-                        .setChecked(CherrygramMessagesConfig.INSTANCE.getFixMsgMenuAnimation())
-                        .setEnabled(CherrygramMessagesConfig.INSTANCE.getBlurMessageMenuBackground())
-                );
-            }*/
-            items.add(UItem.asShadow(null));
-        }
-
+        // MeeroGram R14.38: the message-menu switches (iOS message list + PRO, native
+        // blur, open by long press, whole album, remember keyboard state) are gone -
+        // the iOS menu behaviour is now built in, so there is nothing left to toggle
+        // here. Only the menu contents and the compact layout stay.
         items.add(UItem.asHeader(getString(R.string.LocalMiscellaneousCache)));
         items.add(UItem.asButton(messageMenuItemsRow, R.drawable.msg_list, getString(R.string.CP_MessageMenuItems))
                 .slug("menuItems")
@@ -157,27 +98,7 @@ public class MessageMenuPreferencesEntry extends BaseCGPreferencesEntry {
             return;
         }
 
-        if (item.id == enableNewMessageMenuRow) {
-            CherrygramMessagesConfig.INSTANCE.setBlurMessageMenuBackground(!CherrygramMessagesConfig.INSTANCE.getBlurMessageMenuBackground());
-            SettingsHelper.updateCheckState(view, CherrygramMessagesConfig.INSTANCE.getBlurMessageMenuBackground());
-
-            updateRows(true);
-        } else if (item.id == useNativeBlurRow) {
-            CherrygramMessagesConfig.INSTANCE.setMsgMenuNativeBlur(!CherrygramMessagesConfig.INSTANCE.getMsgMenuNativeBlur());
-            SettingsHelper.updateCheckState(view, CherrygramMessagesConfig.INSTANCE.getMsgMenuNativeBlur());
-        } else if (item.id == openByLongPressRow) {
-            CherrygramMessagesConfig.INSTANCE.setMsgMenuOpenByLongPress(!CherrygramMessagesConfig.INSTANCE.getMsgMenuOpenByLongPress());
-            SettingsHelper.updateCheckState(view, CherrygramMessagesConfig.INSTANCE.getMsgMenuOpenByLongPress());
-        } else if (item.id == showWholeAlbumRow) {
-            CherrygramMessagesConfig.INSTANCE.setMsgMenuShowWholeAlbum(!CherrygramMessagesConfig.INSTANCE.getMsgMenuShowWholeAlbum());
-            SettingsHelper.updateCheckState(view, CherrygramMessagesConfig.INSTANCE.getMsgMenuShowWholeAlbum());
-        } else if (item.id == rememberKeyboardStateRow) {
-            CherrygramMessagesConfig.INSTANCE.setRememberKeyboardState(!CherrygramMessagesConfig.INSTANCE.getRememberKeyboardState());
-            SettingsHelper.updateCheckState(view, CherrygramMessagesConfig.INSTANCE.getRememberKeyboardState());
-        } else if (item.id == fixAnimationDurationRow) {
-            CherrygramMessagesConfig.INSTANCE.setFixMsgMenuAnimation(!CherrygramMessagesConfig.INSTANCE.getFixMsgMenuAnimation());
-            SettingsHelper.updateCheckState(view, CherrygramMessagesConfig.INSTANCE.getFixMsgMenuAnimation());
-        } else if (item.id == messageMenuItemsRow) {
+        if (item.id == messageMenuItemsRow) {
             CGMessageMenuInjector.INSTANCE.showMessageMenuItemsConfigurator(this);
         } else if (item.id == messageMenuItemsCompactViewRow) {
             CherrygramMessagesConfig.INSTANCE.setMsgMenuItemsCompactView(!CherrygramMessagesConfig.INSTANCE.getMsgMenuItemsCompactView());

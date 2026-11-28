@@ -74,7 +74,9 @@ public class MessageMenuHelper {
     }
 
     public boolean openMenuByLongPress() {
-        return CherrygramMessagesConfig.INSTANCE.getMsgMenuOpenByLongPress();
+        // MeeroGram R14.38: long-press always opens the message menu (iOS behaviour).
+        // The switch that used to gate this was removed from the settings screen.
+        return true;
     }
 
     public boolean showGap() {
