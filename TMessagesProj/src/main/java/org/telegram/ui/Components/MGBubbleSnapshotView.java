@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
+import org.telegram.ui.ActionBar.MessageDrawable;
 import org.telegram.ui.Cells.ChatMessageCell;
 
 /**
@@ -176,15 +177,30 @@ public class MGBubbleSnapshotView extends FrameLayout {
             if (mgAlphaForced) {
                 cell.setAlpha(1f);
             }
+            // MeeroGram R14.45: paint the bubble itself. drawBackgroundInternal() only
+            // serves rich-text holes, and drawBackground() paints through a cache that is
+            // empty for a detached canvas - that is why the snapshot ended up as bare
+            // content. Drawing the cell's own bubble drawable at its real bounds always
+            // produces the exact shape and colour of the message.
             try {
-                canvas.save();
-                cell.drawBackground(canvas,
-                        cell.getBackgroundDrawableLeft(),
-                        cell.getPaddingTop() + cell.getBackgroundDrawableTop(),
-                        cell.getBackgroundDrawableRight(),
-                        cell.getPaddingTop() + cell.getBackgroundDrawableBottom(),
-                        false, false, false, 0);
-                canvas.restore();
+                final MessageDrawable bubble = cell.getCurrentBackgroundDrawable(false);
+                if (bubble != null) {
+                    canvas.save();
+                    bubble.setBounds(
+                            cell.getBackgroundDrawableLeft(),
+                            cell.getPaddingTop() + cell.getBackgroundDrawableTop(),
+                            cell.getBackgroundDrawableRight(),
+                            cell.getPaddingTop() + cell.getBackgroundDrawableBottom());
+                    bubble.draw(canvas);
+                    canvas.restore();
+                } else {
+                    cell.drawBackground(canvas,
+                            cell.getBackgroundDrawableLeft(),
+                            cell.getPaddingTop() + cell.getBackgroundDrawableTop(),
+                            cell.getBackgroundDrawableRight(),
+                            cell.getPaddingTop() + cell.getBackgroundDrawableBottom(),
+                            false, false, false, 0);
+                }
             } catch (Throwable ignore) {
             }
             if (cell.drawBackgroundInParent()) {
